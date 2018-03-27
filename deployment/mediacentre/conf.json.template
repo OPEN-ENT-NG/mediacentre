@@ -13,6 +13,10 @@
         "integration-mode" : "HTTP",
         "app-registry.port" : 8012,
         "mode" : "${mode}",
-        "entcore.port" : 8009
+        "entcore.port" : 8009,
+        "max-nodes": 10000,
+        "export-path": "",
+        "id-ent" : "NGPARIS",
+        "control-group" : "GAR"
       }
     }

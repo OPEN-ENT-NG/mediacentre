@@ -6,5 +6,5 @@ import org.vertx.java.core.json.JsonObject;
 
 public interface ExportService {
 
-    void test(Handler<Either<String,JsonObject>> handler);
+    void test(final Handler<Either<String,JsonObject>> handler);
 }
