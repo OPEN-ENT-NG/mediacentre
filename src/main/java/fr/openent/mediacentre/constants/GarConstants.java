@@ -1,11 +1,25 @@
 package fr.openent.mediacentre.constants;
 
 public class GarConstants {
+
+    public static final String DEFAULT_CONTROL_GROUP = "GAR";
+
     public static final String STUDENT_ROOT = "men:GAR-ENT-Eleve";
     public static final String STUDENT_FILE_PARAM = "Eleve";
     public static final String STUDENT_PROFILE = "National_elv";
     public static final String STUDENT_NODE = "men:GAREleve";
     public static final String STUDENT_STUDYFIELD = "men:GAREleveEnseignement";
+
+    public static final String DOCUMENTALIST_CODE = "DOC";
+    public static final String DOCUMENTALIST_DESC= "DOCUMENTATION";
+
+
+    public static final String TEACHER_ROOT = "men:GAR-ENT-Enseignant";
+    public static final String TEACHER_FILE_PARAM = "Enseignant";
+    public static final String TEACHER_PROFILE = "National_ens";
+    public static final String DOCUMENTALIST_PROFILE = "National_doc";
+    public static final String TEACHER_NODE = "men:GAREleve";
+    public static final String TEACHER_POSITION = "men:GAREnsDisciplinesPostes";
 
 
     public static final String PERSON_ID = "men:GARPersonIdentifiant";
@@ -24,5 +38,6 @@ public class GarConstants {
 
     public static final String MEF_CODE = "men:GARMEFCode";
     public static final String STUDYFIELD_CODE = "men:GARMatiereCode";
+    public static final String POSITION_CODE = "men:GAREnsDisciplinePosteCode";
 
 }

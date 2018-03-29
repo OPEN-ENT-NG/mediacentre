@@ -34,6 +34,12 @@ public class XmlExportHelperImpl implements XmlExportHelper {
     private final String exportDir;
     private final String FILE_PREFIX;
 
+    /**
+     * Initialize helper and first xml
+     * @param container vertx container, for logger and config
+     * @param root name of the root xml element
+     * @param fileParamName param for the name of xml file
+     */
     public XmlExportHelperImpl(Container container, String root, String fileParamName) {
         ROOT = root;
         initNewFile();
@@ -45,6 +51,9 @@ public class XmlExportHelperImpl implements XmlExportHelper {
         FILE_PREFIX = idEnt + "_GAR-ENT_Complet_" + strDate + fileParamName + "_";
     }
 
+    /**
+     * Add static attributes to xml root node
+     */
     private void addAttributesToRootNode() {
         currentElement.setAttribute("xmlns:men", "http://data.education.fr/ns/gar");
         currentElement.setAttribute("xmlns:xalan", "http://xml.apache.org/xalan");
@@ -54,6 +63,9 @@ public class XmlExportHelperImpl implements XmlExportHelper {
         currentElement.setAttribute("xsi:schemaLocation", "http://data.education.fr/ns/gar GAR-ENT.xsd");
     }
 
+    /**
+     * Close current xml file and save to disk
+     */
     @Override
     public void closeFile() {
         try {
@@ -62,20 +74,32 @@ public class XmlExportHelperImpl implements XmlExportHelper {
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
             DOMSource source = new DOMSource(currentDoc);
-            StreamResult result = new StreamResult(new File(exportDir + getExportFileName(fileIndex)));
+            String filename = getExportFileName(fileIndex);
+            StreamResult result = new StreamResult(new File(exportDir + filename));
             transformer.transform(source, result);
+            log.info(filename + " saved");
         } catch (TransformerException tfe) {
             log.error(tfe.getMessage());
         }
     }
 
+    /**
+     * Save Json object to xml
+     * @param key key of xml node
+     * @param entry tree content of xml node as JsonObject
+     */
     @Override
     public void saveObject(String key, JsonObject entry) {
         saveObject(key, entry, currentElement);
         testNumberOfOccurrences();
     }
 
-
+    /**
+     * Save Json object to xml
+     * @param key key of xml node
+     * @param entry tree content of xml node as JsonObject
+     * @param curElt parent element for new xml node
+     */
     private void saveObject(String key, JsonObject entry, Element curElt) {
         Element objectElement = currentDoc.createElement(key);
         for(String jsonKey : entry.getFieldNames()) {
@@ -86,6 +110,12 @@ public class XmlExportHelperImpl implements XmlExportHelper {
         nbElem++;
     }
 
+    /**
+     * Save String to xml
+     * @param key key of xml node
+     * @param value string value of xml node
+     * @param curElt parent element for new xml node
+     */
     private void saveString(String key, String value, Element curElt) {
         Element elem = currentDoc.createElement(key);
         elem.appendChild(currentDoc.createTextNode(value));
@@ -93,12 +123,25 @@ public class XmlExportHelperImpl implements XmlExportHelper {
         nbElem++;
     }
 
+    /**
+     * Save Json array to xml
+     * @param key key of xml nodes
+     * @param array array of values to save as multiple nodes
+     * @param curElt parent element for new xml nodes
+     */
     private void saveArray(String key, JsonArray array, Element curElt) {
         for(Object o : array) {
             saveUnknownObject(key, o, curElt);
         }
     }
 
+    /**
+     * Save undetermined object to xml
+     * Identify correct class and call appropriate function
+     * @param key key of xml nodes
+     * @param o unknown object to save
+     * @param curElt parent element for new xml nodes
+     */
     private void saveUnknownObject(String key, Object o, Element curElt) {
         if(o instanceof String) {
             saveString(key, (String)o, curElt);
@@ -115,6 +158,9 @@ public class XmlExportHelperImpl implements XmlExportHelper {
         }
     }
 
+    /**
+     * Init new xml
+     */
     private void initNewFile(){
         DocumentBuilderFactory docFactory = DocumentBuilderFactory.newInstance();
         DocumentBuilder docBuilder = null;
@@ -131,10 +177,13 @@ public class XmlExportHelperImpl implements XmlExportHelper {
         addAttributesToRootNode();
     }
 
+    /**
+     * Test if MAX_NODE is reached
+     * Then close the file and open a new one
+     */
     private void testNumberOfOccurrences() {
         if (nbElem >= MAX_NODES) {
             closeFile();
-            log.info("Students" + fileIndex + " saved");
             fileIndex++;
             initNewFile();
         }

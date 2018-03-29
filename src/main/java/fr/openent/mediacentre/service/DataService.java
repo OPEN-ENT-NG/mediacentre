@@ -8,9 +8,8 @@ public interface DataService {
 
     /**
      * Export Data to folder
-     * @param path folder path
      * @param handler response handler
      */
-    void exportData(String path, Handler<Either<String, JsonObject>> handler);
+    void exportData(Handler<Either<String, JsonObject>> handler);
 
 }

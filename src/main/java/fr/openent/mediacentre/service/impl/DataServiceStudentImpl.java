@@ -1,34 +1,21 @@
 package fr.openent.mediacentre.service.impl;
 
-import fr.openent.mediacentre.helper.XmlExportHelper;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.openent.mediacentre.service.DataService;
 import fr.wseduc.webutils.Either;
-import org.entcore.common.neo4j.Neo4j;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.core.logging.Logger;
 import org.vertx.java.platform.Container;
-import org.w3c.dom.Document;
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
 import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
-public class DataServiceStudentImpl implements DataService{
-
-    private Document doc = null;
-    private XmlExportHelper xmlExportHelper;
-    private final Logger log;
-    private final String CONTROL_GROUP;
-
-    private Neo4j neo4j = Neo4j.getInstance();
+public class DataServiceStudentImpl extends DataServiceBasePersonImpl implements DataService{
 
     DataServiceStudentImpl(Container container) {
-        super();
+        super(container);
         xmlExportHelper = new XmlExportHelperImpl(container, STUDENT_ROOT, STUDENT_FILE_PARAM);
-        this.log = container.logger();
-        this.CONTROL_GROUP = container.config().getString("control-group", "GAR");
     }
 
     /**
@@ -36,11 +23,10 @@ public class DataServiceStudentImpl implements DataService{
      * - Export Students identities
      * - Export Students Mefs
      * - Export Students teaching modules
-     * @param path folder path
      * @param handler response handler
      */
     @Override
-    public void exportData(String path, final Handler<Either<String, JsonObject>> handler) {
+    public void exportData(final Handler<Either<String, JsonObject>> handler) {
 
         getStudentsInfoFromNeo4j(
                 new Handler<Either<String, JsonArray>>() {
@@ -59,7 +45,7 @@ public class DataServiceStudentImpl implements DataService{
                                 handler.handle(new Either.Left<String, JsonObject>(mefsResult.left().getValue()));
                             } else {
 
-                                processStudentsMefs(mefsResult.right().getValue());
+                                processPersonsMefs(mefsResult.right().getValue());
                                 getStudentsStudyfieldsFromNeo4j(
                                         new Handler<Either<String, JsonArray>>() {
                                             @Override
@@ -123,22 +109,7 @@ public class DataServiceStudentImpl implements DataService{
                 continue;
             }
 
-            JsonArray garProfiles = new JsonArray();
-            JsonArray garEtabs = new JsonArray();
-            for(Object o2 : profiles) {
-                if(!(o2 instanceof String)) continue;
-                String structure = (String)o2;
-
-                garEtabs.addString(structure);
-
-                JsonObject garProfile = new JsonObject();
-                garProfile.putString(STRUCTURE_UAI, structure);
-                garProfile.putString(PERSON_PROFILE, STUDENT_PROFILE);
-                garProfiles.addObject(garProfile);
-            }
-            student.putArray(PERSON_PROFILES, garProfiles);
-            student.putArray(PERSON_STRUCTURE, garEtabs);
-            student.removeField("profiles");
+            processProfiles(student, STUDENT_PROFILE);
             xmlExportHelper.saveObject(STUDENT_NODE, student);
         }
     }
@@ -159,14 +130,6 @@ public class DataServiceStudentImpl implements DataService{
         neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
     }
 
-
-    private void processStudentsMefs(JsonArray mefs) {
-        for(Object o : mefs) {
-            if (!(o instanceof JsonObject)) continue;
-            xmlExportHelper.saveObject(PERSON_MEF, (JsonObject)o);
-        }
-    }
-
     /**
      * Get students modules from Neo4j
      * @param handler results
@@ -185,11 +148,11 @@ public class DataServiceStudentImpl implements DataService{
         neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
     }
 
-
+    /**
+     * Process fields of study info
+     * @param studyfields Array of fieldsOfStudy from Neo4j
+     */
     private void processStudentsStudyfields(JsonArray studyfields) {
-        for(Object o : studyfields) {
-            if (!(o instanceof JsonObject)) continue;
-            xmlExportHelper.saveObject(STUDENT_STUDYFIELD, (JsonObject)o);
-        }
+        processSimpleArray(studyfields, STUDENT_STUDYFIELD);
     }
 }
