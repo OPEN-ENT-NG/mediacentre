@@ -2,7 +2,9 @@ package fr.openent.mediacentre.service.impl;
 
 import fr.openent.mediacentre.helper.XmlExportHelper;
 import fr.openent.mediacentre.service.DataService;
+import fr.wseduc.webutils.Either;
 import org.entcore.common.neo4j.Neo4j;
+import org.vertx.java.core.Handler;
 import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
 import org.vertx.java.core.logging.Logger;
@@ -12,7 +14,7 @@ import java.util.Map;
 
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
-abstract class DataServiceBasePersonImpl implements DataService{
+abstract class DataServiceBaseImpl implements DataService{
 
     XmlExportHelper xmlExportHelper;
     final Logger log;
@@ -20,7 +22,7 @@ abstract class DataServiceBasePersonImpl implements DataService{
 
     Neo4j neo4j = Neo4j.getInstance();
 
-    DataServiceBasePersonImpl(Container container) {
+    DataServiceBaseImpl(Container container) {
         this.log = container.logger();
         this.CONTROL_GROUP = container.config().getString("control-group", DEFAULT_CONTROL_GROUP);
     }
@@ -87,6 +89,21 @@ abstract class DataServiceBasePersonImpl implements DataService{
         for(Object o : array) {
             if (!(o instanceof JsonObject)) continue;
             xmlExportHelper.saveObject(name, (JsonObject)o);
+        }
+    }
+
+    /**
+     * Validate response from neo4j
+     * @param event event to validate
+     * @param handler handler to respond to
+     * @return true if response is valid
+     */
+    boolean getValidNeoResponse(Either<String, JsonArray> event, final Handler<Either<String, JsonObject>> handler) {
+        if(event.isLeft()) {
+            handler.handle(new Either.Left<String, JsonObject>(event.left().getValue()));
+            return false;
+        } else {
+            return true;
         }
     }
 

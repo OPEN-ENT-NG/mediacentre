@@ -11,11 +11,11 @@ import static fr.openent.mediacentre.constants.GarConstants.*;
 
 import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
-public class DataServiceStudentImpl extends DataServiceBasePersonImpl implements DataService{
+public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataService{
 
-    DataServiceStudentImpl(Container container) {
+    DataServiceStudentImpl(Container container, String strDate) {
         super(container);
-        xmlExportHelper = new XmlExportHelperImpl(container, STUDENT_ROOT, STUDENT_FILE_PARAM);
+        xmlExportHelper = new XmlExportHelperImpl(container, STUDENT_ROOT, STUDENT_FILE_PARAM, strDate);
     }
 
     /**
@@ -32,27 +32,21 @@ public class DataServiceStudentImpl extends DataServiceBasePersonImpl implements
                 new Handler<Either<String, JsonArray>>() {
             @Override
             public void handle(Either<String, JsonArray> studentsResult) {
-                if(studentsResult.isLeft()) {
-                    handler.handle(new Either.Left<String, JsonObject>(studentsResult.left().getValue()));
-                } else {
+                if(getValidNeoResponse(studentsResult, handler)) {
 
                     processStudentsInfo(studentsResult.right().getValue());
                     getStudentsMefFromNeo4j(
                             new Handler<Either<String, JsonArray>>() {
                         @Override
                         public void handle(Either<String, JsonArray> mefsResult) {
-                            if(mefsResult.isLeft()) {
-                                handler.handle(new Either.Left<String, JsonObject>(mefsResult.left().getValue()));
-                            } else {
+                            if(getValidNeoResponse(mefsResult, handler)) {
 
                                 processPersonsMefs(mefsResult.right().getValue());
                                 getStudentsStudyfieldsFromNeo4j(
                                         new Handler<Either<String, JsonArray>>() {
                                             @Override
                                             public void handle(Either<String, JsonArray> modulesResult) {
-                                                if(modulesResult.isLeft()) {
-                                                    handler.handle(new Either.Left<String, JsonObject>(modulesResult.left().getValue()));
-                                                } else {
+                                                if(getValidNeoResponse(modulesResult, handler)) {
 
                                                     processStudentsStudyfields(modulesResult.right().getValue());
                                                     xmlExportHelper.closeFile();

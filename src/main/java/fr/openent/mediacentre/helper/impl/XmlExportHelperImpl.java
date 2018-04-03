@@ -18,8 +18,6 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 
 public class XmlExportHelperImpl implements XmlExportHelper {
 
@@ -40,14 +38,13 @@ public class XmlExportHelperImpl implements XmlExportHelper {
      * @param root name of the root xml element
      * @param fileParamName param for the name of xml file
      */
-    public XmlExportHelperImpl(Container container, String root, String fileParamName) {
+    public XmlExportHelperImpl(Container container, String root, String fileParamName, String strDate) {
         ROOT = root;
         initNewFile();
         this.log = container.logger();
         MAX_NODES = container.config().getInteger("max-nodes", 10000);
         exportDir = container.config().getString("export-path", "");
         String idEnt = container.config().getString("id-ent", "");
-        String strDate = new SimpleDateFormat("yyyyMMdd_").format(new Date());
         FILE_PREFIX = idEnt + "_GAR-ENT_Complet_" + strDate + fileParamName + "_";
     }
 

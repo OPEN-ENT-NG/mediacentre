@@ -15,22 +15,11 @@ import java.util.Map;
 import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
-public class DataServiceTeacherImpl extends DataServiceBasePersonImpl implements DataService{
+public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataService{
 
-    private Map<String,String> mapStructures;
-
-    DataServiceTeacherImpl(Container container) {
+    DataServiceTeacherImpl(Container container, String strDate) {
         super(container);
-        xmlExportHelper = new XmlExportHelperImpl(container, TEACHER_ROOT, TEACHER_FILE_PARAM);
-    }
-
-    private boolean getValidNeoResponse(Either<String, JsonArray> event, final Handler<Either<String, JsonObject>> handler) {
-        if(event.isLeft()) {
-            handler.handle(new Either.Left<String, JsonObject>(event.left().getValue()));
-            return false;
-        } else {
-            return true;
-        }
+        xmlExportHelper = new XmlExportHelperImpl(container, TEACHER_ROOT, TEACHER_FILE_PARAM, strDate);
     }
 
     /**
@@ -41,68 +30,28 @@ public class DataServiceTeacherImpl extends DataServiceBasePersonImpl implements
      */
     @Override
     public void exportData(final Handler<Either<String, JsonObject>> handler) {
-
-        getAllStructuresFromNeo4j(new Handler<Either<String, JsonArray>>() {
+        getTeachersInfoFromNeo4j(new Handler<Either<String, JsonArray>>() {
             @Override
-            public void handle(Either<String, JsonArray> event) {
-                if (getValidNeoResponse(event, handler)) {
+            public void handle(Either<String, JsonArray> resultTeachers) {
+                if (getValidNeoResponse(resultTeachers, handler)) {
 
-                    getTeachersInfoFromNeo4j(new Handler<Either<String, JsonArray>>() {
-                        @Override
-                        public void handle(Either<String, JsonArray> resultTeachers) {
-                            if (getValidNeoResponse(resultTeachers, handler)) {
-
-                                processTeachersInfo(resultTeachers.right().getValue());
-                                getTeachersMefFromNeo4j(
-                                        new Handler<Either<String, JsonArray>>() {
-                                            @Override
-                                            public void handle(Either<String, JsonArray> mefsResult) {
-                                                if (mefsResult.isLeft()) {
-                                                    handler.handle(new Either.Left<String, JsonObject>(mefsResult.left().getValue()));
-                                                } else {
-                                                    processPersonsMefs(mefsResult.right().getValue());
-                                                    xmlExportHelper.closeFile();
-                                                    handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
-                                                }
-                                            }
-                                        });
-                            }
-                        }
-                    });
+                    processTeachersInfo(resultTeachers.right().getValue());
+                    getTeachersMefFromNeo4j(
+                            new Handler<Either<String, JsonArray>>() {
+                                @Override
+                                public void handle(Either<String, JsonArray> mefsResult) {
+                                    if (mefsResult.isLeft()) {
+                                        handler.handle(new Either.Left<String, JsonObject>(mefsResult.left().getValue()));
+                                    } else {
+                                        processPersonsMefs(mefsResult.right().getValue());
+                                        xmlExportHelper.closeFile();
+                                        handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
+                                    }
+                                }
+                            });
                 }
             }
         });
-
-    }
-
-    /**
-     * Get all structures from Neo4j, and load map with Structures ID and UAI
-     * @param handler boolean result (no data)
-     */
-    private void getAllStructuresFromNeo4j(final Handler<Either<String, JsonArray>> handler) {
-        mapStructures = new HashMap<>();
-        String query = "match (s:Structure) return s.UAI, s.externalId";
-        Neo4j.getInstance().execute(query, new JsonObject(),
-                validResultHandler(new Handler<Either<String, JsonArray>>() {
-                    @Override
-                    public void handle(Either<String, JsonArray> neoResult) {
-                        if(neoResult.isLeft()) {
-                            handler.handle(neoResult);
-                        } else {
-                            JsonArray allStructures = neoResult.right().getValue();
-                            for (Object o : allStructures) {
-                                if (o instanceof JsonObject) {
-                                    JsonObject structure = (JsonObject) o;
-                                    mapStructures.put(
-                                            structure.getString("s.externalId"),
-                                            structure.getString("s.UAI")
-                                    );
-                                }
-                            }
-                            handler.handle(neoResult);
-                        }
-                    }
-                }));
     }
 
     /**

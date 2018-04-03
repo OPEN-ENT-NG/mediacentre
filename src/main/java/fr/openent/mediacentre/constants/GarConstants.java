@@ -34,10 +34,22 @@ public class GarConstants {
     public static final String PERSON_PROFILE = "men:GARPersonProfil";
     public static final String PERSON_MEF = "men:GARPersonMEF";
 
-    public static final String STRUCTURE_UAI = "men:GARStructureUAI";
 
+    public static final String STRUCTURE_ROOT = "man:GAR-ENT-Etab";
+    public static final String STRUCTURE_FILE_PARAM = "Etab";
+    public static final String STRUCTURE_NODE = "man:GAREtab";
+    public static final String STRUCTURE_UAI = "men:GARStructureUAI";
+    public static final String STRUCTURE_CONTRACT = "men:GARStructureContrat";
+    public static final String STRUCTURE_NAME = "men:GARStructureNomCourant";
+    public static final String STRUCTURE_PHONE = "men:GARStructureTelephone";
+    public static final String STRUCTURE_RATTACH = "men:GAREtablissementStructRattachFctl";
+
+    public static final String MEF_NODE = "men:GARMEF";
     public static final String MEF_CODE = "men:GARMEFCode";
+    public static final String MEF_DESCRIPTION = "men:GARMEFLibelle";
+    public static final String STUDYFIELD_NODE = "men:GARMatiere";
     public static final String STUDYFIELD_CODE = "men:GARMatiereCode";
+    public static final String STUDYFIELD_DESC = "men:GARMatiereLibelle";
     public static final String POSITION_CODE = "men:GAREnsDisciplinePosteCode";
 
 }

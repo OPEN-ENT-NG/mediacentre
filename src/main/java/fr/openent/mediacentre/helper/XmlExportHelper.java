@@ -1,6 +1,5 @@
 package fr.openent.mediacentre.helper;
 
-import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
 
 public interface XmlExportHelper {

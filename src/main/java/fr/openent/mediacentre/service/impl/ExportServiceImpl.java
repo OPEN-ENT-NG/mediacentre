@@ -3,16 +3,12 @@ package fr.openent.mediacentre.service.impl;
 import fr.openent.mediacentre.service.DataService;
 import fr.openent.mediacentre.service.ExportService;
 import fr.wseduc.webutils.Either;
-import org.entcore.common.neo4j.Neo4j;
 import org.vertx.java.core.Handler;
-import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
 import org.vertx.java.platform.Container;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 
 public class ExportServiceImpl implements ExportService{
@@ -28,20 +24,33 @@ public class ExportServiceImpl implements ExportService{
     @Override
     public void test(final Handler<Either<String, JsonObject>> handler) {
 
-        DataService studentService = new DataServiceStudentImpl(container);
-        final DataService teacherService = new DataServiceTeacherImpl(container);
-        studentService.exportData(new Handler<Either<String, JsonObject>>() {
+
+        String strDate = new SimpleDateFormat("yyyyMMdd_HHmmss_").format(new Date());
+        final DataService studentService = new DataServiceStudentImpl(container, strDate);
+        final DataService teacherService = new DataServiceTeacherImpl(container, strDate);
+        final DataService structureService = new DataServiceStructureImpl(container, strDate);
+
+        structureService.exportData(new Handler<Either<String, JsonObject>>() {
             @Override
-            public void handle(Either<String, JsonObject> result) {
-                if(result.isRight()) {
-                    teacherService.exportData(new Handler<Either<String, JsonObject>>() {
+            public void handle(Either<String, JsonObject> resultStructure) {
+                if(resultStructure.isRight()) {
+                    studentService.exportData(new Handler<Either<String, JsonObject>>() {
                         @Override
-                        public void handle(Either<String, JsonObject> stringJsonObjectEither) {
-                            handler.handle(stringJsonObjectEither);
+                        public void handle(Either<String, JsonObject> resultStudent) {
+                            if(resultStudent.isRight()) {
+                                teacherService.exportData(new Handler<Either<String, JsonObject>>() {
+                                    @Override
+                                    public void handle(Either<String, JsonObject> resultTeacher) {
+                                        handler.handle(resultTeacher);
+                                    }
+                                });
+                            } else {
+                                handler.handle(resultStudent);
+                            }
                         }
                     });
                 } else {
-                    handler.handle(result);
+                    handler.handle(resultStructure);
                 }
             }
         });
