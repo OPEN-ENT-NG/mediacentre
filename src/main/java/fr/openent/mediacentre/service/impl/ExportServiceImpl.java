@@ -29,6 +29,7 @@ public class ExportServiceImpl implements ExportService{
         final DataService studentService = new DataServiceStudentImpl(container, strDate);
         final DataService teacherService = new DataServiceTeacherImpl(container, strDate);
         final DataService structureService = new DataServiceStructureImpl(container, strDate);
+        final DataService groupService = new DataServiceGroupImpl(container, strDate);
 
         structureService.exportData(new Handler<Either<String, JsonObject>>() {
             @Override
@@ -41,7 +42,14 @@ public class ExportServiceImpl implements ExportService{
                                 teacherService.exportData(new Handler<Either<String, JsonObject>>() {
                                     @Override
                                     public void handle(Either<String, JsonObject> resultTeacher) {
-                                        handler.handle(resultTeacher);
+                                        if(resultTeacher.isRight()) {
+                                            groupService.exportData(new Handler<Either<String, JsonObject>>() {
+                                                @Override
+                                                public void handle(Either<String, JsonObject> resultGroups) {
+                                                    handler.handle(resultGroups);
+                                                }
+                                            });
+                                        }
                                     }
                                 });
                             } else {

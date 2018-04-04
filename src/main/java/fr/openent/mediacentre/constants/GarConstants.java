@@ -44,6 +44,18 @@ public class GarConstants {
     public static final String STRUCTURE_PHONE = "men:GARStructureTelephone";
     public static final String STRUCTURE_RATTACH = "men:GAREtablissementStructRattachFctl";
 
+    public static final String GROUPS_ROOT = "man:GAR-ENT-Groupe";
+    public static final String GROUPS_NODE = "man:GARGroupe";
+    public static final String GROUPS_PERSON_NODE = "man:GARPersonGroupe";
+    public static final String GROUPS_SUBJECT_NODE = "man:GAREnsClasseMatiere";
+    public static final String GROUPS_FILE_PARAM = "Groupe";
+    public static final String GROUPS_DIVISION_NAME = "DIVISION";
+    public static final String GROUPS_GROUP_NAME = "GROUPE";
+    public static final String GROUPS_CODE = "men:GARGroupeCode";
+    public static final String GROUPS_DESC = "men:GARGroupeLibelle";
+    public static final String GROUPS_STATUS = "men:GARGroupeStatut";
+    public static final String GROUPS_DIVISION = "men:GARGroupeDivAppartenance";
+
     public static final String MEF_NODE = "men:GARMEF";
     public static final String MEF_CODE = "men:GARMEFCode";
     public static final String MEF_DESCRIPTION = "men:GARMEFLibelle";

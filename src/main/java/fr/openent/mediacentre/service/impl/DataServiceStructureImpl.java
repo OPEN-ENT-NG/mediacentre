@@ -27,7 +27,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
             public void handle(Either<String, JsonArray> structResults) {
                 if(getValidNeoResponse(structResults, handler)) {
 
-                    processStucturesInfo(structResults.right().getValue());
+                    processStructuresInfo(structResults.right().getValue());
                     getStucturesMefsFromNeo4j(new Handler<Either<String, JsonArray>>() {
                         @Override
                         public void handle(Either<String, JsonArray> mefsResults) {
@@ -60,9 +60,9 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
     private void getStucturesInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (s:Structure) " +
                 "OPTIONAL MATCH (s2:Structure)<-[HAS_ATTACHMENT]-(s:Structure) ";
-        String dataReturn = "RETURN distinct s.UAI  as `" + STRUCTURE_UAI + "`, " +
+        String dataReturn = "RETURN distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "s.contract  as `" + STRUCTURE_CONTRACT + "`, " +
-                "s.name  as `" + STRUCTURE_NAME + "`, " +
+                "s.name as `" + STRUCTURE_NAME + "`, " +
                 "s.phone  as `" + STRUCTURE_PHONE + "`, " +
                 "s2.UAI  as `" + STRUCTURE_RATTACH + "`, " +
                 "s.externalId  as structid " +
@@ -74,7 +74,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      * Process structures info
      * @param structures Array of structures from Neo4j
      */
-    private void processStucturesInfo(JsonArray structures) {
+    private void processStructuresInfo(JsonArray structures) {
         for(Object o : structures) {
             if(!(o instanceof JsonObject)) continue;
             JsonObject structure = (JsonObject) o;
