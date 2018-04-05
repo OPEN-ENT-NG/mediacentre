@@ -30,6 +30,7 @@ public class ExportServiceImpl implements ExportService{
         final DataService teacherService = new DataServiceTeacherImpl(container, strDate);
         final DataService structureService = new DataServiceStructureImpl(container, strDate);
         final DataService groupService = new DataServiceGroupImpl(container, strDate);
+        final DataService respService = new DataServiceRespImpl(container, strDate);
 
         structureService.exportData(new Handler<Either<String, JsonObject>>() {
             @Override
@@ -46,9 +47,20 @@ public class ExportServiceImpl implements ExportService{
                                             groupService.exportData(new Handler<Either<String, JsonObject>>() {
                                                 @Override
                                                 public void handle(Either<String, JsonObject> resultGroups) {
-                                                    handler.handle(resultGroups);
+                                                    if(resultGroups.isRight()) {
+                                                        respService.exportData(new Handler<Either<String, JsonObject>>() {
+                                                            @Override
+                                                            public void handle(Either<String, JsonObject> resultResp) {
+                                                                handler.handle(resultResp);
+                                                            }
+                                                        });
+                                                    } else {
+                                                        handler.handle(resultGroups);
+                                                    }
                                                 }
                                             });
+                                        } else {
+                                            handler.handle(resultTeacher);
                                         }
                                     }
                                 });

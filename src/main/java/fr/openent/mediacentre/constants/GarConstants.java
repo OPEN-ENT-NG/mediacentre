@@ -28,6 +28,7 @@ public class GarConstants {
     public static final String PERSON_NAME = "men:GARPersonNom";
     public static final String PERSON_OTHER_NAMES = "men:GARPersonAutresPrenoms";
     public static final String PERSON_FIRST_NAME = "men:GARPersonPrenom";
+    public static final String PERSON_MAIL = "men:GARPersonMail";
     public static final String PERSON_STRUCT_ATTACH = "men:GARPersonStructRattach";
     public static final String PERSON_STRUCTURE = "men:GARPersonEtab";
     public static final String PERSON_PROFILES = "men:GARPersonProfils";
@@ -55,6 +56,11 @@ public class GarConstants {
     public static final String GROUPS_DESC = "men:GARGroupeLibelle";
     public static final String GROUPS_STATUS = "men:GARGroupeStatut";
     public static final String GROUPS_DIVISION = "men:GARGroupeDivAppartenance";
+
+
+    public static final String RESP_ROOT = "man:GAR-ENT-RespAff";
+    public static final String RESP_NODE = "man:GARRespAff";
+    public static final String RESP_FILE_PARAM = "RespAff";
 
     public static final String MEF_NODE = "men:GARMEF";
     public static final String MEF_CODE = "men:GARMEFCode";
