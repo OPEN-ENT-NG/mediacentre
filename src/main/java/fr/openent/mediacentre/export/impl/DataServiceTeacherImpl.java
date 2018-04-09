@@ -1,9 +1,8 @@
-package fr.openent.mediacentre.service.impl;
+package fr.openent.mediacentre.export.impl;
 
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
-import fr.openent.mediacentre.service.DataService;
+import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
-import org.entcore.common.neo4j.Neo4j;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
@@ -33,7 +32,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         getTeachersInfoFromNeo4j(new Handler<Either<String, JsonArray>>() {
             @Override
             public void handle(Either<String, JsonArray> resultTeachers) {
-                if (getValidNeoResponse(resultTeachers, handler)) {
+                if (validResponseNeo4j(resultTeachers, handler)) {
 
                     processTeachersInfo(resultTeachers.right().getValue());
                     getTeachersMefFromNeo4j(
@@ -43,12 +42,46 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                                     if (mefsResult.isLeft()) {
                                         handler.handle(new Either.Left<String, JsonObject>(mefsResult.left().getValue()));
                                     } else {
-                                        processPersonsMefs(mefsResult.right().getValue());
+                                        processTeachersMefs(mefsResult.right().getValue());
                                         xmlExportHelper.closeFile();
                                         handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
                                     }
                                 }
                             });
+                }
+            }
+        });
+    }
+
+    /**
+     * Process teachers info, validate data and save to xml
+     * @param handler result handler
+     */
+    private void getAndProcessTeachersInfo(final Handler<Either<String, JsonObject>> handler) {
+
+        getTeachersInfoFromNeo4j(new Handler<Either<String, JsonArray>>() {
+            @Override
+            public void handle(Either<String, JsonArray> teacherInfos) {
+                if( validResponseNeo4j(teacherInfos, handler) ) {
+                    Either<String,JsonObject> result = processTeachersInfo( teacherInfos.right().getValue() );
+                    handler.handle(result);
+                }
+            }
+        });
+    }
+
+    /**
+     * Process teachers mefs, validate data and save to xml
+     * @param handler result handler
+     */
+    private void getAndProcessTeachersMefs(final Handler<Either<String, JsonObject>> handler) {
+
+        getTeachersMefFromNeo4j(new Handler<Either<String, JsonArray>>() {
+            @Override
+            public void handle(Either<String, JsonArray> teacherMefs) {
+                if( validResponseNeo4j(teacherMefs, handler) ) {
+                    Either<String,JsonObject> result = processTeachersMefs( teacherMefs.right().getValue() );
+                    handler.handle(result);
                 }
             }
         });
@@ -83,28 +116,37 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * Add structures in arrays to match xsd
      * @param teachers Array of teachers from Neo4j
      */
-    private void processTeachersInfo(JsonArray teachers) {
+    private Either<String,JsonObject> processTeachersInfo(JsonArray teachers) {
+        try {
+            for(Object o : teachers) {
+                if(!(o instanceof JsonObject)) continue;
 
-        for(Object o : teachers) {
-            if(!(o instanceof JsonObject)) continue;
+                JsonObject teacher = (JsonObject) o;
+                JsonArray profiles = teacher.getArray("profiles", null);
+                if(profiles == null || profiles.size() == 0) {
+                    log.error("Mediacentre : Teacher with no profile or function for export, id "
+                            + teacher.getString("u.id", "unknown"));
+                    continue;
+                }
+                if(isMandatoryFieldsAbsent(teacher, TEACHER_NODE_MANDATORY))continue;
 
-            JsonObject teacher = (JsonObject) o;
-            JsonArray profiles = teacher.getArray("profiles", null);
-            if(profiles == null || profiles.size() == 0) {
-                log.error("Mediacentre : Teacher with no profile or function for export, id "
-                        + teacher.getString("u.id", "unknown"));
-                continue;
+                Map<String,String> userStructProfiles = new HashMap<>();
+                processFunctions(teacher, userStructProfiles);
+                processProfiles(teacher, TEACHER_PROFILE, userStructProfiles);
+                xmlExportHelper.saveObject(TEACHER_NODE, teacher);
             }
-            Map<String,String> userStructProfiles = new HashMap<>();
-            processFunctions(teacher, userStructProfiles);
-            processProfiles(teacher, TEACHER_PROFILE, userStructProfiles);
-            xmlExportHelper.saveObject(TEACHER_NODE, teacher);
+            return new Either.Right<>(null);
+        } catch (Exception e) {
+            return new Either.Left<>("Error when processing teachers Info : " + e.getMessage());
         }
     }
 
     /**
      * Process teachers functions
      * Calc profile for Documentalist functions
+     * Teacher function is in form structID$functionCode$functionDesc$roleCode and must be splited
+     * and analyzed
+     * Documentalists have specific role and profile
      * @param teacher to process functions for
      * @param structMap map between structures ID and profile
      */
@@ -127,7 +169,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
             String structUAI = mapStructures.get(structID);
             String functionCode = arrFunction[1];
             String functionDesc = arrFunction[2];
-            String positionCode = arrFunction[3];
+            String roleCode = arrFunction[3];
             String profileType = TEACHER_PROFILE;
             if(DOCUMENTALIST_CODE.equals(functionCode) && DOCUMENTALIST_DESC.equals(functionDesc)) {
                 profileType = DOCUMENTALIST_PROFILE;
@@ -136,7 +178,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
             JsonObject function = new JsonObject();
             function.putString(STRUCTURE_UAI, structUAI);
-            function.putString(POSITION_CODE, positionCode);
+            function.putString(POSITION_CODE, roleCode);
             garFunctions.addObject(function);
         }
         teacher.putArray(TEACHER_POSITION, garFunctions);
@@ -157,5 +199,19 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 "s.UAI as `" + STRUCTURE_UAI + "` " +
                 "order by " + "`" + PERSON_ID + "`";
         neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
+    }
+
+    /**
+     * Process mefs info
+     * @param mefs Array of mefs from Neo4j
+     */
+    private Either<String,JsonObject> processTeachersMefs(JsonArray mefs) {
+        processSimpleArray(mefs, PERSON_MEF);
+        Either<String,JsonObject> event =  processSimpleArray(mefs, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
+        if(event.isLeft()) {
+            return new Either.Left<>("Error when processing teacher mefs : " + event.left().getValue());
+        } else {
+            return event;
+        }
     }
 }

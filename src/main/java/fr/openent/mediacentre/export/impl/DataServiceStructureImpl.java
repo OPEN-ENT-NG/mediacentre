@@ -1,7 +1,7 @@
-package fr.openent.mediacentre.service.impl;
+package fr.openent.mediacentre.export.impl;
 
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
-import fr.openent.mediacentre.service.DataService;
+import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.json.JsonArray;
@@ -18,36 +18,92 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         xmlExportHelper = new XmlExportHelperImpl(container, STRUCTURE_ROOT, STRUCTURE_FILE_PARAM, strDate);
     }
 
-
+    /**
+     * Export Data to folder
+     * - Export Structures info and build mapStructures with mapping between structures ID and UAI
+     * - Export Structures Mefs
+     * - Export Structures fields of study
+     *
+     */
     @Override
     public void exportData(final Handler<Either<String, JsonObject>> handler) {
+
+        getAndProcessStructuresInfo(new Handler<Either<String, JsonObject>>() {
+            @Override
+            public void handle(Either<String, JsonObject> structInfoResults) {
+                if (validResponse(structInfoResults, handler)) {
+
+                    getAndProcessStructuresMefs(new Handler<Either<String, JsonObject>>() {
+                        @Override
+                        public void handle(Either<String, JsonObject> structMefsResults) {
+                            if (validResponse(structMefsResults, handler)) {
+
+                                getAndProcessStructuresFos(new Handler<Either<String, JsonObject>>() {
+                                    @Override
+                                    public void handle(Either<String, JsonObject> structFosResults) {
+                                        if (validResponse(structFosResults, handler)) {
+
+                                            xmlExportHelper.closeFile();
+                                            handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
+
+                                        }
+                                    }
+                                });
+
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * Process structure info, validate data and save to xml
+     * @param handler result handler
+     */
+    private void getAndProcessStructuresInfo(final Handler<Either<String, JsonObject>> handler) {
 
         getStucturesInfoFromNeo4j(new Handler<Either<String, JsonArray>>() {
             @Override
             public void handle(Either<String, JsonArray> structResults) {
-                if(getValidNeoResponse(structResults, handler)) {
+                if( validResponseNeo4j(structResults, handler) ) {
+                    Either<String,JsonObject> result = processStructuresInfo( structResults.right().getValue() );
+                    handler.handle(result);
+                }
+            }
+        });
+    }
 
-                    processStructuresInfo(structResults.right().getValue());
-                    getStucturesMefsFromNeo4j(new Handler<Either<String, JsonArray>>() {
-                        @Override
-                        public void handle(Either<String, JsonArray> mefsResults) {
-                            if(getValidNeoResponse(mefsResults, handler)) {
+    /**
+     * Process structure mefs, validate data and save to xml
+     * @param handler result handler
+     */
+    private void getAndProcessStructuresMefs(final Handler<Either<String, JsonObject>> handler) {
 
-                                processStucturesMefs(mefsResults.right().getValue());
-                                getStucturesFosFromNeo4j(new Handler<Either<String, JsonArray>>() {
-                                    @Override
-                                    public void handle(Either<String, JsonArray> fosResults) {
-                                        if(getValidNeoResponse(fosResults, handler)) {
+        getStucturesMefsFromNeo4j(new Handler<Either<String, JsonArray>>() {
+            @Override
+            public void handle(Either<String, JsonArray> structResults) {
+                if( validResponseNeo4j(structResults, handler) ) {
+                    Either<String,JsonObject> result = processStucturesMefs( structResults.right().getValue() );
+                    handler.handle(result);
+                }
+            }
+        });
+    }
 
-                                            processStucturesFos(fosResults.right().getValue());
-                                            xmlExportHelper.closeFile();
-                                            handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
-                                        }
-                                    }
-                                });
-                            }
-                        }
-                    });
+    /**
+     * Process structure fields of study, validate data and save to xml
+     * @param handler result handler
+     */
+    private void getAndProcessStructuresFos(final Handler<Either<String, JsonObject>> handler) {
+
+        getStucturesFosFromNeo4j(new Handler<Either<String, JsonArray>>() {
+            @Override
+            public void handle(Either<String, JsonArray> structResults) {
+                if( validResponseNeo4j(structResults, handler) ) {
+                    Either<String,JsonObject> result = processStucturesFos( structResults.right().getValue() );
+                    handler.handle(result);
                 }
             }
         });
@@ -72,14 +128,22 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
 
     /**
      * Process structures info
+     * Update general map with mapping between structures ID and UAI
      * @param structures Array of structures from Neo4j
      */
-    private void processStructuresInfo(JsonArray structures) {
-        for(Object o : structures) {
-            if(!(o instanceof JsonObject)) continue;
-            JsonObject structure = (JsonObject) o;
-            updateMap(structure);
-            xmlExportHelper.saveObject(STRUCTURE_NODE, structure);
+    private Either<String,JsonObject> processStructuresInfo(JsonArray structures) {
+        try {
+            for (Object o : structures) {
+                if (!(o instanceof JsonObject)) continue;
+                JsonObject structure = (JsonObject) o;
+                updateMap(structure);
+
+                if(isMandatoryFieldsAbsent(structure, STRUCTURE_NODE_MANDATORY))continue;
+                xmlExportHelper.saveObject(STRUCTURE_NODE, structure);
+            }
+            return new Either.Right<>(null);
+        } catch (Exception e) {
+            return new Either.Left<>("Error when processing structures Info : " + e.getMessage());
         }
     }
 
@@ -94,6 +158,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         mapStructures.put(structId, structUAI);
         structure.removeField("structid");
     }
+
 
     /**
      * Get structures mefs from Neo4j
@@ -126,8 +191,14 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      * Process structures mefs
      * @param mefs Array of mefs from Neo4j
      */
-    private void processStucturesMefs(JsonArray mefs) {
-        processSimpleArray(mefs, MEF_NODE);
+    private Either<String,JsonObject> processStucturesMefs(JsonArray mefs) {
+
+        Either<String,JsonObject> event =  processSimpleArray(mefs, MEF_NODE, MEF_NODE_MANDATORY);
+        if(event.isLeft()) {
+            return new Either.Left<>("Error when processing structures mefs : " + event.left().getValue());
+        } else {
+            return event;
+        }
     }
 
     /**
@@ -160,10 +231,15 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
     }
 
     /**
-     * Process structures mefs
-     * @param mefs Array of mefs from Neo4j
+     * Process structures fields of study
+     * @param fos Array of fis from Neo4j
      */
-    private void processStucturesFos(JsonArray mefs) {
-        processSimpleArray(mefs, STUDYFIELD_NODE);
+    private Either<String,JsonObject>  processStucturesFos(JsonArray fos) {
+        Either<String,JsonObject> event =  processSimpleArray(fos, STUDYFIELD_NODE, STUDYFIELD_NODE_MANDATORY);
+        if(event.isLeft()) {
+            return new Either.Left<>("Error when processing structures fos : " + event.left().getValue());
+        } else {
+            return event;
+        }
     }
 }

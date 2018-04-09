@@ -1,7 +1,7 @@
-package fr.openent.mediacentre.service.impl;
+package fr.openent.mediacentre.export.impl;
 
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
-import fr.openent.mediacentre.service.DataService;
+import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.json.JsonArray;
@@ -24,7 +24,7 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
         getRespFromNeo4j(new Handler<Either<String, JsonArray>>() {
             @Override
             public void handle(Either<String, JsonArray> respResults) {
-                if(getValidNeoResponse(respResults,  handler)) {
+                if(validResponseNeo4j(respResults,  handler)) {
 
                     processStucturesFos(respResults.right().getValue());
                     xmlExportHelper.closeFile();
@@ -38,8 +38,10 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
 
     /**
      * Get person in charge of affectation from Neo4j
+     * Get academic email when available, else get structure email, no personal email
      * @param handler results
      */
+    // todo bad return of resp aff (must return array a RESP_STRUCT)
     private void getRespFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (u:User)-[IN]->(n:ManualGroup{name:\"" + CONTROL_GROUP + "\"})" +
                 "-[DEPENDS]->(s:Structure) ";

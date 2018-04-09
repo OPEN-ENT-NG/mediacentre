@@ -1,4 +1,4 @@
-package fr.openent.mediacentre.service;
+package fr.openent.mediacentre.export;
 
 import fr.wseduc.webutils.Either;
 import org.vertx.java.core.Handler;
@@ -9,7 +9,7 @@ import java.util.Map;
 
 public interface DataService {
 
-    static Map<String,String> mapStructures = new HashMap<>();
+    Map<String,String> mapStructures = new HashMap<>();
 
     /**
      * Export Data to folder

@@ -1,7 +1,7 @@
-package fr.openent.mediacentre.service.impl;
+package fr.openent.mediacentre.export.impl;
 
 import fr.openent.mediacentre.helper.XmlExportHelper;
-import fr.openent.mediacentre.service.DataService;
+import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
 import org.entcore.common.neo4j.Neo4j;
 import org.vertx.java.core.Handler;
@@ -20,20 +20,11 @@ abstract class DataServiceBaseImpl implements DataService{
     final Logger log;
     final String CONTROL_GROUP;
 
-    Neo4j neo4j = Neo4j.getInstance();
+    final Neo4j neo4j = Neo4j.getInstance();
 
     DataServiceBaseImpl(Container container) {
         this.log = container.logger();
         this.CONTROL_GROUP = container.config().getString("control-group", DEFAULT_CONTROL_GROUP);
-    }
-
-    /**
-     * Process profiles without adaptive profile
-     * @param person person to process
-     * @param profileName profile to fill
-     */
-    void processProfiles(JsonObject person, String profileName) {
-        processProfiles(person, profileName, null);
     }
 
     /**
@@ -73,32 +64,61 @@ abstract class DataServiceBaseImpl implements DataService{
     }
 
     /**
-     * Process mefs info
-     * @param mefs Array of mefs from Neo4j
+     * Save an array of JsonObjects in xml
+     * @param array array from neo4j
+     * @param name xml node name
      */
-    void processPersonsMefs(JsonArray mefs) {
-        processSimpleArray(mefs, PERSON_MEF);
+    void processSimpleArray(JsonArray array, String name) {
+        try {
+
+            for(Object o : array) {
+                if (!(o instanceof JsonObject)) continue;
+                xmlExportHelper.saveObject(name, (JsonObject)o);
+            }
+        } catch (Exception e){
+            log.info(e.getMessage());
+        }
     }
 
     /**
      * Save an array of JsonObjects in xml
      * @param array array from neo4j
      * @param name xml node name
+     * @return result
      */
-    void processSimpleArray(JsonArray array, String name) {
-        for(Object o : array) {
-            if (!(o instanceof JsonObject)) continue;
-            xmlExportHelper.saveObject(name, (JsonObject)o);
+    Either<String,JsonObject> processSimpleArray(JsonArray array, String name, String[] mandatoryFields) {
+        try {
+
+            for(Object o : array) {
+                if (!(o instanceof JsonObject)) continue;
+                JsonObject obj = (JsonObject)o;
+                if(isMandatoryFieldsAbsent(obj, mandatoryFields)) {
+                    log.warn(name + " object malformed : " + obj.toString());
+                    continue;
+                }
+                xmlExportHelper.saveObject(name, obj);
+            }
+            return new Either.Right<>(null);
+        } catch (Exception e){
+            return new Either.Left<>(e.getMessage());
         }
     }
 
+    boolean isMandatoryFieldsAbsent(JsonObject obj, String[] mandatoryFields) {
+        if(obj == null) return false;
+        for(String s : mandatoryFields) {
+            if(!obj.containsField(s)) return false;
+        }
+        return true;
+    }
+
     /**
-     * Validate response from neo4j
+     * Validate response and trigger handler if not
      * @param event event to validate
      * @param handler handler to respond to
      * @return true if response is valid
      */
-    boolean getValidNeoResponse(Either<String, JsonArray> event, final Handler<Either<String, JsonObject>> handler) {
+    boolean validResponseNeo4j(Either<String,JsonArray> event, final Handler<Either<String, JsonObject>> handler) {
         if(event.isLeft()) {
             handler.handle(new Either.Left<String, JsonObject>(event.left().getValue()));
             return false;
@@ -106,6 +126,22 @@ abstract class DataServiceBaseImpl implements DataService{
             return true;
         }
     }
+
+    /**
+     * Validate response and trigger handler if not
+     * @param event event to validate
+     * @param handler handler to respond to
+     * @return true if response is valid
+     */
+    boolean validResponse(Either<String,JsonObject> event, final Handler<Either<String, JsonObject>> handler) {
+        if(event.isLeft()) {
+            handler.handle(new Either.Left<String, JsonObject>(event.left().getValue()));
+            return false;
+        } else {
+            return true;
+        }
+    }
+
 
     /**
      * Add a profile in profileArray

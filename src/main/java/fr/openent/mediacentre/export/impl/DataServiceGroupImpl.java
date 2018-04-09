@@ -1,7 +1,7 @@
-package fr.openent.mediacentre.service.impl;
+package fr.openent.mediacentre.export.impl;
 
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
-import fr.openent.mediacentre.service.DataService;
+import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.json.JsonArray;
@@ -17,36 +17,91 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         xmlExportHelper = new XmlExportHelperImpl(container, GROUPS_ROOT, GROUPS_FILE_PARAM, strDate);
     }
 
+    /**
+     * Export Data to folder
+     * - Export Groups info
+     * - Export Groups content (people into the groups)
+     * - Export Groups fields of study     *
+     */
     @Override
     public void exportData(final Handler<Either<String, JsonObject>> handler) {
+
+        getAndProcessGroupsInfoFromNeo4j(new Handler<Either<String, JsonObject>>() {
+            @Override
+            public void handle(Either<String, JsonObject> groupsResults) {
+                if (validResponse(groupsResults, handler)) {
+
+                    getAndProcessGroupsPersonFromNeo4j(new Handler<Either<String, JsonObject>>() {
+                        @Override
+                        public void handle(Either<String, JsonObject> groupPersonResults) {
+                            if (validResponse(groupPersonResults, handler)) {
+
+                                getAndProcessGroupsFosFromNeo4j(new Handler<Either<String, JsonObject>>() {
+                                    @Override
+                                    public void handle(Either<String, JsonObject> groupFosResults) {
+                                        if (validResponse(groupFosResults, handler)) {
+
+                                            xmlExportHelper.closeFile();
+                                            handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
+
+                                        }
+                                    }
+                                });
+
+                            }
+                        }
+                    });
+                }
+            }
+        });
+    }
+
+    /**
+     * Process groups info, validate data and save to xml
+     * @param handler result handler
+     */
+    private void getAndProcessGroupsInfoFromNeo4j(final Handler<Either<String, JsonObject>> handler) {
 
         getGroupsInfoFromNeo4j(new Handler<Either<String, JsonArray>>() {
             @Override
             public void handle(Either<String, JsonArray> groupsResults) {
-                if(getValidNeoResponse(groupsResults, handler)) {
+                if( validResponseNeo4j(groupsResults, handler) ) {
+                    Either<String,JsonObject> result = processGroupsInfo( groupsResults.right().getValue() );
+                    handler.handle(result);
+                }
+            }
+        });
+    }
 
-                    processGroupsInfo(groupsResults.right().getValue());
-                    getGroupsPersonFromNeo4j(new Handler<Either<String, JsonArray>>() {
-                        @Override
-                        public void handle(final Either<String, JsonArray> groupPersonResults) {
-                            if(getValidNeoResponse(groupPersonResults, handler)) {
+    /**
+     * Process groups content, validate data and save to xml
+     * @param handler result handler
+     */
+    private void getAndProcessGroupsPersonFromNeo4j(final Handler<Either<String, JsonObject>> handler) {
 
-                                processGroupPersonInfo(groupPersonResults.right().getValue());
-                                getGroupsSubjectsFromNeo4j(new Handler<Either<String, JsonArray>>() {
-                                    @Override
-                                    public void handle(Either<String, JsonArray> groupSubjectResults) {
-                                        if(getValidNeoResponse(groupSubjectResults, handler)) {
+        getGroupsPersonFromNeo4j(new Handler<Either<String, JsonArray>>() {
+            @Override
+            public void handle(Either<String, JsonArray> groupPersonResults) {
+                if( validResponseNeo4j(groupPersonResults, handler) ) {
+                    Either<String,JsonObject> result = processGroupPersonInfo( groupPersonResults.right().getValue() );
+                    handler.handle(result);
+                }
+            }
+        });
+    }
 
-                                            processGroupSubjectsInfo(groupSubjectResults.right().getValue());
-                                            xmlExportHelper.closeFile();
-                                            handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
-                                        }
-                                    }
-                                });
-                            }
-                        }
-                    });
+    /**
+     * Process groups fos, validate data and save to xml
+     * @param handler result handler
+     */
+    private void getAndProcessGroupsFosFromNeo4j(final Handler<Either<String, JsonObject>> handler) {
 
+        getGroupsFosFromNeo4j(new Handler<Either<String, JsonArray>>() {
+            @Override
+            public void handle(Either<String, JsonArray> groupFosResults) {
+                if( validResponseNeo4j(groupFosResults, handler) ) {
+                    Either<String,JsonObject> result = processGroupFosInfo( groupFosResults.right().getValue() );
+                    handler.handle(result);
                 }
             }
         });
@@ -94,12 +149,19 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * Process groups info
      * @param groups Array of groups from Neo4j
      */
-    private void processGroupsInfo(JsonArray groups) {
-        processSimpleArray(groups, GROUPS_NODE);
+    private Either<String,JsonObject> processGroupsInfo(JsonArray groups) {
+        Either<String,JsonObject> event =  processSimpleArray(groups, GROUPS_NODE, GROUPS_NODE_MANDATORY);
+        if(event.isLeft()) {
+            return new Either.Left<>("Error when processing groups infos : " + event.left().getValue());
+        } else {
+            return event;
+        }
+
     }
 
     /**
      * Get groups content from Neo4j
+     * Use external id for groups when available
      * @param handler results
      */
     private void getGroupsPersonFromNeo4j(Handler<Either<String, JsonArray>> handler) {
@@ -121,15 +183,23 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * Process groups content
      * @param groupPerson Array of group content from Neo4j
      */
-    private void processGroupPersonInfo(JsonArray groupPerson) {
-        processSimpleArray(groupPerson, GROUPS_PERSON_NODE);
+    private Either<String,JsonObject> processGroupPersonInfo(JsonArray groupPerson) {
+        Either<String,JsonObject> event =
+                processSimpleArray(groupPerson, GROUPS_PERSON_NODE, GROUPS_PERSON_NODE_MANDATORY);
+        if(event.isLeft()) {
+            return new Either.Left<>("Error when processing groups content : " + event.left().getValue());
+        } else {
+            return event;
+        }
     }
 
     /**
-     * Get groups subjects from Neo4j
+     * Get groups fields of study from Neo4j
+     * Use external id for groups when available
+     * Field of study code may be prefixed by ACADEMY-
      * @param handler results
      */
-    private void getGroupsSubjectsFromNeo4j(Handler<Either<String, JsonArray>> handler) {
+    private void getGroupsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (u:User)-[t:TEACHES]->(sub:Subject)-[SUBJECT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
                 "with u.id as uid, t.groups + t.classes as grouplist, sub.code as code, s.UAI as uai " +
@@ -146,8 +216,14 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * Process groups subjects
      * @param groupSubject Array of group subjects from Neo4j
      */
-    private void processGroupSubjectsInfo(JsonArray groupSubject) {
-        processSimpleArray(groupSubject, GROUPS_SUBJECT_NODE);
+    private Either<String,JsonObject> processGroupFosInfo(JsonArray groupSubject) {
+        Either<String,JsonObject> event =
+                processSimpleArray(groupSubject, GROUPS_SUBJECT_NODE, GROUPS_SUBJECT_NODE_MANDATORY);
+        if(event.isLeft()) {
+            return new Either.Left<>("Error when processing groups fos : " + event.left().getValue());
+        } else {
+            return event;
+        }
     }
 
 
