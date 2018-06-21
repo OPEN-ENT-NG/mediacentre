@@ -44,7 +44,11 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                                             if(validResponse(modulesResult, handler)) {
 
                                                 xmlExportHelper.closeFile();
-                                                handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
+                                                handler.handle(new Either.Right<String, JsonObject>(
+                                                        new JsonObject().putArray(
+                                                                FILE_LIST_KEY,
+                                                                xmlExportHelper.getFileList()
+                                                        )));
                                             }
                                         }
                                     }

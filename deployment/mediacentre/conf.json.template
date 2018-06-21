@@ -15,7 +15,7 @@
         "mode" : "${mode}",
         "entcore.port" : 8009,
         "max-nodes": 10000,
-        "export-path": "",
+        "export-path": "data/",
         "id-ent" : "NGPARIS",
         "control-group" : "GAR"
       }

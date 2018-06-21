@@ -16,7 +16,7 @@ public class Mediacentre extends BaseServer {
 		super.start();
 		addController(new MediacentreController());
 
-		final String exportCron = container.config().getString("export-cron", "0 0 1 * * ? *");
+		final String exportCron = container.config().getString("export-cron", "");
 
 		try{
 			new CronTrigger(vertx, exportCron).schedule(new ExportTask(vertx.eventBus(), container.logger()));

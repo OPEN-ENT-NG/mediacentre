@@ -5,11 +5,13 @@ import fr.openent.mediacentre.export.ExportService;
 import fr.wseduc.webutils.Either;
 import org.vertx.java.core.Handler;
 import org.vertx.java.core.eventbus.Message;
+import org.vertx.java.core.json.JsonArray;
 import org.vertx.java.core.json.JsonObject;
 import org.vertx.java.platform.Container;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -58,25 +60,47 @@ public class ExportServiceImpl implements ExportService{
         dataServiceQueue.add(new DataServiceGroupImpl(container, strDate));
         dataServiceQueue.add(new DataServiceRespImpl(container, strDate));
 
-        processExport(dataServiceQueue, handler);
+        JsonArray fileList = new JsonArray();
+        processExport(dataServiceQueue, fileList, handler);
     }
 
     private void processExport(final Queue<DataService> dataServiceQueue,
+                               final JsonArray fileList,
                                final Handler<Either<String, JsonObject>> handler) {
-        if(!dataServiceQueue.isEmpty()) {
-            DataService service = dataServiceQueue.poll();
+        DataService service = dataServiceQueue.poll();
+        if(service != null) {
             service.exportData(new Handler<Either<String, JsonObject>>() {
                 @Override
                 public void handle(Either<String, JsonObject> exportResult) {
                     if(exportResult.isRight()) {
-                        processExport(dataServiceQueue, handler);
+
+                        JsonArray fileListResult = exportResult.right().getValue().getArray(DataService.FILE_LIST_KEY);
+                        if(fileListResult != null) {
+                            for (Object o : fileListResult) {
+                                fileList.add(o);
+                            }
+                        }
+                        processExport(dataServiceQueue, fileList, handler);
                     } else {
                         handler.handle(exportResult);
                     }
                 }
             });
         } else {
+            doReporting(fileList, handler);
+        }
+    }
+
+    private void doReporting(final JsonArray fileList, final Handler<Either<String, JsonObject>> handler) {
+
+        if(fileList.size() == 0) {
+            handler.handle(new Either.Left<String, JsonObject>("No file created"));
+        } else  {
+            JsonObject msgContent = new JsonObject();
+            msgContent.putArray("path", fileList);
+            msgContent.putString("zipfile", )
             handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
         }
+
     }
 }

@@ -60,6 +60,7 @@ public class GarConstants {
 
     public static final String RESP_ROOT = "man:GAR-ENT-RespAff";
     public static final String RESP_NODE = "man:GARRespAff";
+    public static final String RESP_ETAB = "man:GARRespAffEtab";
     public static final String RESP_FILE_PARAM = "RespAff";
 
     public static final String MEF_NODE = "men:GARMEF";
@@ -80,8 +81,9 @@ public class GarConstants {
     public static final String[] STUDENT_NODE_MANDATORY = {PERSON_STRUCTURE,PERSON_ID,PERSON_PROFILES,
                                                             PERSON_NAME,PERSON_FIRST_NAME};
     public static final String[] PERSON_MEF_NODE_MANDATORY = {STRUCTURE_UAI,PERSON_ID,MEF_CODE};
-    public static final String[] STUDENT_STUDYFIELD_NODE_MANDATORY = {STRUCTURE_UAI,PERSON_ID,STUDYFIELD_CODE};
+    public static final String[] STUDENT_STUDYFIELD_NODE_MANDATORY = {STRUCTURE_UAI,PERSON_ID,STUDYFIELD_CODE,RESP_ETAB};
 
     public static final String[] TEACHER_NODE_MANDATORY = {PERSON_STRUCTURE,PERSON_ID,PERSON_PROFILES,
                                                             PERSON_NAME,PERSON_FIRST_NAME};
+    public static final String[] RESP_NODE_MANDATORY = {PERSON_ID,PERSON_NAME,PERSON_FIRST_NAME};
 }

@@ -44,7 +44,11 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                                     } else {
                                         processTeachersMefs(mefsResult.right().getValue());
                                         xmlExportHelper.closeFile();
-                                        handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
+                                        handler.handle(new Either.Right<String, JsonObject>(
+                                                new JsonObject().putArray(
+                                                        FILE_LIST_KEY,
+                                                        xmlExportHelper.getFileList()
+                                                )));
                                     }
                                 }
                             });
@@ -206,7 +210,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param mefs Array of mefs from Neo4j
      */
     private Either<String,JsonObject> processTeachersMefs(JsonArray mefs) {
-        processSimpleArray(mefs, PERSON_MEF);
+        processSimpleArray(mefs, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
         Either<String,JsonObject> event =  processSimpleArray(mefs, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
         if(event.isLeft()) {
             return new Either.Left<>("Error when processing teacher mefs : " + event.left().getValue());

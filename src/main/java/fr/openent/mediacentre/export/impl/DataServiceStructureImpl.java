@@ -44,7 +44,11 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                                         if (validResponse(structFosResults, handler)) {
 
                                             xmlExportHelper.closeFile();
-                                            handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
+                                            handler.handle(new Either.Right<String, JsonObject>(
+                                                    new JsonObject().putArray(
+                                                            FILE_LIST_KEY,
+                                                            xmlExportHelper.getFileList()
+                                                    )));
 
                                         }
                                     }

@@ -9,7 +9,7 @@ import java.util.Map;
 
 public interface DataService {
 
-    Map<String,String> mapStructures = new HashMap<>();
+    String FILE_LIST_KEY = "filelist";
 
     /**
      * Export Data to folder

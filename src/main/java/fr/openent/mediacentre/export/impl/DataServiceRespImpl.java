@@ -28,12 +28,15 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
 
                     processStucturesFos(respResults.right().getValue());
                     xmlExportHelper.closeFile();
-                    handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
+                    handler.handle(new Either.Right<String, JsonObject>(
+                            new JsonObject().putArray(
+                                    FILE_LIST_KEY,
+                                    xmlExportHelper.getFileList()
+                            )));
                 }
             }
         });
     }
-
 
 
     /**
@@ -41,16 +44,15 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
      * Get academic email when available, else get structure email, no personal email
      * @param handler results
      */
-    // todo bad return of resp aff (must return array a RESP_STRUCT)
     private void getRespFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (u:User)-[IN]->(n:ManualGroup{name:\"" + CONTROL_GROUP + "\"})" +
-                "-[DEPENDS]->(s:Structure) ";
+        String query = "MATCH (sr:Structure)<-[ADMINISTRATIVE_ATTACHMENT]-(u:User)-[IN]->" +
+                "(n:ManualGroup{name:\"" + CONTROL_GROUP + "\"})-[DEPENDS]->(s:Structure) ";
         String dataReturn = "RETURN u.id as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_NAME + "`, " +
                 "u.firstName as `" + PERSON_FIRST_NAME + "`, " +
-                "coalesce(u.emailAcademy,s.email) as `" + PERSON_MAIL + "`, " +
-                "s.UAI as `" + STRUCTURE_UAI + "` " +
-                "order by `" + PERSON_ID + "`, `" + STRUCTURE_UAI + "`";
+                "coalesce(u.emailAcademy,sr.email) as `" + PERSON_MAIL + "`, " +
+                "collect(s.UAI) as `" + RESP_ETAB + "` " +
+                "order by `" + PERSON_ID + "`";
         neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
     }
 
@@ -59,6 +61,6 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
      * @param resps Array of respq from Neo4j
      */
     private void processStucturesFos(JsonArray resps) {
-        processSimpleArray(resps, RESP_NODE);
+        processSimpleArray(resps, RESP_NODE, RESP_NODE_MANDATORY);
     }
 }

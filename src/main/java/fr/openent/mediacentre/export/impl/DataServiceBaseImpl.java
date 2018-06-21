@@ -10,12 +10,14 @@ import org.vertx.java.core.json.JsonObject;
 import org.vertx.java.core.logging.Logger;
 import org.vertx.java.platform.Container;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
 abstract class DataServiceBaseImpl implements DataService{
 
+    static Map<String,String> mapStructures = new HashMap<>();
     XmlExportHelper xmlExportHelper;
     final Logger log;
     final String CONTROL_GROUP;
@@ -65,25 +67,10 @@ abstract class DataServiceBaseImpl implements DataService{
 
     /**
      * Save an array of JsonObjects in xml
+     * Only save object with all mandatory fields present
      * @param array array from neo4j
      * @param name xml node name
-     */
-    void processSimpleArray(JsonArray array, String name) {
-        try {
-
-            for(Object o : array) {
-                if (!(o instanceof JsonObject)) continue;
-                xmlExportHelper.saveObject(name, (JsonObject)o);
-            }
-        } catch (Exception e){
-            log.info(e.getMessage());
-        }
-    }
-
-    /**
-     * Save an array of JsonObjects in xml
-     * @param array array from neo4j
-     * @param name xml node name
+     * @param mandatoryFields list of mandatory fields that must be present in the JsonObject
      * @return result
      */
     Either<String,JsonObject> processSimpleArray(JsonArray array, String name, String[] mandatoryFields) {
@@ -105,11 +92,11 @@ abstract class DataServiceBaseImpl implements DataService{
     }
 
     boolean isMandatoryFieldsAbsent(JsonObject obj, String[] mandatoryFields) {
-        if(obj == null) return false;
+        if(obj == null) return true;
         for(String s : mandatoryFields) {
-            if(!obj.containsField(s)) return false;
+            if(!obj.containsField(s)) return true;
         }
-        return true;
+        return false;
     }
 
     /**

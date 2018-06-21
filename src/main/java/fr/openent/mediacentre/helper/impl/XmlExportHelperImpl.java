@@ -31,6 +31,7 @@ public class XmlExportHelperImpl implements XmlExportHelper {
     private int fileIndex = 0;
     private final String exportDir;
     private final String FILE_PREFIX;
+    private JsonArray fileList;
 
     /**
      * Initialize helper and first xml
@@ -46,6 +47,7 @@ public class XmlExportHelperImpl implements XmlExportHelper {
         exportDir = container.config().getString("export-path", "");
         String idEnt = container.config().getString("id-ent", "");
         FILE_PREFIX = idEnt + "_GAR-ENT_Complet_" + strDate + fileParamName + "_";
+        fileList = new JsonArray();
     }
 
     /**
@@ -58,6 +60,15 @@ public class XmlExportHelperImpl implements XmlExportHelper {
         currentElement.setAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
         currentElement.setAttribute("Version", "1.0");
         currentElement.setAttribute("xsi:schemaLocation", "http://data.education.fr/ns/gar GAR-ENT.xsd");
+    }
+
+    /**
+     * Get list of files created by exporter
+     * @return JsonArray of Strings
+     */
+    @Override
+    public JsonArray getFileList() {
+        return fileList;
     }
 
     /**
@@ -74,6 +85,7 @@ public class XmlExportHelperImpl implements XmlExportHelper {
             String filename = getExportFileName(fileIndex);
             StreamResult result = new StreamResult(new File(exportDir + filename));
             transformer.transform(source, result);
+            fileList.addString(exportDir + filename);
             log.info(filename + " saved");
         } catch (TransformerException tfe) {
             log.error(tfe.getMessage());
