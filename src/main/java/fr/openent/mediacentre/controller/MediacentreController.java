@@ -30,8 +30,9 @@ public class MediacentreController extends ControllerHelper {
     private Logger log = LoggerFactory.getLogger(MediacentreController.class);
     private EventBus eb = null;
 
-    public MediacentreController(JsonObject config) {
+    public MediacentreController(Vertx vertx, JsonObject config) {
         super();
+        eb = vertx.eventBus();
         this.exportService = new ExportServiceImpl(config);
     }
 

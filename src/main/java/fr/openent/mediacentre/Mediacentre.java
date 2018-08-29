@@ -14,7 +14,7 @@ public class Mediacentre extends BaseServer {
 	@Override
 	public void start() throws Exception {
 		super.start();
-		addController(new MediacentreController(config));
+		addController(new MediacentreController(vertx, config));
 
 		final String exportCron = config.getString("export-cron", "");
 
