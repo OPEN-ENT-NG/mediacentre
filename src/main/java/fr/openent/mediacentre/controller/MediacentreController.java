@@ -6,7 +6,7 @@ import fr.openent.mediacentre.export.impl.ExportServiceImpl;
 import fr.wseduc.bus.BusAddress;
 import fr.wseduc.rs.Get;
 import fr.wseduc.webutils.Either;
-import fr.wseduc.webutils.security.SecuredAction;
+import fr.wseduc.security.SecuredAction;
 import io.vertx.core.logging.LoggerFactory;
 import org.entcore.common.controller.ControllerHelper;
 import io.vertx.core.Handler;
@@ -30,15 +30,15 @@ public class MediacentreController extends ControllerHelper {
     private Logger log = LoggerFactory.getLogger(MediacentreController.class);
     private EventBus eb = null;
 
-    public MediacentreController() {
+    public MediacentreController(JsonObject config) {
         super();
+        this.exportService = new ExportServiceImpl(config);
     }
 
-    @Override
-    public void init(Vertx vertx, JsonObject config, RouteMatcher rm, Map<String, SecuredAction> securedActions) {
-        super.init(vertx, config, rm, securedActions);
-        this.exportService = new ExportServiceImpl(config);
-        this.eb = vertx.eventBus();
+    @Get("")
+    @SecuredAction("mediacentre.view")
+    public void render(HttpServerRequest request) {
+        renderView(request);
     }
 
     @Get("testexport")
