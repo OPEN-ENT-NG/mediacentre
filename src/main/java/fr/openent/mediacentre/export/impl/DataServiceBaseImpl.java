@@ -3,12 +3,13 @@ package fr.openent.mediacentre.export.impl;
 import fr.openent.mediacentre.helper.XmlExportHelper;
 import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
+import io.vertx.core.logging.LoggerFactory;
 import org.entcore.common.neo4j.Neo4j;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.core.logging.Logger;
-import org.vertx.java.platform.Container;
+import io.vertx.core.Handler;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -19,14 +20,13 @@ abstract class DataServiceBaseImpl implements DataService{
 
     static Map<String,String> mapStructures = new HashMap<>();
     XmlExportHelper xmlExportHelper;
-    final Logger log;
+    final Logger log = LoggerFactory.getLogger(DataServiceBaseImpl.class);
     final String CONTROL_GROUP;
 
     final Neo4j neo4j = Neo4j.getInstance();
 
-    DataServiceBaseImpl(Container container) {
-        this.log = container.logger();
-        this.CONTROL_GROUP = container.config().getString("control-group", DEFAULT_CONTROL_GROUP);
+    DataServiceBaseImpl(JsonObject config) {
+        this.CONTROL_GROUP = config.getString("control-group", DEFAULT_CONTROL_GROUP);
     }
 
     /**
@@ -37,15 +37,15 @@ abstract class DataServiceBaseImpl implements DataService{
      * @param structMap map for profile by structure
      */
     void processProfiles(JsonObject person, String profileName, Map<String, String> structMap) {
-        JsonArray profiles = person.getArray("profiles");
+        JsonArray profiles = person.getJsonArray("profiles");
 
-        JsonArray garProfiles = new JsonArray();
-        JsonArray garEtabs = new JsonArray();
+        JsonArray garProfiles = new fr.wseduc.webutils.collections.JsonArray();
+        JsonArray garEtabs = new fr.wseduc.webutils.collections.JsonArray();
         for(Object o2 : profiles) {
             if(!(o2 instanceof String)) continue;
             String structure = ((String)o2);
 
-            garEtabs.addString(structure);
+            garEtabs.add(structure);
 
             if(structMap != null && structMap.containsKey(structure)) {
                 addProfile(garProfiles, structure, structMap.get(structure));
@@ -56,13 +56,13 @@ abstract class DataServiceBaseImpl implements DataService{
         }
         if(structMap != null) {
             for (String structUAI : structMap.keySet()) {
-                garEtabs.addString(structUAI);
+                garEtabs.add(structUAI);
                 addProfile(garProfiles, structUAI, profileName);
             }
         }
-        person.putArray(PERSON_PROFILES, garProfiles);
-        person.putArray(PERSON_STRUCTURE, garEtabs);
-        person.removeField("profiles");
+        person.put(PERSON_PROFILES, garProfiles);
+        person.put(PERSON_STRUCTURE, garEtabs);
+        person.remove("profiles");
     }
 
     /**
@@ -94,7 +94,7 @@ abstract class DataServiceBaseImpl implements DataService{
     boolean isMandatoryFieldsAbsent(JsonObject obj, String[] mandatoryFields) {
         if(obj == null) return true;
         for(String s : mandatoryFields) {
-            if(!obj.containsField(s)) return true;
+            if(!obj.containsKey(s)) return true;
         }
         return false;
     }
@@ -138,9 +138,9 @@ abstract class DataServiceBaseImpl implements DataService{
      */
     private void addProfile(JsonArray profileArray, String structUAI, String profile) {
         JsonObject garProfile = new JsonObject();
-        garProfile.putString(STRUCTURE_UAI, structUAI);
-        garProfile.putString(PERSON_PROFILE, profile);
-        profileArray.addObject(garProfile);
+        garProfile.put(STRUCTURE_UAI, structUAI);
+        garProfile.put(PERSON_PROFILE, profile);
+        profileArray.add(garProfile);
     }
 
 

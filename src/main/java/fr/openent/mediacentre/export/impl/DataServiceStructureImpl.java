@@ -3,19 +3,19 @@ package fr.openent.mediacentre.export.impl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.platform.Container;
+import io.vertx.core.Handler;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+
 import static fr.openent.mediacentre.constants.GarConstants.*;
 import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
 public class DataServiceStructureImpl extends DataServiceBaseImpl implements DataService {
 
 
-    DataServiceStructureImpl(Container container, String strDate) {
-        super(container);
-        xmlExportHelper = new XmlExportHelperImpl(container, STRUCTURE_ROOT, STRUCTURE_FILE_PARAM, strDate);
+    DataServiceStructureImpl(JsonObject config, String strDate) {
+        super(config);
+        xmlExportHelper = new XmlExportHelperImpl(config, STRUCTURE_ROOT, STRUCTURE_FILE_PARAM, strDate);
     }
 
     /**
@@ -45,7 +45,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
 
                                             xmlExportHelper.closeFile();
                                             handler.handle(new Either.Right<String, JsonObject>(
-                                                    new JsonObject().putArray(
+                                                    new JsonObject().put(
                                                             FILE_LIST_KEY,
                                                             xmlExportHelper.getFileList()
                                                     )));
@@ -160,7 +160,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         String structId = structure.getString("structid");
         String structUAI = structure.getString(STRUCTURE_UAI);
         mapStructures.put(structId, structUAI);
-        structure.removeField("structid");
+        structure.remove("structid");
     }
 
 

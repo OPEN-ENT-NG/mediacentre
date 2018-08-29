@@ -12,16 +12,16 @@ public class Mediacentre extends BaseServer {
 	public static final String MEDIACENTRE_ADDRESS = "openent.mediacentre";
 
 	@Override
-	public void start() {
+	public void start() throws Exception {
 		super.start();
 		addController(new MediacentreController());
 
-		final String exportCron = container.config().getString("export-cron", "");
+		final String exportCron = config.getString("export-cron", "");
 
 		try{
-			new CronTrigger(vertx, exportCron).schedule(new ExportTask(vertx.eventBus(), container.logger()));
+			new CronTrigger(vertx, exportCron).schedule(new ExportTask(vertx.eventBus()));
 		}catch (ParseException e) {
-			container.logger().fatal(e.getMessage(), e);
+			log.fatal(e.getMessage(), e);
 		}
 	}
 

@@ -1,35 +1,37 @@
 package fr.openent.mediacentre.export;
 
 import fr.openent.mediacentre.Mediacentre;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.eventbus.EventBus;
-import org.vertx.java.core.eventbus.Message;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.core.logging.Logger;
+import io.vertx.core.Handler;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+
+import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
 
 public class ExportTask implements Handler<Long> {
 
 
     private final EventBus eb;
-    private final Logger log;
+    private final Logger log = LoggerFactory.getLogger(ExportTask.class);
 
-    public ExportTask(EventBus eb, Logger log) {
+    public ExportTask(EventBus eb) {
         this.eb = eb;
-        this.log = log;
     }
 
     @Override
     public void handle(Long event) {
         log.info("export launched");
         eb.send(Mediacentre.MEDIACENTRE_ADDRESS,
-                new JsonObject().putString("action", "export"),
-                new Handler<Message<JsonObject>>() {
+                new JsonObject().put("action", "export"),
+                handlerToAsyncHandler(new Handler<Message<JsonObject>>() {
             @Override
             public void handle(Message<JsonObject> event) {
                 if ("ok".equals(event.body().getString("status"))) {
                     log.info("export succeeded");
                 }
             }
-        });
+        }));
     }
 }

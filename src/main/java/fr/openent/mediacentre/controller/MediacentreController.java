@@ -7,26 +7,27 @@ import fr.wseduc.bus.BusAddress;
 import fr.wseduc.rs.Get;
 import fr.wseduc.webutils.Either;
 import fr.wseduc.webutils.security.SecuredAction;
+import io.vertx.core.logging.LoggerFactory;
 import org.entcore.common.controller.ControllerHelper;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.Vertx;
-import org.vertx.java.core.eventbus.EventBus;
-import org.vertx.java.core.eventbus.Message;
-import org.vertx.java.core.eventbus.impl.JsonObjectMessage;
-import org.vertx.java.core.http.HttpServerRequest;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.http.HttpServerRequest;
 import org.vertx.java.core.http.RouteMatcher;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.platform.Container;
-import org.vertx.java.core.logging.Logger;
+import io.vertx.core.json.JsonObject;
+
+import io.vertx.core.logging.Logger;
 
 import java.util.Map;
 
+import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
 import static fr.wseduc.webutils.http.response.DefaultResponseHandler.defaultResponseHandler;
 
 public class MediacentreController extends ControllerHelper {
 
     private ExportService exportService;
-    private Logger log = null;
+    private Logger log = LoggerFactory.getLogger(MediacentreController.class);
     private EventBus eb = null;
 
     public MediacentreController() {
@@ -34,10 +35,9 @@ public class MediacentreController extends ControllerHelper {
     }
 
     @Override
-    public void init(Vertx vertx, Container container, RouteMatcher rm, Map<String, SecuredAction> securedActions) {
-        super.init(vertx, container, rm, securedActions);
-        this.exportService = new ExportServiceImpl(container);
-        this.log = container.logger();
+    public void init(Vertx vertx, JsonObject config, RouteMatcher rm, Map<String, SecuredAction> securedActions) {
+        super.init(vertx, config, rm, securedActions);
+        this.exportService = new ExportServiceImpl(config);
         this.eb = vertx.eventBus();
     }
 
@@ -49,20 +49,20 @@ public class MediacentreController extends ControllerHelper {
 
     @Get("testsftp")
     public void testsftp(final HttpServerRequest request) {
-        JsonObject test = new JsonObject().putString("action","send")
-                .putString("known-hosts","C:\\Users\\colenot\\.ssh\\known_hosts")
-                .putString("hostname","213.32.49.235")
-                .putNumber("port",24242)
-                .putString("username","sftpODE")
-                .putString("sshkey","C:\\CGI\\DATA\\ARANGER\\DATA\\Support\\Alimentation\\priv_key.ppk")
-                .putString("local-file","C:\\Users\\colenot\\.ssh\\known_hosts")
-                .putString("dist-file","/testtcol.txt");
-        eb.send("sftp", test, new Handler<Message<JsonObject>>() {
+        JsonObject test = new JsonObject().put("action","send")
+                .put("known-hosts","C:\\Users\\colenot\\.ssh\\known_hosts")
+                .put("hostname","213.32.49.235")
+                .put("port",24242)
+                .put("username","sftpODE")
+                .put("sshkey","C:\\CGI\\DATA\\ARANGER\\DATA\\Support\\Alimentation\\priv_key.ppk")
+                .put("local-file","C:\\Users\\colenot\\.ssh\\known_hosts")
+                .put("dist-file","/testtcol.txt");
+        eb.send("sftp", test,  handlerToAsyncHandler(new Handler<Message<JsonObject>>() {
             @Override
             public void handle(Message<JsonObject> message) {
                 defaultResponseHandler(request).handle(new Either.Left<String, JsonObject>("Toto"));
             }
-        });
+        }));
         //exportService.launchExport(defaultResponseHandler(request));
         //defaultResponseHandler(request).handle(new Either.Left<String, JsonObject>("Toto"));
     }
@@ -76,8 +76,8 @@ public class MediacentreController extends ControllerHelper {
             default:
                 log.error("Mediacentre invalid.action " + action);
                 JsonObject json = (new JsonObject())
-                        .putString("status", "error")
-                        .putString("message", "invalid.action");
+                        .put("status", "error")
+                        .put("message", "invalid.action");
                 message.reply(json);
         }
     }

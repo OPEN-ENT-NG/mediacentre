@@ -3,19 +3,19 @@ package fr.openent.mediacentre.export.impl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.platform.Container;
+import io.vertx.core.Handler;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
 import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
 public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataService{
 
-    DataServiceStudentImpl(Container container, String strDate) {
-        super(container);
-        xmlExportHelper = new XmlExportHelperImpl(container, STUDENT_ROOT, STUDENT_FILE_PARAM, strDate);
+    DataServiceStudentImpl(JsonObject config, String strDate) {
+        super(config);
+        xmlExportHelper = new XmlExportHelperImpl(config, STUDENT_ROOT, STUDENT_FILE_PARAM, strDate);
     }
 
     /**
@@ -45,7 +45,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
 
                                                 xmlExportHelper.closeFile();
                                                 handler.handle(new Either.Right<String, JsonObject>(
-                                                        new JsonObject().putArray(
+                                                        new JsonObject().put(
                                                                 FILE_LIST_KEY,
                                                                 xmlExportHelper.getFileList()
                                                         )));
@@ -150,7 +150,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 if(!(o instanceof JsonObject)) continue;
 
                 JsonObject student = (JsonObject) o;
-                JsonArray profiles = student.getArray("profiles", null);
+                JsonArray profiles = student.getJsonArray("profiles", null);
                 if(profiles == null || profiles.size() == 0) {
                     log.warn("Mediacentre : Student with no profile for export, id "
                             + student.getString("u.id", "unknown"));

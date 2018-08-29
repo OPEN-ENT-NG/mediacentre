@@ -3,19 +3,19 @@ package fr.openent.mediacentre.export.impl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.platform.Container;
+import io.vertx.core.Handler;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+
 
 import static fr.openent.mediacentre.constants.GarConstants.*;
 import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
 public class DataServiceRespImpl extends DataServiceBaseImpl implements DataService {
 
-    DataServiceRespImpl(Container container, String strDate) {
-        super(container);
-        xmlExportHelper = new XmlExportHelperImpl(container, RESP_ROOT, RESP_FILE_PARAM, strDate);
+    DataServiceRespImpl(JsonObject config, String strDate) {
+        super(config);
+        xmlExportHelper = new XmlExportHelperImpl(config, RESP_ROOT, RESP_FILE_PARAM, strDate);
     }
 
     @Override
@@ -29,7 +29,7 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
                     processStucturesFos(respResults.right().getValue());
                     xmlExportHelper.closeFile();
                     handler.handle(new Either.Right<String, JsonObject>(
-                            new JsonObject().putArray(
+                            new JsonObject().put(
                                     FILE_LIST_KEY,
                                     xmlExportHelper.getFileList()
                             )));

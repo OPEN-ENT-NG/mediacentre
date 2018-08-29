@@ -3,10 +3,10 @@ package fr.openent.mediacentre.export.impl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.platform.Container;
+import io.vertx.core.Handler;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,9 +16,9 @@ import static fr.openent.mediacentre.constants.GarConstants.*;
 
 public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataService{
 
-    DataServiceTeacherImpl(Container container, String strDate) {
-        super(container);
-        xmlExportHelper = new XmlExportHelperImpl(container, TEACHER_ROOT, TEACHER_FILE_PARAM, strDate);
+    DataServiceTeacherImpl(JsonObject config, String strDate) {
+        super(config);
+        xmlExportHelper = new XmlExportHelperImpl(config, TEACHER_ROOT, TEACHER_FILE_PARAM, strDate);
     }
 
     /**
@@ -45,7 +45,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                                         processTeachersMefs(mefsResult.right().getValue());
                                         xmlExportHelper.closeFile();
                                         handler.handle(new Either.Right<String, JsonObject>(
-                                                new JsonObject().putArray(
+                                                new JsonObject().put(
                                                         FILE_LIST_KEY,
                                                         xmlExportHelper.getFileList()
                                                 )));
@@ -126,7 +126,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 if(!(o instanceof JsonObject)) continue;
 
                 JsonObject teacher = (JsonObject) o;
-                JsonArray profiles = teacher.getArray("profiles", null);
+                JsonArray profiles = teacher.getJsonArray("profiles", null);
                 if(profiles == null || profiles.size() == 0) {
                     log.error("Mediacentre : Teacher with no profile or function for export, id "
                             + teacher.getString("u.id", "unknown"));
@@ -155,12 +155,12 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param structMap map between structures ID and profile
      */
     private void processFunctions(JsonObject teacher, Map<String,String> structMap) {
-        JsonArray functions = teacher.getArray("functions", null);
+        JsonArray functions = teacher.getJsonArray("functions", null);
         if(functions == null || functions.size() == 0) {
             return;
         }
 
-        JsonArray garFunctions = new JsonArray();
+        JsonArray garFunctions = new fr.wseduc.webutils.collections.JsonArray();
         for(Object o : functions) {
             if(!(o instanceof String)) continue;
             String[] arrFunction = ((String)o).split("\\$");
@@ -181,12 +181,12 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
             structMap.put(structUAI, profileType);
 
             JsonObject function = new JsonObject();
-            function.putString(STRUCTURE_UAI, structUAI);
-            function.putString(POSITION_CODE, roleCode);
-            garFunctions.addObject(function);
+            function.put(STRUCTURE_UAI, structUAI);
+            function.put(POSITION_CODE, roleCode);
+            garFunctions.add(function);
         }
-        teacher.putArray(TEACHER_POSITION, garFunctions);
-        teacher.removeField("functions");
+        teacher.put(TEACHER_POSITION, garFunctions);
+        teacher.remove("functions");
     }
 
     /**

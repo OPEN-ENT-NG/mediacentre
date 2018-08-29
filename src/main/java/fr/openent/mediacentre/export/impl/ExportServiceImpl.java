@@ -3,11 +3,11 @@ package fr.openent.mediacentre.export.impl;
 import fr.openent.mediacentre.export.DataService;
 import fr.openent.mediacentre.export.ExportService;
 import fr.wseduc.webutils.Either;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.eventbus.Message;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.platform.Container;
+import io.vertx.core.Handler;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -18,12 +18,12 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ExportServiceImpl implements ExportService{
 
-    private final Container container;
+    private final JsonObject config;
 
 
 
-    public ExportServiceImpl(Container container) {
-        this.container = container;
+    public ExportServiceImpl(JsonObject config) {
+        this.config = config;
     }
 
 
@@ -37,12 +37,12 @@ public class ExportServiceImpl implements ExportService{
                 JsonObject json;
                 if(exportResult.isLeft()) {
                     json = (new JsonObject())
-                            .putString("status", "error")
-                            .putString("message", exportResult.left().getValue());
+                            .put("status", "error")
+                            .put("message", exportResult.left().getValue());
                 } else {
                     json = exportResult.right().getValue();
                 }
-                message.reply(json.putString("status", "ok"));
+                message.reply(json.put("status", "ok"));
             }
         });
     }
@@ -54,13 +54,13 @@ public class ExportServiceImpl implements ExportService{
         String strDate = new SimpleDateFormat("yyyyMMdd_HHmmss_").format(new Date());
 
         final Queue<DataService> dataServiceQueue = new ConcurrentLinkedQueue<>();
-        dataServiceQueue.add(new DataServiceStructureImpl(container, strDate));
-        dataServiceQueue.add(new DataServiceStudentImpl(container, strDate));
-        dataServiceQueue.add(new DataServiceTeacherImpl(container, strDate));
-        dataServiceQueue.add(new DataServiceGroupImpl(container, strDate));
-        dataServiceQueue.add(new DataServiceRespImpl(container, strDate));
+        dataServiceQueue.add(new DataServiceStructureImpl(config, strDate));
+        dataServiceQueue.add(new DataServiceStudentImpl(config, strDate));
+        dataServiceQueue.add(new DataServiceTeacherImpl(config, strDate));
+        dataServiceQueue.add(new DataServiceGroupImpl(config, strDate));
+        dataServiceQueue.add(new DataServiceRespImpl(config, strDate));
 
-        JsonArray fileList = new JsonArray();
+        JsonArray fileList = new fr.wseduc.webutils.collections.JsonArray();
         processExport(dataServiceQueue, fileList, handler);
     }
 
@@ -74,7 +74,7 @@ public class ExportServiceImpl implements ExportService{
                 public void handle(Either<String, JsonObject> exportResult) {
                     if(exportResult.isRight()) {
 
-                        JsonArray fileListResult = exportResult.right().getValue().getArray(DataService.FILE_LIST_KEY);
+                        JsonArray fileListResult = exportResult.right().getValue().getJsonArray(DataService.FILE_LIST_KEY);
                         if(fileListResult != null) {
                             for (Object o : fileListResult) {
                                 fileList.add(o);
@@ -97,8 +97,9 @@ public class ExportServiceImpl implements ExportService{
             handler.handle(new Either.Left<String, JsonObject>("No file created"));
         } else  {
             JsonObject msgContent = new JsonObject();
-            msgContent.putArray("path", fileList);
-            msgContent.putString("zipfile", )
+            msgContent.put("path", fileList);
+            //TODO faire le zip
+            msgContent.put("zipfile", "");
             handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
         }
 

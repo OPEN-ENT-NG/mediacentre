@@ -3,18 +3,18 @@ package fr.openent.mediacentre.export.impl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
-import org.vertx.java.core.Handler;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.platform.Container;
+import io.vertx.core.Handler;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+
 import static fr.openent.mediacentre.constants.GarConstants.*;
 import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
 public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataService {
 
-    DataServiceGroupImpl(Container container, String strDate) {
-        super(container);
-        xmlExportHelper = new XmlExportHelperImpl(container, GROUPS_ROOT, GROUPS_FILE_PARAM, strDate);
+    DataServiceGroupImpl(JsonObject config, String strDate) {
+        super(config);
+        xmlExportHelper = new XmlExportHelperImpl(config, GROUPS_ROOT, GROUPS_FILE_PARAM, strDate);
     }
 
     /**
@@ -43,7 +43,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
 
                                             xmlExportHelper.closeFile();
                                             handler.handle(new Either.Right<String, JsonObject>(
-                                                    new JsonObject().putArray(
+                                                    new JsonObject().put(
                                                             FILE_LIST_KEY,
                                                             xmlExportHelper.getFileList()
                                                     )));

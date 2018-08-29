@@ -1,10 +1,11 @@
 package fr.openent.mediacentre.helper.impl;
 
 import fr.openent.mediacentre.helper.XmlExportHelper;
-import org.vertx.java.core.json.JsonArray;
-import org.vertx.java.core.json.JsonObject;
-import org.vertx.java.core.logging.Logger;
-import org.vertx.java.platform.Container;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+
+import io.vertx.core.logging.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -26,7 +27,7 @@ public class XmlExportHelperImpl implements XmlExportHelper {
     private Element currentElement = null;
     private final String ROOT;
     private Document currentDoc = null;
-    private final Logger log;
+    private final Logger log = LoggerFactory.getLogger(XmlExportHelperImpl.class);
     private int nbElem = 0;
     private int fileIndex = 0;
     private final String exportDir;
@@ -35,19 +36,18 @@ public class XmlExportHelperImpl implements XmlExportHelper {
 
     /**
      * Initialize helper and first xml
-     * @param container vertx container, for logger and config
+     * @param config vertx container, for logger and config
      * @param root name of the root xml element
      * @param fileParamName param for the name of xml file
      */
-    public XmlExportHelperImpl(Container container, String root, String fileParamName, String strDate) {
+    public XmlExportHelperImpl(JsonObject config, String root, String fileParamName, String strDate) {
         ROOT = root;
         initNewFile();
-        this.log = container.logger();
-        MAX_NODES = container.config().getInteger("max-nodes", 10000);
-        exportDir = container.config().getString("export-path", "");
-        String idEnt = container.config().getString("id-ent", "");
+        MAX_NODES = config.getInteger("max-nodes", 10000);
+        exportDir = config.getString("export-path", "");
+        String idEnt = config.getString("id-ent", "");
         FILE_PREFIX = idEnt + "_GAR-ENT_Complet_" + strDate + fileParamName + "_";
-        fileList = new JsonArray();
+        fileList = new fr.wseduc.webutils.collections.JsonArray();
     }
 
     /**
@@ -85,7 +85,7 @@ public class XmlExportHelperImpl implements XmlExportHelper {
             String filename = getExportFileName(fileIndex);
             StreamResult result = new StreamResult(new File(exportDir + filename));
             transformer.transform(source, result);
-            fileList.addString(exportDir + filename);
+            fileList.add(exportDir + filename);
             log.info(filename + " saved");
         } catch (TransformerException tfe) {
             log.error(tfe.getMessage());
@@ -111,7 +111,7 @@ public class XmlExportHelperImpl implements XmlExportHelper {
      */
     private void saveObject(String key, JsonObject entry, Element curElt) {
         Element objectElement = currentDoc.createElement(key);
-        for(String jsonKey : entry.getFieldNames()) {
+        for(String jsonKey : entry.fieldNames()) {
             Object o = entry.getValue(jsonKey);
             saveUnknownObject(jsonKey, o, objectElement);
         }
