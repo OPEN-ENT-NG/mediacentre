@@ -16,3 +16,4 @@ src/main/resources/public/js
 src/main/resources/view
 out
 build
+coverage

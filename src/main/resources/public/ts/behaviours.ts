@@ -1,4 +1,3 @@
-import { Behaviours } from 'entcore';
+import { Behaviours } from "entcore";
 
-Behaviours.register('mediacentre', {
-});
+Behaviours.register("mediacentre", {});

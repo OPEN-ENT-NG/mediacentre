@@ -32,6 +32,16 @@ buildNode () {
   esac
 }
 
+runTests () {
+case `uname -s` in
+    MINGW*)
+      docker-compose run --rm -u "$USER_UID:$GROUP_GID" node sh -c "npm install --no-bin-links && npm test"
+      ;;
+    *)
+      docker-compose run --rm -u "$USER_UID:$GROUP_GID" node sh -c "npm install && npm test"
+  esac
+}
+
 buildGradle () {
   docker-compose run --rm -u "$USER_UID:$GROUP_GID" gradle gradle shadowJar install publishToMavenLocal
 }
@@ -55,6 +65,9 @@ do
       ;;
     buildNode)
       buildNode
+      ;;
+    runTests)
+      runTests
       ;;
     buildGradle)
       buildGradle
