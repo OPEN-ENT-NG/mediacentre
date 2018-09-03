@@ -118,13 +118,14 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      * @param handler results
      */
     private void getStucturesInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (s:Structure) " +
+        String query = "MATCH (s:Structure)<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
                 "OPTIONAL MATCH (s2:Structure)<-[HAS_ATTACHMENT]-(s:Structure) ";
         String dataReturn = "RETURN distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
-                "s.contract  as `" + STRUCTURE_CONTRACT + "`, " +
                 "s.name as `" + STRUCTURE_NAME + "`, " +
-                "s.phone  as `" + STRUCTURE_PHONE + "`, " +
                 "s2.UAI  as `" + STRUCTURE_RATTACH + "`, " +
+                "s.contract  as `" + STRUCTURE_CONTRACT + "`, " +
+                "s.phone  as `" + STRUCTURE_PHONE + "`, " +
+                //TODO GARStructureTelephone
                 "s.externalId  as structid " +
                 "order by " + "`" + STRUCTURE_UAI + "`";
         neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));

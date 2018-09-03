@@ -127,11 +127,13 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 "(p:Profile)<-[HAS_PROFILE]-(pg:ProfileGroup) " +
                 "where p.name = 'Student' " +
                 "OPTIONAL MATCH (u:User)-[ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) ";
-        String dataReturn = "return distinct u.id  as `" + PERSON_ID + "`, " +
+        String dataReturn = "return distinct " +
+                "u.id  as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_PATRO_NAME + "`, " +
                 "u.lastName as `" + PERSON_NAME + "`, " +
-                "u.otherNames as `" + PERSON_OTHER_NAMES + "`, " +
                 "u.firstName as `" + PERSON_FIRST_NAME + "`, " +
+                "u.otherNames as `" + PERSON_OTHER_NAMES + "`, " +
+                //TODO GARPersonCivilite
                 "sr.UAI as `" + PERSON_STRUCT_ATTACH + "`, " +
                 "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
                 "collect(distinct s.UAI) as profiles " +
@@ -156,15 +158,43 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                             + student.getString("u.id", "unknown"));
                     continue;
                 }
-                if(isMandatoryFieldsAbsent(student, STUDENT_NODE_MANDATORY))continue;
 
                 processProfiles(student, STUDENT_PROFILE, null);
+
+
+
+                if(isMandatoryFieldsAbsent(student, STUDENT_NODE_MANDATORY)) {
+                    log.warn("Mediacentre : mandatory attribut for Student : " + student);
+                    continue;
+                }
+
+                reorganizeNodes(student);
+
                 xmlExportHelper.saveObject(STUDENT_NODE, student);
             }
             return new Either.Right<>(null);
         } catch (Exception e) {
             return new Either.Left<>("Error when processing students Info : " + e.getMessage());
         }
+    }
+
+    /**
+     * XSD specify precise order for xml tags
+     * @param student
+     */
+    private void reorganizeNodes(JsonObject student) {
+        JsonObject personCopy = student.copy();
+        student.clear();
+        student.put(PERSON_ID, personCopy.getValue(PERSON_ID));
+        student.put(PERSON_PROFILES, personCopy.getValue(PERSON_PROFILES));
+        student.put(PERSON_PATRO_NAME, personCopy.getValue(PERSON_PATRO_NAME));
+        student.put(PERSON_NAME, personCopy.getValue(PERSON_NAME));
+        student.put(PERSON_FIRST_NAME, personCopy.getValue(PERSON_FIRST_NAME));
+        student.put(PERSON_OTHER_NAMES, personCopy.getValue(PERSON_OTHER_NAMES));
+        //TODO GARPersonCivilite
+        student.put(PERSON_STRUCT_ATTACH, personCopy.getValue(PERSON_STRUCT_ATTACH));
+        student.put(PERSON_STRUCTURE, personCopy.getValue(PERSON_STRUCTURE));
+        student.put(PERSON_BIRTH_DATE, personCopy.getValue(PERSON_BIRTH_DATE));
     }
 
     /**
@@ -176,9 +206,10 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 "(u:User)-[ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) ";
         String dataReturn = "where p.name = 'Student' " +
-                "return distinct u.id as `" + PERSON_ID + "`, " +
-                "u.module as `" + MEF_CODE + "`, " +
-                "s.UAI as `" + STRUCTURE_UAI + "` " +
+                "return distinct "+
+                "s.UAI as `" + STRUCTURE_UAI + "`, " +
+                "u.id as `" + PERSON_ID + "`, " +
+                "u.module as `" + MEF_CODE + "` " +
                 "order by " + "`" + PERSON_ID + "`";
         neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
     }
@@ -207,8 +238,9 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 "where p.name = 'Student' ";
         String dataReturn = "with u,s " +
                 "unwind u.fieldOfStudy as fos " +
-                "return distinct u.id as `" + PERSON_ID + "`, " +
+                "return distinct "+
                 "s.UAI as `" + STRUCTURE_UAI + "`, " +
+                "u.id as `" + PERSON_ID + "`, " +
                 "fos as `" + STUDYFIELD_CODE + "` " +
                 "order by " + "`" + PERSON_ID + "`";
         neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));

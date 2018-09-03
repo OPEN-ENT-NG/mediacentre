@@ -36,19 +36,19 @@ public class GarConstants {
     public static final String PERSON_MEF = "men:GARPersonMEF";
 
 
-    public static final String STRUCTURE_ROOT = "man:GAR-ENT-Etab";
+    public static final String STRUCTURE_ROOT = "men:GAR-ENT-Etab";
     public static final String STRUCTURE_FILE_PARAM = "Etab";
-    public static final String STRUCTURE_NODE = "man:GAREtab";
+    public static final String STRUCTURE_NODE = "men:GAREtab";
     public static final String STRUCTURE_UAI = "men:GARStructureUAI";
     public static final String STRUCTURE_CONTRACT = "men:GARStructureContrat";
     public static final String STRUCTURE_NAME = "men:GARStructureNomCourant";
     public static final String STRUCTURE_PHONE = "men:GARStructureTelephone";
     public static final String STRUCTURE_RATTACH = "men:GAREtablissementStructRattachFctl";
 
-    public static final String GROUPS_ROOT = "man:GAR-ENT-Groupe";
-    public static final String GROUPS_NODE = "man:GARGroupe";
-    public static final String GROUPS_PERSON_NODE = "man:GARPersonGroupe";
-    public static final String GROUPS_SUBJECT_NODE = "man:GAREnsClasseMatiere";
+    public static final String GROUPS_ROOT = "men:GAR-ENT-Groupe";
+    public static final String GROUPS_NODE = "men:GARGroupe";
+    public static final String GROUPS_PERSON_NODE = "men:GARPersonGroupe";
+    public static final String GROUPS_SUBJECT_NODE = "men:GAREnsClasseMatiere";
     public static final String GROUPS_FILE_PARAM = "Groupe";
     public static final String GROUPS_DIVISION_NAME = "DIVISION";
     public static final String GROUPS_GROUP_NAME = "GROUPE";
@@ -58,9 +58,9 @@ public class GarConstants {
     public static final String GROUPS_DIVISION = "men:GARGroupeDivAppartenance";
 
 
-    public static final String RESP_ROOT = "man:GAR-ENT-RespAff";
-    public static final String RESP_NODE = "man:GARRespAff";
-    public static final String RESP_ETAB = "man:GARRespAffEtab";
+    public static final String RESP_ROOT = "men:GAR-ENT-RespAff";
+    public static final String RESP_NODE = "men:GARRespAff";
+    public static final String RESP_ETAB = "men:GARRespAffEtab";
     public static final String RESP_FILE_PARAM = "RespAff";
 
     public static final String MEF_NODE = "men:GARMEF";
@@ -81,7 +81,7 @@ public class GarConstants {
     public static final String[] STUDENT_NODE_MANDATORY = {PERSON_STRUCTURE,PERSON_ID,PERSON_PROFILES,
                                                             PERSON_NAME,PERSON_FIRST_NAME};
     public static final String[] PERSON_MEF_NODE_MANDATORY = {STRUCTURE_UAI,PERSON_ID,MEF_CODE};
-    public static final String[] STUDENT_STUDYFIELD_NODE_MANDATORY = {STRUCTURE_UAI,PERSON_ID,STUDYFIELD_CODE,RESP_ETAB};
+    public static final String[] STUDENT_STUDYFIELD_NODE_MANDATORY = {STRUCTURE_UAI,PERSON_ID,STUDYFIELD_CODE};
 
     public static final String[] TEACHER_NODE_MANDATORY = {PERSON_STRUCTURE,PERSON_ID,PERSON_PROFILES,
                                                             PERSON_NAME,PERSON_FIRST_NAME};
