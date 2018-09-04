@@ -17,6 +17,9 @@
         "max-nodes": 10000,
         "export-path": "data/",
         "id-ent" : "NGPARIS",
-        "control-group" : "GAR"
+        "control-group" : "GAR",
+        "gar-host": "",
+        "cert-path": "",
+        "key-path": ""
       }
     }

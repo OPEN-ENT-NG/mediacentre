@@ -1,3 +1,4 @@
-export * from "./Ressource";
+export * from "./Resource";
 export * from "./Type";
 export * from "./Helper";
+export * from "./Structure";

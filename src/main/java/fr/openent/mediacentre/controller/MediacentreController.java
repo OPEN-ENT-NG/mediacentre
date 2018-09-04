@@ -3,30 +3,32 @@ package fr.openent.mediacentre.controller;
 import fr.openent.mediacentre.Mediacentre;
 import fr.openent.mediacentre.export.ExportService;
 import fr.openent.mediacentre.export.impl.ExportServiceImpl;
+import fr.openent.mediacentre.service.ResourceService;
+import fr.openent.mediacentre.service.impl.DefaultResourceService;
 import fr.wseduc.bus.BusAddress;
 import fr.wseduc.rs.Get;
-import fr.wseduc.webutils.Either;
+import fr.wseduc.security.ActionType;
 import fr.wseduc.security.SecuredAction;
-import io.vertx.core.logging.LoggerFactory;
-import org.entcore.common.controller.ControllerHelper;
+import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.HttpServerRequest;
-import org.vertx.java.core.http.RouteMatcher;
 import io.vertx.core.json.JsonObject;
-
 import io.vertx.core.logging.Logger;
-
-import java.util.Map;
+import io.vertx.core.logging.LoggerFactory;
+import org.entcore.common.controller.ControllerHelper;
+import org.entcore.common.user.UserUtils;
 
 import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
+import static fr.wseduc.webutils.http.response.DefaultResponseHandler.arrayResponseHandler;
 import static fr.wseduc.webutils.http.response.DefaultResponseHandler.defaultResponseHandler;
 
 public class MediacentreController extends ControllerHelper {
 
     private ExportService exportService;
+    private final ResourceService resourceService;
     private Logger log = LoggerFactory.getLogger(MediacentreController.class);
     private EventBus eb = null;
 
@@ -34,12 +36,29 @@ public class MediacentreController extends ControllerHelper {
         super();
         eb = vertx.eventBus();
         this.exportService = new ExportServiceImpl(config);
+        this.resourceService = new DefaultResourceService(
+                vertx,
+                config.getString("gar-host"),
+                config.getString("id-ent"),
+                config.getString("cert-path"),
+                config.getString("key-path")
+        );
     }
 
     @Get("")
     @SecuredAction("mediacentre.view")
     public void render(HttpServerRequest request) {
         renderView(request);
+    }
+
+    @Get("/resources")
+    @SecuredAction(value = "", type = ActionType.AUTHENTICATED)
+    public void getResources(final HttpServerRequest request) {
+        UserUtils.getUserInfos(eb, request, user -> {
+            String structureId = request.params().contains("structure") ? request.getParam("structure") : user.getStructures().get(0);
+            String userId = user.getUserId();
+            this.resourceService.get(userId, structureId, getHost(request), arrayResponseHandler(request));
+        });
     }
 
     @Get("testexport")

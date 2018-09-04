@@ -12,6 +12,10 @@
                 <i18n>mediacentre.in</i18n> [[ filteredResources.length ]] [[ lang.translate(filteredResources.length ===
                 1 ? "mediacentre.result" : "mediacentre.results") ]]
             </em>
+            <div class="right-magnet">
+                <select ng-if="structures.all.length > 1" ng-change="loadResources(structure)" ng-options="structure as structure.getName() for structure in structures.all"
+                    ng-model="structure"></select>
+            </div>
         </article>
         <article class="zero twelve-mobile resource-filters" ng-show="openers.filters">
             <div class="row" ng-include="'/mediacentre/public/template/filters.html'"></div>

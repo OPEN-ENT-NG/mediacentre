@@ -1,6 +1,6 @@
 import { _ } from "entcore";
 import { Mix, Eventer } from "entcore-toolkit";
-import { Type, Types, Helper } from "./index";
+import { Type, Types, Helper, Structure } from "./index";
 import { TYPES } from "../definitions";
 
 import data from "./__mocks__/ressources";
@@ -44,9 +44,12 @@ export class Resources {
     this.typologies = new Types();
   }
 
-  async sync(): Promise<void> {
+  async sync(structure: Structure): Promise<void> {
     //TODO Call https methods. Use a provider to get data
     this.eventer.trigger("loading", { loading: true });
+    console.log(
+      `Loading resources for structure ${structure.getId()} - ${structure.getName()}`
+    );
     const { listeRessources } = data;
     this.all = Mix.castArrayAs(Resource, listeRessources.ressource);
     this.levels.all = Mix.castArrayAs(Type, this.getValues(TYPES.level));

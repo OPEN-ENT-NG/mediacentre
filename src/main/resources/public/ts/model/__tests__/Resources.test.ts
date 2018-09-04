@@ -1,9 +1,11 @@
-import { Eventer, Mix } from "entcore-toolkit";
+import { Eventer } from "entcore-toolkit";
 
-import { Resource, Resources, Types, Type } from "../index";
+import { Resource, Resources, Types, Structures } from "../index";
 import data from "../__mocks__/ressources";
 
 const resources = new Resources();
+const structures = new Structures();
+structures.sync();
 const eventerCallback = jest.fn();
 
 describe("constructor()", () => {
@@ -32,15 +34,15 @@ describe("constructor()", () => {
   });
 });
 
-describe("sync()", () => {
+describe("async sync(structure: Structure): Promise<void> ", () => {
   it("should load 'all' array with 2 objects", async () => {
-    await resources.sync();
+    await resources.sync(structures.all[0]);
     expect(resources.all.length).toEqual(2);
   });
 
   it("should trigger eventerCallback twice when launching Resources sychronization", async () => {
     resources.eventer.on("loading", eventerCallback);
-    await resources.sync();
+    await resources.sync(structures.all[0]);
     expect(eventerCallback).toBeCalled();
     expect(eventerCallback.mock.calls.length).toEqual(2);
   });
