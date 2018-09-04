@@ -3,13 +3,17 @@ package fr.openent.mediacentre.controller;
 import fr.openent.mediacentre.Mediacentre;
 import fr.openent.mediacentre.export.ExportService;
 import fr.openent.mediacentre.export.impl.ExportServiceImpl;
+import fr.openent.mediacentre.service.EventService;
 import fr.openent.mediacentre.service.ResourceService;
+import fr.openent.mediacentre.service.impl.DefaultEventService;
 import fr.openent.mediacentre.service.impl.DefaultResourceService;
 import fr.wseduc.bus.BusAddress;
 import fr.wseduc.rs.Get;
+import fr.wseduc.rs.Post;
 import fr.wseduc.security.ActionType;
 import fr.wseduc.security.SecuredAction;
 import fr.wseduc.webutils.Either;
+import fr.wseduc.webutils.request.RequestUtils;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
@@ -29,6 +33,7 @@ public class MediacentreController extends ControllerHelper {
 
     private ExportService exportService;
     private final ResourceService resourceService;
+    private final EventService eventService;
     private Logger log = LoggerFactory.getLogger(MediacentreController.class);
     private EventBus eb = null;
 
@@ -36,6 +41,7 @@ public class MediacentreController extends ControllerHelper {
         super();
         eb = vertx.eventBus();
         this.exportService = new ExportServiceImpl(config);
+        this.eventService = new DefaultEventService(config.getString("event-collection", "gar-events"));
         this.resourceService = new DefaultResourceService(
                 vertx,
                 config.getString("gar-host"),
@@ -58,6 +64,16 @@ public class MediacentreController extends ControllerHelper {
             String structureId = request.params().contains("structure") ? request.getParam("structure") : user.getStructures().get(0);
             String userId = user.getUserId();
             this.resourceService.get(userId, structureId, getHost(request), arrayResponseHandler(request));
+        });
+    }
+
+    @Post("/event")
+    @SecuredAction(value = "", type = ActionType.AUTHENTICATED)
+    public void postEvent(HttpServerRequest request) {
+        RequestUtils.bodyToJson(request, pathPrefix + "event", body -> {
+            UserUtils.getUserInfos(eb, request, user -> {
+                eventService.add(body, user, defaultResponseHandler(request));
+            });
         });
     }
 

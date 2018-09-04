@@ -1,6 +1,6 @@
 import { _ } from "entcore";
 import { Mix, Eventer } from "entcore-toolkit";
-import { Type, Types, Helper, Structure } from "./index";
+import { Type, Types, Helper, Structure, Event } from "./index";
 import { TYPES } from "../definitions";
 
 import data from "./__mocks__/ressources";
@@ -10,6 +10,7 @@ export class Resource {
   idType: string;
   nomRessource: string;
   idEditeur: string;
+  nomEditeur: string;
   urlVignette: string;
   typePresentation: { code: string; nom: string };
   typePedagogique: Type[];
@@ -24,6 +25,8 @@ export class Resource {
   open() {
     const tab = window.open(this.urlAccesRessource, "_blank");
     tab.focus();
+    const event: Event = new Event(this);
+    event.save();
   }
 }
 

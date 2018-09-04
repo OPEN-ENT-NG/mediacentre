@@ -1,6 +1,7 @@
 declare let global: any;
 
 export const _ = global._;
+export const angular = global.angular;
 
 export const model = {
   me: {
