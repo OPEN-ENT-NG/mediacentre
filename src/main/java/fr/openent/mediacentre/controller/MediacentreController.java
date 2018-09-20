@@ -3,6 +3,7 @@ package fr.openent.mediacentre.controller;
 import fr.openent.mediacentre.Mediacentre;
 import fr.openent.mediacentre.export.ExportService;
 import fr.openent.mediacentre.export.impl.ExportServiceImpl;
+import fr.openent.mediacentre.security.WorkflowUtils;
 import fr.openent.mediacentre.service.EventService;
 import fr.openent.mediacentre.service.ResourceService;
 import fr.openent.mediacentre.service.TarService;
@@ -21,21 +22,13 @@ import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.HttpServerRequest;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
-import org.apache.commons.compress.utils.IOUtils;
 import org.entcore.common.controller.ControllerHelper;
-import org.entcore.common.http.response.DefaultResponseHandler;
 import org.entcore.common.user.UserUtils;
-import org.omg.PortableInterceptor.INACTIVE;
 
 import java.io.*;
-import java.util.zip.GZIPOutputStream;
 
 import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
 import static fr.wseduc.webutils.http.response.DefaultResponseHandler.arrayResponseHandler;
@@ -99,7 +92,8 @@ public class MediacentreController extends ControllerHelper {
         //defaultResponseHandler(request).handle(new Either.Left<String, JsonObject>("Toto"));
     }
 
-    @Get("testsftp")
+    @Get("/export")
+    @SecuredAction(value = WorkflowUtils.EXPORT , type = ActionType.WORKFLOW)
     public void testsftp(final HttpServerRequest request) {
         log.info("INIT SFTP SEND DATA READY");
         File directory = new File(config.getString("export-path"));
