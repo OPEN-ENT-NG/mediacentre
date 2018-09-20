@@ -5,6 +5,8 @@ import fr.openent.mediacentre.export.ExportService;
 import fr.openent.mediacentre.export.impl.ExportServiceImpl;
 import fr.openent.mediacentre.service.EventService;
 import fr.openent.mediacentre.service.ResourceService;
+import fr.openent.mediacentre.service.TarService;
+import fr.openent.mediacentre.service.impl.DefaultTarService;
 import fr.openent.mediacentre.service.impl.DefaultEventService;
 import fr.openent.mediacentre.service.impl.DefaultResourceService;
 import fr.wseduc.bus.BusAddress;
@@ -19,11 +21,21 @@ import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.compress.utils.IOUtils;
 import org.entcore.common.controller.ControllerHelper;
+import org.entcore.common.http.response.DefaultResponseHandler;
 import org.entcore.common.user.UserUtils;
+import org.omg.PortableInterceptor.INACTIVE;
+
+import java.io.*;
+import java.util.zip.GZIPOutputStream;
 
 import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
 import static fr.wseduc.webutils.http.response.DefaultResponseHandler.arrayResponseHandler;
@@ -32,22 +44,26 @@ import static fr.wseduc.webutils.http.response.DefaultResponseHandler.defaultRes
 public class MediacentreController extends ControllerHelper {
 
     private ExportService exportService;
+    private TarService tarService;
     private final ResourceService resourceService;
     private final EventService eventService;
+    private JsonObject sftpGarConfig = null;
     private Logger log = LoggerFactory.getLogger(MediacentreController.class);
     private EventBus eb = null;
 
     public MediacentreController(Vertx vertx, JsonObject config) {
         super();
         eb = vertx.eventBus();
+        this.sftpGarConfig = config.getJsonObject("gar-sftp");
         this.exportService = new ExportServiceImpl(config);
+        this.tarService = new DefaultTarService();
         this.eventService = new DefaultEventService(config.getString("event-collection", "gar-events"));
         this.resourceService = new DefaultResourceService(
                 vertx,
-                config.getString("gar-host"),
+                sftpGarConfig.getString("host"),
                 config.getString("id-ent"),
-                config.getString("cert-path"),
-                config.getString("key-path")
+                "",
+                sftpGarConfig.getString("sshkey")
         );
     }
 
@@ -85,20 +101,40 @@ public class MediacentreController extends ControllerHelper {
 
     @Get("testsftp")
     public void testsftp(final HttpServerRequest request) {
-        JsonObject test = new JsonObject().put("action","send")
-                .put("known-hosts","C:\\Users\\colenot\\.ssh\\known_hosts")
-                .put("hostname","213.32.49.235")
-                .put("port",24242)
-                .put("username","sftpODE")
-                .put("sshkey","C:\\CGI\\DATA\\ARANGER\\DATA\\Support\\Alimentation\\priv_key.ppk")
-                .put("local-file","C:\\Users\\colenot\\.ssh\\known_hosts")
-                .put("dist-file","/testtcol.txt");
-        eb.send("sftp", test,  handlerToAsyncHandler(new Handler<Message<JsonObject>>() {
-            @Override
-            public void handle(Message<JsonObject> message) {
-                defaultResponseHandler(request).handle(new Either.Left<String, JsonObject>("Toto"));
+        log.info("INIT SFTP SEND DATA READY");
+        File directory = new File(config.getString("export-path"));
+        tarService.compress(config.getString("export-archive-path"), directory, (Either<String, JsonObject> event) -> {
+            if(event.isRight() && event.right().getValue().containsKey("archive")) {
+                String archiveName = event.right().getValue().getString("archive");
+                //SFTP sender
+                JsonObject sendTOGar = new JsonObject().put("action", "send")
+                        .put("known-hosts", sftpGarConfig.getString("known-hosts"))
+                        .put("hostname", sftpGarConfig.getString("host"))
+                        .put("port", sftpGarConfig.getString("port"))
+                        .put("username", sftpGarConfig.getString("username"))
+                        .put("sshkey", sftpGarConfig.getString("sshkey"))
+                        .put("passphrase", sftpGarConfig.getString("passphrase"))
+                        .put("local-file", config.getString("export-archive-path") + archiveName)
+                        .put("dist-file", sftpGarConfig.getString("dir-dest") + archiveName);
+                eb.send("sftp", sendTOGar, handlerToAsyncHandler(new Handler<Message<JsonObject>>() {
+                    @Override
+                    public void handle(Message<JsonObject> message) {
+                        if(message.body().containsKey("status") && message.body().getString("status") == "error"){
+                            defaultResponseHandler(request).handle(new Either.Left<>(message.body().toString()));
+                        }
+                        else {
+                            request.response().setStatusCode(200).end();
+                        }
+                    }
+                }));
+
+            } else {
+                defaultResponseHandler(request).handle(new Either.Left<>(event.toString()));
             }
-        }));
+        });
+
+
+
         //exportService.launchExport(defaultResponseHandler(request));
         //defaultResponseHandler(request).handle(new Either.Left<String, JsonObject>("Toto"));
     }

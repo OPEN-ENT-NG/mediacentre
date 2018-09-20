@@ -1,26 +1,33 @@
-    {
-      "name": "fr.openent~mediacentre~1.0-SNAPSHOT",
-      "config": {
-        "main" : "fr.openent.mediacentre.Mediacentre",
-        "port" : 8102,
-        "app-name" : "Mediacentre",
-    	"app-address" : "/mediacentre",
-    	"app-icon" : "Mediacentre-large",
-        "host": "${host}",
-        "ssl" : $ssl,
-        "event-collection": "gar-events",
-        "auto-redeploy": false,
-        "userbook-host": "${host}",
-        "integration-mode" : "HTTP",
-        "app-registry.port" : 8012,
-        "mode" : "${mode}",
-        "entcore.port" : 8009,
-        "max-nodes": 10000,
-        "export-path": "data/",
-        "id-ent" : "NGPARIS",
-        "control-group" : "GAR",
-        "gar-host": "",
-        "cert-path": "",
-        "key-path": ""
-      }
+{
+  "name": "fr.openent~mediacentre~1.0-SNAPSHOT",
+  "config": {
+    "main" : "fr.openent.mediacentre.Mediacentre",
+    "port" : 8102,
+    "app-name" : "Mediacentre",
+    "app-address" : "/mediacentre",
+    "app-icon" : "Mediacentre-large",
+    "host": "${host}",
+    "ssl" : $ssl,
+    "event-collection": "gar-events",
+    "auto-redeploy": false,
+    "userbook-host": "${host}",
+    "integration-mode" : "HTTP",
+    "app-registry.port" : 8012,
+    "mode" : "${mode}",
+    "entcore.port" : 8009,
+    "max-nodes": 10000,
+    "export-path": "/srv/springboard/sftp_conf/data/",
+    "export-archive-path": "/srv/springboard/sftp_conf/data-compress/",
+    "id-ent" : "NGPARIS",
+    "control-group" : "GAR",Central Market
+    "gar-sftp" : {
+      "host": "${garSftpHost}",
+      "port": "${garSftpPort}",
+      "username": "${garSftpUsername}",
+      "passphrase": "${garSftpPassphrase}",
+      "sshkey": "${garSftpSshkey}",
+      "dir-dest": "${garSftpDirDest}",
+      "known-hosts": "/srv/springboard/sftp_conf/known_hosts"
     }
+  }
+}

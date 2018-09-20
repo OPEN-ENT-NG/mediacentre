@@ -58,6 +58,7 @@ dependencies {
   testCompile "org.entcore:tests:$entCoreVersion"
   testCompile 'io.gatling.highcharts:gatling-charts-highcharts:2.2.2'
   compile "fr.wseduc:vertx-cron-timer:$vertxCronTimer"
+  compile "org.apache.commons:commons-compress:$commonsCompress"
 }
 
 jar {
