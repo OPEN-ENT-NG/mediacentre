@@ -110,7 +110,7 @@ public class MediacentreController extends ControllerHelper {
                 JsonObject sendTOGar = new JsonObject().put("action", "send")
                         .put("known-hosts", sftpGarConfig.getString("known-hosts"))
                         .put("hostname", sftpGarConfig.getString("host"))
-                        .put("port", sftpGarConfig.getString("port"))
+                        .put("port", sftpGarConfig.getInteger("port"))
                         .put("username", sftpGarConfig.getString("username"))
                         .put("sshkey", sftpGarConfig.getString("sshkey"))
                         .put("passphrase", sftpGarConfig.getString("passphrase"))

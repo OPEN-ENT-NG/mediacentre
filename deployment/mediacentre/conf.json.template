@@ -22,7 +22,7 @@
     "control-group" : "GAR",
     "gar-sftp" : {
       "host": "${garSftpHost}",
-      "port": "${garSftpPort}",
+      "port": ${garSftpPort},
       "username": "${garSftpUsername}",
       "passphrase": "${garSftpPassphrase}",
       "sshkey": "${garSftpSshkey}",
