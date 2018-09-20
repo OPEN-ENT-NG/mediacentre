@@ -19,7 +19,7 @@
     "export-path": "/srv/springboard/sftp_conf/data/",
     "export-archive-path": "/srv/springboard/sftp_conf/data-compress/",
     "id-ent" : "NGPARIS",
-    "control-group" : "GAR",Central Market
+    "control-group" : "GAR",
     "gar-sftp" : {
       "host": "${garSftpHost}",
       "port": "${garSftpPort}",
