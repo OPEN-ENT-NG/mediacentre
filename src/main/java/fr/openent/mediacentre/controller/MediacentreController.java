@@ -41,6 +41,7 @@ public class MediacentreController extends ControllerHelper {
     private final ResourceService resourceService;
     private final EventService eventService;
     private JsonObject sftpGarConfig = null;
+    private JsonObject garRessourcesConfig = null;
     private Logger log = LoggerFactory.getLogger(MediacentreController.class);
     private EventBus eb = null;
 
@@ -48,15 +49,16 @@ public class MediacentreController extends ControllerHelper {
         super();
         eb = vertx.eventBus();
         this.sftpGarConfig = config.getJsonObject("gar-sftp");
+        this.garRessourcesConfig = config.getJsonObject("gar-ressources");
         this.exportService = new ExportServiceImpl(config);
         this.tarService = new DefaultTarService();
         this.eventService = new DefaultEventService(config.getString("event-collection", "gar-events"));
         this.resourceService = new DefaultResourceService(
                 vertx,
-                sftpGarConfig.getString("host"),
+                garRessourcesConfig.getString("host"),
                 config.getString("id-ent"),
-                "",
-                sftpGarConfig.getString("sshkey")
+                garRessourcesConfig.getString("cert"),
+                garRessourcesConfig.getString("key")
         );
     }
 
@@ -72,7 +74,7 @@ public class MediacentreController extends ControllerHelper {
         UserUtils.getUserInfos(eb, request, user -> {
             String structureId = request.params().contains("structure") ? request.getParam("structure") : user.getStructures().get(0);
             String userId = user.getUserId();
-            this.resourceService.get(userId, structureId, getHost(request), arrayResponseHandler(request));
+            this.resourceService.get(userId, structureId, garRessourcesConfig.getString("host"), arrayResponseHandler(request));
         });
     }
 

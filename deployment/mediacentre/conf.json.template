@@ -16,10 +16,16 @@
     "mode" : "${mode}",
     "entcore.port" : 8009,
     "max-nodes": 10000,
-    "export-path": "/srv/springboard/sftp_conf/data/",
-    "export-archive-path": "/srv/springboard/sftp_conf/data-compress/",
-    "id-ent" : "NGPARIS",
+    "export-path": "/srv/springboard/mediacentre/sftp_conf/data/",
+    "export-archive-path": "/srv/springboard/mediacentre/sftp_conf/data-compress/",
+    "id-ent" : "J1",
     "control-group" : "GAR",
+    "gar-id-ent" : "${garSftpUsername}",
+    "gar-ressources" : {
+      "host": "${garRessourcesHost}",
+      "cert": "${garRessourcesCert}",
+      "key": "${garRessourcesKey}"
+    },
     "gar-sftp" : {
       "host": "${garSftpHost}",
       "port": ${garSftpPort},
@@ -27,7 +33,7 @@
       "passphrase": "${garSftpPassphrase}",
       "sshkey": "${garSftpSshkey}",
       "dir-dest": "${garSftpDirDest}",
-      "known-hosts": "/srv/springboard/sftp_conf/known_hosts"
+      "known-hosts": "/srv/springboard/mediacentre/sftp_conf/known_hosts"
     }
   }
 }

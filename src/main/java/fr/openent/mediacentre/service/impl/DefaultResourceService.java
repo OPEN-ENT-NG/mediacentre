@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Date;
 import java.util.zip.GZIPInputStream;
 
@@ -61,9 +62,20 @@ public class DefaultResourceService implements ResourceService {
                 JsonArray results = event.right().getValue();
                 if (results.size() > 0) {
                     String uai = results.getJsonObject(0).getString("UAI");
-                    String resourcesUri = this.garHost + "/ressources/" + idEnt + "/" + uai + "/" + userId;
+                    String garHostNoProtocol = "";
+                    try {
+                        garHostNoProtocol = new URL(garHost).getHost().toString();
+                    } catch (Exception e) {
+                        handler.handle(new Either.Left<>("[DefaultResourceService@get] Bad gar host url : " + garHost));
+                    }
+                    String resourcesUri = garHost + "/ressources/" + idEnt + "/" + uai + "/" + userId;
+                    log.info("Call Gar Ressource "+ resourcesUri);
                     final HttpClientRequest client = httpClient.get(resourcesUri, response -> {
+                        log.info("Call RESPONSE Gar Ressource " + response.statusCode());
                         if (response.statusCode() != 200) {
+                            log.info("Call RESPONSE Gar Ressource != 200");
+                            log.info(response);
+
                             handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to connect to GAR servers: " + response.statusMessage()));
                         } else {
                             Buffer responseBuffer = new BufferImpl();
@@ -76,8 +88,9 @@ public class DefaultResourceService implements ResourceService {
                         }
                     }).putHeader("Accept", "application/json")
                             .putHeader("Accept-Encoding", "gzip, deflate")
-                            .putHeader("Host", hostname)
-                            .putHeader("Date", Long.toString(new Date().getTime()));
+                            .putHeader("Host", garHostNoProtocol)
+                            .putHeader("Cache-Control", "no-cache")
+                            .putHeader("Date", new Date().toString());
 
                     client.end();
                 } else {
@@ -116,7 +129,6 @@ public class DefaultResourceService implements ResourceService {
                 .setSsl("https".equals(uri.getScheme()))
                 .setKeepAlive(true)
                 .setPemKeyCertOptions(getPemKeyCertOptions(certPath, keyPath))
-                .setProxyOptions(new ProxyOptions().setHost("10.83.199.99").setPort(3127).setUsername("sled").setPassword("sled"));
         return vertx.createHttpClient(options);
     }
 

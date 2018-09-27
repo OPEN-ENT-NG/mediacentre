@@ -2,8 +2,10 @@ import { _ } from "entcore";
 import { Mix, Eventer } from "entcore-toolkit";
 import { Type, Types, Helper, Structure, Event } from "./index";
 import { TYPES } from "../definitions";
+import http from 'axios';
 
-import data from "./__mocks__/ressources";
+
+//import dataMock from "./__mocks__/ressources";
 
 export class Resource {
   idRessource: string;
@@ -47,14 +49,19 @@ export class Resources {
     this.typologies = new Types();
   }
 
-  async sync(structure: Structure): Promise<void> {
+
+    async sync(structure: Structure): Promise<void> {
     //TODO Call https methods. Use a provider to get data
     this.eventer.trigger("loading", { loading: true });
     console.log(
       `Loading resources for structure ${structure.getId()} - ${structure.getName()}`
     );
-    const { listeRessources } = data;
-    this.all = Mix.castArrayAs(Resource, listeRessources.ressource);
+
+    let url = `/mediacentre/resources?structure=${structure.getId()}`;
+    let {data} = await http.get(url);
+
+    //const { listeRessources } = dataMock;
+    this.all = Mix.castArrayAs(Resource, data);
     this.levels.all = Mix.castArrayAs(Type, this.getValues(TYPES.level));
     this.teachingFields.all = Mix.castArrayAs(
       Type,
