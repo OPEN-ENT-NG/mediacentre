@@ -128,7 +128,7 @@ public class DefaultResourceService implements ResourceService {
                 .setTrustAll(true)
                 .setSsl("https".equals(uri.getScheme()))
                 .setKeepAlive(true)
-                .setPemKeyCertOptions(getPemKeyCertOptions(certPath, keyPath))
+                .setPemKeyCertOptions(getPemKeyCertOptions(certPath, keyPath));
         return vertx.createHttpClient(options);
     }
 
