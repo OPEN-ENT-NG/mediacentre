@@ -44,10 +44,12 @@ public class MediacentreController extends ControllerHelper {
     private JsonObject garRessourcesConfig = null;
     private Logger log = LoggerFactory.getLogger(MediacentreController.class);
     private EventBus eb = null;
+    private JsonObject config;
 
     public MediacentreController(Vertx vertx, JsonObject config) {
         super();
         eb = vertx.eventBus();
+        this.config = config;
         this.sftpGarConfig = config.getJsonObject("gar-sftp");
         this.garRessourcesConfig = config.getJsonObject("gar-ressources");
         this.exportService = new ExportServiceImpl(config);
@@ -140,6 +142,13 @@ public class MediacentreController extends ControllerHelper {
         String action = message.body().getString("action", "");
         switch (action) {
             case "export" : exportService.launchExport(message);
+                break;
+            case "getConfig":
+                log.info("MEDIACENTRE GET CONFIG BUS RECEPTION");
+                JsonObject data = (new JsonObject())
+                        .put("status", "ok")
+                        .put("message", config);
+                message.reply(data);
                 break;
             default:
                 log.error("Mediacentre invalid.action " + action);

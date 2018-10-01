@@ -9,6 +9,8 @@
 node_modules
 Schooltoring.iml
 .idea
+.iml
+*.iml
 rev-manifest.json
 src/main/resources/public/dist
 src/main/resources/public/template/entcore
