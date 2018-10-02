@@ -5,7 +5,7 @@ import { TYPES } from "../definitions";
 import http from 'axios';
 
 
-//import dataMock from "./__mocks__/ressources";
+import dataMock from "./__mocks__/ressources";
 
 export class Resource {
   idRessource: string;
@@ -57,11 +57,11 @@ export class Resources {
       `Loading resources for structure ${structure.getId()} - ${structure.getName()}`
     );
 
-    let url = `/mediacentre/resources?structure=${structure.getId()}`;
-    let {data} = await http.get(url);
+    //let url = `/mediacentre/resources?structure=${structure.getId()}`;
+    //let {data} = await http.get(url);
 
-    //const { listeRessources } = dataMock;
-    this.all = Mix.castArrayAs(Resource, data);
+    const { listeRessources } = dataMock;
+    this.all = Mix.castArrayAs(Resource, listeRessources.ressource);
     this.levels.all = Mix.castArrayAs(Type, this.getValues(TYPES.level));
     this.teachingFields.all = Mix.castArrayAs(
       Type,
