@@ -99,42 +99,57 @@ public class MediacentreController extends ControllerHelper {
     @Get("/export")
     @SecuredAction(value = WorkflowUtils.EXPORT , type = ActionType.WORKFLOW)
     public void testsftp(final HttpServerRequest request) {
-        log.info("INIT SFTP SEND DATA READY");
-        File directory = new File(config.getString("export-path"));
-        tarService.compress(config.getString("export-archive-path"), directory, (Either<String, JsonObject> event) -> {
-            if(event.isRight() && event.right().getValue().containsKey("archive")) {
-                String archiveName = event.right().getValue().getString("archive");
-                //SFTP sender
-                JsonObject sendTOGar = new JsonObject().put("action", "send")
-                        .put("known-hosts", sftpGarConfig.getString("known-hosts"))
-                        .put("hostname", sftpGarConfig.getString("host"))
-                        .put("port", sftpGarConfig.getInteger("port"))
-                        .put("username", sftpGarConfig.getString("username"))
-                        .put("sshkey", sftpGarConfig.getString("sshkey"))
-                        .put("passphrase", sftpGarConfig.getString("passphrase"))
-                        .put("local-file", config.getString("export-archive-path") + archiveName)
-                        .put("dist-file", sftpGarConfig.getString("dir-dest") + archiveName);
-                eb.send("sftp", sendTOGar, handlerToAsyncHandler(new Handler<Message<JsonObject>>() {
-                    @Override
-                    public void handle(Message<JsonObject> message) {
-                        if(message.body().containsKey("status") && message.body().getString("status") == "error"){
-                            defaultResponseHandler(request).handle(new Either.Left<>(message.body().toString()));
-                        }
-                        else {
-                            request.response().setStatusCode(200).end();
-                        }
+        log.info("Start Export (Generate xml files, compress to tar.gz, generate md5, send to GAR by sftp");
+        emptyDIrectory(config.getString("export-path"));
+        log.info("Generate XML files");
+        exportService.launchExport((Either<String, JsonObject> event1) -> {
+            if (event1.isRight()) {
+                File directory = new File(config.getString("export-path"));
+                log.info("Tar.GZ to Compress");
+                emptyDIrectory(config.getString("export-archive-path"));
+                tarService.compress(config.getString("export-archive-path"), directory, (Either<String, JsonObject> event2) -> {
+                    if(event2.isRight() && event2.right().getValue().containsKey("archive")) {
+                        String archiveName = event2.right().getValue().getString("archive");
+                        //SFTP sender
+                        log.info("Send to GAR by sftp");
+                        JsonObject sendTOGar = new JsonObject().put("action", "send")
+                                .put("known-hosts", sftpGarConfig.getString("known-hosts"))
+                                .put("hostname", sftpGarConfig.getString("host"))
+                                .put("port", sftpGarConfig.getInteger("port"))
+                                .put("username", sftpGarConfig.getString("username"))
+                                .put("sshkey", sftpGarConfig.getString("sshkey"))
+                                .put("passphrase", sftpGarConfig.getString("passphrase"))
+                                .put("local-file", config.getString("export-archive-path") + archiveName)
+                                .put("dist-file", sftpGarConfig.getString("dir-dest") + archiveName);
+                        eb.send("sftp", sendTOGar, handlerToAsyncHandler(new Handler<Message<JsonObject>>() {
+                            @Override
+                            public void handle(Message<JsonObject> message) {
+                                if(message.body().containsKey("status") && message.body().getString("status") == "error"){
+                                    defaultResponseHandler(request).handle(new Either.Left<>(message.body().toString()));
+                                }
+                                else {
+                                    request.response().setStatusCode(200).end();
+                                }
+                            }
+                        }));
+                    } else {
+                        defaultResponseHandler(request).handle(new Either.Left<>(event2.toString()));
                     }
-                }));
-
-            } else {
-                defaultResponseHandler(request).handle(new Either.Left<>(event.toString()));
+                });
+            }
+            else{
+                defaultResponseHandler(request).handle(new Either.Left<>(event1.toString()));
             }
         });
+    }
 
-
-
-        //exportService.launchExport(defaultResponseHandler(request));
-        //defaultResponseHandler(request).handle(new Either.Left<String, JsonObject>("Toto"));
+    private void emptyDIrectory (String path){
+        File index = new File(path);
+        String[] entries = index.list();
+        for (String s : entries) {
+            File currentFile = new File(index.getPath(), s);
+            currentFile.delete();
+        }
     }
 
     @BusAddress(Mediacentre.MEDIACENTRE_ADDRESS)

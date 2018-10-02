@@ -15,4 +15,4 @@ node:
     - ~/config/.gitconfig:/home/node/.gitconfig
     - ~/config/.npmrc:/home/node/.npmrc
     - ~/config/.bowerrc:/home/node/.bowerrc
-    - ~/.gradle:/home/node/.gradle
+    - ~/.gradle:/home/gradle/.gradle

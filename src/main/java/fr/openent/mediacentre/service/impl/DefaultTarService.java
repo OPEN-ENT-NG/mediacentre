@@ -11,10 +11,12 @@ import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.utils.IOUtils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
 import java.util.Arrays;
 
 public class DefaultTarService implements TarService {
@@ -87,7 +89,19 @@ public class DefaultTarService implements TarService {
                 log.info("Compress ok");
                 out.close();
                 result.put("status", true);
-                handler.handle(new Either.Right<>(result));
+                try {
+                    String pathMd5 = dirDest + result.getString("archive");
+                    String md5 = DefaultTarService.getMD5Checksum(pathMd5);
+                    InputStream stream = new ByteArrayInputStream(md5.getBytes(StandardCharsets.UTF_8));
+                    handler.handle(new Either.Right<>(result));
+                } catch (Exception e) {
+                    log.info("Can't generate md5");
+                    e.printStackTrace();
+                    handler.handle(new Either.Left<>(e.toString()));
+                }
+
+
+
 
             } catch (IOException e) {
                 log.info("Can't close TAR.GZ output stream");
@@ -99,5 +113,34 @@ public class DefaultTarService implements TarService {
             result.put("status", true);
             handler.handle(new Either.Right<>(result));
         }
+    }
+
+    public static byte[] createChecksum(String filename) throws Exception {
+        InputStream fis = new FileInputStream(filename);
+
+        byte[] buffer = new byte[1024];
+        MessageDigest complete = MessageDigest.getInstance("MD5");
+        int numRead;
+
+        do {
+            numRead = fis.read(buffer);
+            if (numRead > 0) {
+                complete.update(buffer, 0, numRead);
+            }
+        } while (numRead != -1);
+
+        fis.close();
+        return complete.digest();
+    }
+
+
+    public static String getMD5Checksum(String filename) throws Exception {
+        byte[] b = createChecksum(filename);
+        String result = "";
+
+        for (int i = 0; i < b.length; i++) {
+            result += Integer.toString((b[i] & 0xff) + 0x100, 16).substring(1);
+        }
+        return result;
     }
 }
