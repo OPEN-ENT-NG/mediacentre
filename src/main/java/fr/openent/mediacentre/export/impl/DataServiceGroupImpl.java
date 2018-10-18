@@ -95,7 +95,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
     }
 
     /**
-     * Process groups fos, validate data and save to xml
+     * Process groups and classes fos, validate data and save to xml
      * @param handler result handler
      */
     private void getAndProcessGroupsFosFromNeo4j(final Handler<Either<String, JsonObject>> handler) {
@@ -105,7 +105,19 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
             public void handle(Either<String, JsonArray> groupFosResults) {
                 if( validResponseNeo4j(groupFosResults, handler) ) {
                     Either<String,JsonObject> result = processGroupFosInfo( groupFosResults.right().getValue() );
-                    handler.handle(result);
+                    if(result.isRight()) {
+                        getClassesFosFromNeo4j(new Handler<Either<String, JsonArray>>() {
+                            @Override
+                            public void handle(Either<String, JsonArray> groupFosResults) {
+                                if (validResponseNeo4j(groupFosResults, handler)) {
+                                    Either<String, JsonObject> result = processClassFosInfo(groupFosResults.right().getValue());
+                                    handler.handle(result);
+                                }
+                            }
+                        });
+                    }else {
+                        handler.handle(result);
+                    }
                 }
             }
         });
@@ -134,8 +146,9 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "UNION ";
         String groupsQuery = "MATCH (u:User)-[COMMUNIQUE]->(fg:FunctionalGroup)-[d2:DEPENDS]->" +
                 "(s:Structure)<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
-                "WHERE u.profiles = ['Student'] " +
+                "WHERE u.profiles = ['Student'] OR u.profiles = ['Teacher']" +
                 "OPTIONAL MATCH (c:Class)<-[d:DEPENDS]-(pg:ProfileGroup)<-[IN]-(u:User) " +
+                "WHERE  u.profiles = ['Student'] " +
                 "with s.UAI as uai, " +
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as id, " +
                 "collect(distinct split(c.externalId,\"$\")[1]) as dividlist, " +
@@ -204,10 +217,47 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * Field of study code may be prefixed by ACADEMY-
      * @param handler results
      */
+    private void getClassesFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
+        String query = "MATCH (u:User)-[t:TEACHES]->(sub:Subject)-[SUBJECT]->(s:Structure)" +
+                "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                //TODO ici obligé de gérer que le code matière a été suffixé par GAR- dans mon annuaire multi-académique
+                // il faut pouvoir gérer le cas mono et multi-académique
+                "with u.id as uid,  t.classes as classesList, split(sub.code,\"-\")[1] as code, s.UAI as uai " +
+                "unwind(classesList) as classes ";
+        String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
+                "uid as `" + PERSON_ID + "`, " +
+                "split(classes,\"$\")[1] as `" + GROUPS_CODE + "`, " +
+                "collect(code) as `" + STUDYFIELD_CODE + "` " +
+                "order by `" + PERSON_ID + "`, `" + STRUCTURE_UAI + "`";
+        neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
+    }
+
+    /**
+     * Process classes subjects
+     * @param classSubject Array of class subjects from Neo4j
+     */
+    private Either<String,JsonObject> processClassFosInfo(JsonArray classSubject) {
+        Either<String,JsonObject> event =
+                processSimpleArray(classSubject, GROUPS_CLASS_SUBJECT_NODE, GROUPS_SUBJECT_NODE_MANDATORY);
+        if(event.isLeft()) {
+            return new Either.Left<>("Error when processing classes fos : " + event.left().getValue());
+        } else {
+            return event;
+        }
+    }
+
+    /**
+     * Get groups fields of study from Neo4j
+     * Use external id for groups when available
+     * Field of study code may be prefixed by ACADEMY-
+     * @param handler results
+     */
     private void getGroupsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (u:User)-[t:TEACHES]->(sub:Subject)-[SUBJECT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
-                "with u.id as uid, t.groups + t.classes as grouplist, sub.code as code, s.UAI as uai " +
+                //TODO ici obligé de gérer que le code matière a été suffixé par GAR- dans mon annuaire multi-académique
+                // il faut pouvoir gérer le cas mono et multi-académique
+                "with u.id as uid, t.groups as grouplist, split(sub.code,\"-\")[1] as code, s.UAI as uai " +
                 "unwind(grouplist) as group ";
         String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
@@ -223,7 +273,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      */
     private Either<String,JsonObject> processGroupFosInfo(JsonArray groupSubject) {
         Either<String,JsonObject> event =
-                processSimpleArray(groupSubject, GROUPS_SUBJECT_NODE, GROUPS_SUBJECT_NODE_MANDATORY);
+                processSimpleArray(groupSubject, GROUPS_GROUP_SUBJECT_NODE, GROUPS_SUBJECT_NODE_MANDATORY);
         if(event.isLeft()) {
             return new Either.Left<>("Error when processing groups fos : " + event.left().getValue());
         } else {

@@ -7,6 +7,8 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
+import java.util.ArrayList;
+
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
 import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
@@ -132,7 +134,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 "u.lastName as `" + PERSON_PATRO_NAME + "`, " +
                 "u.lastName as `" + PERSON_NAME + "`, " +
                 "u.firstName as `" + PERSON_FIRST_NAME + "`, " +
-                "u.otherNames as `" + PERSON_OTHER_NAMES + "`, " +
+                "coalesce(u.otherNames, [u.firstName]) as `" + PERSON_OTHER_NAMES + "`, " +
                 //TODO GARPersonCivilite
                 "sr.UAI as `" + PERSON_STRUCT_ATTACH + "`, " +
                 "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
@@ -160,8 +162,6 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 }
 
                 processProfiles(student, STUDENT_PROFILE, null);
-
-
 
                 if(isMandatoryFieldsAbsent(student, STUDENT_NODE_MANDATORY)) {
                     log.warn("Mediacentre : mandatory attribut for Student : " + student);

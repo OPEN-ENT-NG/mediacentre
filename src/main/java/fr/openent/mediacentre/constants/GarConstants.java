@@ -48,7 +48,8 @@ public class GarConstants {
     public static final String GROUPS_ROOT = "men:GAR-ENT-Groupe";
     public static final String GROUPS_NODE = "men:GARGroupe";
     public static final String GROUPS_PERSON_NODE = "men:GARPersonGroupe";
-    public static final String GROUPS_SUBJECT_NODE = "men:GAREnsClasseMatiere";
+    public static final String GROUPS_CLASS_SUBJECT_NODE = "men:GAREnsClasseMatiere";
+    public static final String GROUPS_GROUP_SUBJECT_NODE = "men:GAREnsGroupeMatiere";
     public static final String GROUPS_FILE_PARAM = "Groupe";
     public static final String GROUPS_DIVISION_NAME = "DIVISION";
     public static final String GROUPS_GROUP_NAME = "GROUPE";
@@ -79,11 +80,11 @@ public class GarConstants {
     public static final String[] GROUPS_PERSON_NODE_MANDATORY = {GROUPS_CODE,STRUCTURE_UAI,PERSON_ID};
     public static final String[] GROUPS_SUBJECT_NODE_MANDATORY = {GROUPS_CODE,STRUCTURE_UAI,PERSON_ID,STUDYFIELD_CODE};
     public static final String[] STUDENT_NODE_MANDATORY = {PERSON_STRUCTURE,PERSON_ID,PERSON_PROFILES,
-                                                            PERSON_NAME,PERSON_FIRST_NAME};
+                                                            PERSON_NAME,PERSON_FIRST_NAME, PERSON_OTHER_NAMES};
     public static final String[] PERSON_MEF_NODE_MANDATORY = {STRUCTURE_UAI,PERSON_ID,MEF_CODE};
     public static final String[] STUDENT_STUDYFIELD_NODE_MANDATORY = {STRUCTURE_UAI,PERSON_ID,STUDYFIELD_CODE};
 
     public static final String[] TEACHER_NODE_MANDATORY = {PERSON_STRUCTURE,PERSON_ID,PERSON_PROFILES,
-                                                            PERSON_NAME,PERSON_FIRST_NAME};
+                                                            PERSON_NAME,PERSON_FIRST_NAME, PERSON_OTHER_NAMES};
     public static final String[] RESP_NODE_MANDATORY = {PERSON_ID,PERSON_NAME,PERSON_FIRST_NAME};
 }

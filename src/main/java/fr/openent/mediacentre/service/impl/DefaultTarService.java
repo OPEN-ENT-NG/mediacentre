@@ -13,9 +13,6 @@ import org.apache.commons.compress.utils.IOUtils;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.Arrays;
 
@@ -59,9 +56,10 @@ public class DefaultTarService implements TarService {
             File[] children = DataFolder.listFiles();
             if (children != null) {
                 File first = children[0];
-                String archiveName = extractArchiveName(first.getName()) + ".tar.gz";
-                out = getTarArchiveOutputStream(dirDest + archiveName);
-                result.put("archive", archiveName);
+                String archiveName = extractArchiveName(first.getName());
+                out = getTarArchiveOutputStream(dirDest + archiveName + ".tar.gz");
+                result.put("archive", archiveName + ".tar.gz");
+                result.put("md5File", archiveName + ".md5");
                 for (File child : children) {
                     log.info("Add " + first.getName() +" on archive " + archiveName);
                     out.putArchiveEntry(new TarArchiveEntry(child, child.getName()));
@@ -89,23 +87,15 @@ public class DefaultTarService implements TarService {
                 log.info("Compress ok");
                 out.close();
                 result.put("status", true);
-                try {
-                    String pathMd5 = dirDest + result.getString("archive");
-                    String md5 = DefaultTarService.getMD5Checksum(pathMd5);
-                    InputStream stream = new ByteArrayInputStream(md5.getBytes(StandardCharsets.UTF_8));
-                    handler.handle(new Either.Right<>(result));
-                } catch (Exception e) {
-                    log.info("Can't generate md5");
-                    e.printStackTrace();
-                    handler.handle(new Either.Left<>(e.toString()));
-                }
-
-
-
-
-            } catch (IOException e) {
-                log.info("Can't close TAR.GZ output stream");
-                e.printStackTrace();
+                String tarToMd5 = (dirDest + result.getString("archive"));
+                String md5 = DefaultTarService.getMD5Checksum(tarToMd5);
+                OutputStream outputStream = new FileOutputStream(dirDest + result.getString("md5File"));
+                InputStream stream = new ByteArrayInputStream(md5.getBytes(StandardCharsets.UTF_8));
+                IOUtils.copy(stream, outputStream);
+                outputStream.close();
+                handler.handle(new Either.Right<>(result));
+            } catch (Exception e) {
+                log.info("Can't create MD5", e);
                 handler.handle(new Either.Left<>(e.toString()));
             }
         }

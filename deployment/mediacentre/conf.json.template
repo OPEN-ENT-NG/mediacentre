@@ -1,5 +1,5 @@
 {
-  "name": "fr.openent~mediacentre~1.0.0",
+  "name": "fr.openent~mediacentre~1.2.0",
   "config": {
     "main" : "fr.openent.mediacentre.Mediacentre",
     "port" : 8102,
@@ -16,11 +16,11 @@
     "mode" : "${mode}",
     "entcore.port" : 8009,
     "max-nodes": 10000,
-    "export-path": "/srv/springboard/mediacentre/sftp_conf/data/",
-    "export-archive-path": "/srv/springboard/mediacentre/sftp_conf/data-compress/",
-    "id-ent" : "J1",
-    "control-group" : "GAR",
-    "gar-id-ent" : "${garSftpUsername}",
+    "export-path": "${garExportPath}data/",
+    "export-archive-path": "${garExportPath}data-compress/",
+    "export-cron": "${garExportCron}",
+    "id-ent" : "${garIdENT}",
+    "control-group" : "RESP-AFFECT-GAR",
     "gar-ressources" : {
       "host": "${garRessourcesHost}",
       "cert": "${garRessourcesCert}",
@@ -33,7 +33,7 @@
       "passphrase": "${garSftpPassphrase}",
       "sshkey": "${garSftpSshkey}",
       "dir-dest": "${garSftpDirDest}",
-      "known-hosts": "/srv/springboard/mediacentre/sftp_conf/known_hosts"
+      "known-hosts": "${garSftpKnownHost}"
     }
   }
 }

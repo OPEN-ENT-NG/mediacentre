@@ -6,7 +6,7 @@ import java.util.List;
 
 public class WorkflowUtils {
 
-    static public final String EXPORT = "mediacentre.export";
+    static public final String EXPORT = "mediacentre.launch_export";
 
     private WorkflowUtils() {
         throw new IllegalAccessError("Utility class");

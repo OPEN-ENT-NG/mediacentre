@@ -8,6 +8,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -106,7 +107,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 "u.lastName as `" + PERSON_PATRO_NAME + "`, " +
                 "u.lastName as `" + PERSON_NAME + "`, " +
                 "u.firstName as `" + PERSON_FIRST_NAME + "`, " +
-                "u.otherNames as `" + PERSON_OTHER_NAMES + "`, " +
+                "coalesce(u.otherNames, [u.firstName]) as `" + PERSON_OTHER_NAMES + "`, " +
                 //TODO GARPersonCivilite
                 "sr.UAI as `" + PERSON_STRUCT_ATTACH + "`, " +
                 "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
@@ -133,7 +134,6 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                             + teacher.getString("u.id", "unknown"));
                     continue;
                 }
-
 
                 Map<String,String> userStructProfiles = new HashMap<>();
 

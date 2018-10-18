@@ -11,6 +11,7 @@ import fr.openent.mediacentre.service.impl.DefaultTarService;
 import fr.openent.mediacentre.service.impl.DefaultEventService;
 import fr.openent.mediacentre.service.impl.DefaultResourceService;
 import fr.wseduc.bus.BusAddress;
+import fr.wseduc.cron.CronTrigger;
 import fr.wseduc.rs.Get;
 import fr.wseduc.rs.Post;
 import fr.wseduc.security.ActionType;
@@ -29,6 +30,7 @@ import org.entcore.common.controller.ControllerHelper;
 import org.entcore.common.user.UserUtils;
 
 import java.io.*;
+import java.text.ParseException;
 
 import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
 import static fr.wseduc.webutils.http.response.DefaultResponseHandler.arrayResponseHandler;
@@ -40,6 +42,7 @@ public class MediacentreController extends ControllerHelper {
     private TarService tarService;
     private final ResourceService resourceService;
     private final EventService eventService;
+    private final Vertx vertx;
     private JsonObject sftpGarConfig = null;
     private JsonObject garRessourcesConfig = null;
     private Logger log = LoggerFactory.getLogger(MediacentreController.class);
@@ -50,6 +53,7 @@ public class MediacentreController extends ControllerHelper {
         super();
         eb = vertx.eventBus();
         this.config = config;
+        this.vertx = vertx;
         this.sftpGarConfig = config.getJsonObject("gar-sftp");
         this.garRessourcesConfig = config.getJsonObject("gar-ressources");
         this.exportService = new ExportServiceImpl(config);
@@ -62,6 +66,7 @@ public class MediacentreController extends ControllerHelper {
                 garRessourcesConfig.getString("cert"),
                 garRessourcesConfig.getString("key")
         );
+        this.launchExport();
     }
 
     @Get("")
@@ -90,15 +95,32 @@ public class MediacentreController extends ControllerHelper {
         });
     }
 
-    @Get("testexport")
-    public void testExport(HttpServerRequest request) {
-        exportService.launchExport(defaultResponseHandler(request));
-        //defaultResponseHandler(request).handle(new Either.Left<String, JsonObject>("Toto"));
+
+    @Get("/launchExport")
+    @SecuredAction(value = WorkflowUtils.EXPORT, type = ActionType.WORKFLOW)
+    public void launchExportFromRoute(HttpServerRequest request) {
+        //this.launchExport();
+        request.response().setStatusCode(200).end("Import started");
     }
 
-    @Get("/export")
-    @SecuredAction(value = WorkflowUtils.EXPORT , type = ActionType.WORKFLOW)
-    public void testsftp(final HttpServerRequest request) {
+    private void launchExport() {
+        log.info("Start lauchExport (GAR export)------");
+        try {
+            new CronTrigger(vertx, config.getString("export-cron")).schedule(new Handler<Long>() {
+                @Override
+                public void handle(Long event) {
+                    exportAndSend();
+                }
+            });
+
+        } catch (ParseException e) {
+            log.error("cron GAR failed");
+            log.fatal(e.getMessage(), e);
+            return;
+        }
+    }
+
+    private void exportAndSend() {
         log.info("Start Export (Generate xml files, compress to tar.gz, generate md5, send to GAR by sftp");
         emptyDIrectory(config.getString("export-path"));
         log.info("Generate XML files");
@@ -111,7 +133,7 @@ public class MediacentreController extends ControllerHelper {
                     if(event2.isRight() && event2.right().getValue().containsKey("archive")) {
                         String archiveName = event2.right().getValue().getString("archive");
                         //SFTP sender
-                        log.info("Send to GAR by sftp");
+                        log.info("Send to GAR tar GZ by sftp: "+ archiveName);
                         JsonObject sendTOGar = new JsonObject().put("action", "send")
                                 .put("known-hosts", sftpGarConfig.getString("known-hosts"))
                                 .put("hostname", sftpGarConfig.getString("host"))
@@ -121,24 +143,32 @@ public class MediacentreController extends ControllerHelper {
                                 .put("passphrase", sftpGarConfig.getString("passphrase"))
                                 .put("local-file", config.getString("export-archive-path") + archiveName)
                                 .put("dist-file", sftpGarConfig.getString("dir-dest") + archiveName);
-                        eb.send("sftp", sendTOGar, handlerToAsyncHandler(new Handler<Message<JsonObject>>() {
-                            @Override
-                            public void handle(Message<JsonObject> message) {
-                                if(message.body().containsKey("status") && message.body().getString("status") == "error"){
-                                    defaultResponseHandler(request).handle(new Either.Left<>(message.body().toString()));
-                                }
-                                else {
-                                    request.response().setStatusCode(200).end();
-                                }
+                        eb.send("sftp", sendTOGar, handlerToAsyncHandler(message -> {
+                            if(message.body().containsKey("status") && message.body().getString("status") == "error"){
+                                log.info("FAILED Send to GAR tar GZ by sftp");
+                            }
+                            else {
+                                String md5File = event2.right().getValue().getString("md5File");
+                                log.info("Send to GAR md5 by sftp: " + md5File);
+                                sendTOGar
+                                        .put("local-file", config.getString("export-archive-path") + md5File)
+                                        .put("dist-file", sftpGarConfig.getString("dir-dest") + md5File);
+                                eb.send("sftp", sendTOGar, handlerToAsyncHandler(message1 -> {
+                                    if (message1.body().containsKey("status") && message1.body().getString("status") == "error") {
+                                        log.info("FAILED Send to Md5 by sftp");
+                                    } else {
+                                        log.info("SUCCESS Export and Send to GAR");
+                                    }
+                                }));
                             }
                         }));
                     } else {
-                        defaultResponseHandler(request).handle(new Either.Left<>(event2.toString()));
+                        log.error("Failed Export and Send to GAR");
                     }
                 });
             }
             else{
-                defaultResponseHandler(request).handle(new Either.Left<>(event1.toString()));
+                log.error("Failed Export and Send to GAR");
             }
         });
     }
