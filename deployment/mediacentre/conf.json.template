@@ -1,18 +1,39 @@
-    {
-      "name": "fr.openent~mediacentre~0.1-SNAPSHOT",
-      "config": {
-        "main" : "fr.openent.mediacentre.Mediacentre",
-        "port" : 8102,
-        "app-name" : "Mediacentre",
-    	"app-address" : "/mediacentre",
-    	"app-icon" : "Mediacentre-large",
-        "host": "${host}",
-        "ssl" : $ssl,
-        "auto-redeploy": false,
-        "userbook-host": "${host}",
-        "integration-mode" : "HTTP",
-        "app-registry.port" : 8012,
-        "mode" : "${mode}",
-        "entcore.port" : 8009
-      }
+{
+  "name": "fr.openent~mediacentre~1.0.0",
+  "config": {
+    "main" : "fr.openent.mediacentre.Mediacentre",
+    "port" : 8102,
+    "app-name" : "Mediacentre",
+    "app-address" : "/mediacentre",
+    "app-icon" : "Mediacentre-large",
+    "host": "${host}",
+    "ssl" : $ssl,
+    "event-collection": "gar-events",
+    "auto-redeploy": false,
+    "userbook-host": "${host}",
+    "integration-mode" : "HTTP",
+    "app-registry.port" : 8012,
+    "mode" : "${mode}",
+    "entcore.port" : 8009,
+    "max-nodes": 10000,
+    "export-path": "/srv/springboard/mediacentre/sftp_conf/data/",
+    "export-archive-path": "/srv/springboard/mediacentre/sftp_conf/data-compress/",
+    "id-ent" : "J1",
+    "control-group" : "GAR",
+    "gar-id-ent" : "${garSftpUsername}",
+    "gar-ressources" : {
+      "host": "${garRessourcesHost}",
+      "cert": "${garRessourcesCert}",
+      "key": "${garRessourcesKey}"
+    },
+    "gar-sftp" : {
+      "host": "${garSftpHost}",
+      "port": ${garSftpPort},
+      "username": "${garSftpUsername}",
+      "passphrase": "${garSftpPassphrase}",
+      "sshkey": "${garSftpSshkey}",
+      "dir-dest": "${garSftpDirDest}",
+      "known-hosts": "/srv/springboard/mediacentre/sftp_conf/known_hosts"
     }
+  }
+}

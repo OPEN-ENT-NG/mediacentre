@@ -1,0 +1,36 @@
+<div class="row">
+    <h4>
+        <i18n>mediacentre.filter.title</i18n>
+    </h4>
+    <div>
+        <multi-combo title="[[ lang.translate('mediacentre.levels') ]]" combo-model="resources.levels.all" search-on="nom" order-by="nom"
+            filtered-model="search.levels" labels="labels"></multi-combo>
+        <div class="row bagde-list">
+            <span class="badge level" ng-repeat="level in search.levels">[[ level.toString() ]]</span>
+        </div>
+    </div>
+    <div>
+        <multi-combo title="[[ lang.translate('mediacentre.teachingFields') ]]" combo-model="resources.teachingFields.all" search-on="nom"
+            order-by="nom" filtered-model="search.teachingFields" labels="labels"></multi-combo>
+        <div class="row bagde-list">
+            <span class="badge field" ng-repeat="field in search.teachingFields">[[ field.toString() ]]</span>
+        </div>
+    </div>
+    <div>
+        <multi-combo title="[[ lang.translate('mediacentre.educationalTypes') ]]" combo-model="resources.educationalTypes.all" search-on="nom"
+            order-by="nom" filtered-model="search.educationalTypes" labels="labels"></multi-combo>
+        <div class="row bagde-list">
+            <span class="badge educational-type" ng-repeat="type in search.educationalTypes">[[ type.toString() ]]</span>
+        </div>
+    </div>
+    <div>
+        <multi-combo title="[[ lang.translate('mediacentre.typologies') ]]" combo-model="resources.typologies.all" search-on="nom"
+            order-by="nom" filtered-model="search.typologies" labels="labels"></multi-combo>
+        <div class="row bagde-list">
+            <span class="badge typology" ng-repeat="typology in search.typologies">
+                [[ typology.toString() ]]
+            </span>
+        </div>
+    </div>
+</div>
+<div><button class="twelve" ng-click="filter()"><i18n>mediacentre.filter</i18n></button></div>

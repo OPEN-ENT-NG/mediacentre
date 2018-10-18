@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "idRessource": {
+      "type": "string"
+    },
+    "nomRessource": {
+      "type": "string"
+    },
+    "nomEditeur": {
+      "type": "string"
+    },
+    "urlVignette": {
+      "type": "string"
+    },
+    "typePedagogique": {
+      "type": "array"
+    },
+    "niveauEducatif": {
+      "type": "array"
+    },
+    "typePresentation": {
+      "type": "object"
+    },
+    "typologieDocument": {
+      "type": "array"
+    },
+    "domaineEnseignement": {
+      "type": "array"
+    }
+  },
+  "required": [
+    "nomRessource",
+    "nomEditeur",
+    "urlVignette",
+    "typePedagogique",
+    "niveauEducatif",
+    "typePresentation",
+    "typologieDocument",
+    "domaineEnseignement",
+    "idRessource"
+  ]
+}

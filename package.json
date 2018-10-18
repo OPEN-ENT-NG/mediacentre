@@ -4,7 +4,9 @@
   "description": "Mediacentre",
   "main": "gulpfile.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "coverage": "./node_modules/.bin/jest --config jest.config.js --forceExit --coverage",
+    "clean": "rm -rf build && rm -rf bin && rm -rf src/main/resources/public/dist && rm -rf coverage && rm -rf src/main/resources/public/js",
+    "test": "npm run clean && npm run coverage"
   },
   "repository": {
     "type": "git",
@@ -17,7 +19,8 @@
   },
   "homepage": "",
   "dependencies": {
-    "entcore": "^2.1.0",
+    "entcore": "2.2.7",
+    "entcore-toolkit": "^1.0.1",
     "@types/core-js": "0.9.42",
     "awesome-typescript-loader": "3.2.1",
     "axios": "0.16.2",
@@ -32,10 +35,17 @@
     "typescript": "2.4.1",
     "webpack": "3.1.0",
     "webpack-stream": "3.2.0",
-    "yargs": "^8.0.2",
-    "entcore-toolkit": "^1.0.1"
+    "yargs": "^8.0.2"
   },
   "devDependencies": {
-     "@types/jquery": "^2.0.34"
+    "@types/jest": "^22.2.0",
+    "@types/jquery": "^2.0.34",
+    "axios-mock-adapter": "^1.14.1",
+    "jest": "^22.4.2",
+    "jest-environment-node": "^23.0.0-alpha.0",
+    "moment": "^2.21.0",
+    "ts-jest": "^22.4.2",
+    "underscore": "^1.8.3",
+    "angular": "1.3"
   }
 }
