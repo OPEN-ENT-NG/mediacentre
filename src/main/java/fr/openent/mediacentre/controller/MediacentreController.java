@@ -99,7 +99,7 @@ public class MediacentreController extends ControllerHelper {
     @Get("/launchExport")
     @SecuredAction(value = WorkflowUtils.EXPORT, type = ActionType.WORKFLOW)
     public void launchExportFromRoute(HttpServerRequest request) {
-        //this.launchExport();
+        this.launchExport();
         request.response().setStatusCode(200).end("Import started");
     }
 
