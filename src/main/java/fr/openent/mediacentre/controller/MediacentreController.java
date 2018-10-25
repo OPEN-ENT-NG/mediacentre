@@ -99,12 +99,12 @@ public class MediacentreController extends ControllerHelper {
     @Get("/launchExport")
     @SecuredAction(value = WorkflowUtils.EXPORT, type = ActionType.WORKFLOW)
     public void launchExportFromRoute(HttpServerRequest request) {
-        this.launchExport();
+        this.exportAndSend();
         request.response().setStatusCode(200).end("Import started");
     }
 
     private void launchExport() {
-        log.info("Start lauchExport (GAR export)------");
+        log.info("Start lauchExport (CRON GAR export)------");
         try {
             new CronTrigger(vertx, config.getString("export-cron")).schedule(new Handler<Long>() {
                 @Override
@@ -121,7 +121,7 @@ public class MediacentreController extends ControllerHelper {
     }
 
     private void exportAndSend() {
-        log.info("Start Export (Generate xml files, compress to tar.gz, generate md5, send to GAR by sftp");
+        log.info("Start exportAndSend GAR (Generate xml files, compress to tar.gz, generate md5, send to GAR by sftp");
         emptyDIrectory(config.getString("export-path"));
         log.info("Generate XML files");
         exportService.launchExport((Either<String, JsonObject> event1) -> {
