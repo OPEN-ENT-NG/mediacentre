@@ -143,7 +143,11 @@ public class MediacentreController extends ControllerHelper {
                                 .put("passphrase", sftpGarConfig.getString("passphrase"))
                                 .put("local-file", config.getString("export-archive-path") + archiveName)
                                 .put("dist-file", sftpGarConfig.getString("dir-dest") + archiveName);
-                        eb.send("sftp", sendTOGar, handlerToAsyncHandler(message -> {
+
+                        String n = (String) vertx.sharedData().getLocalMap("server").get("node");
+                        String node = (n != null) ? n : "";
+
+                        eb.send(node+"sftp", sendTOGar, handlerToAsyncHandler(message -> {
                             if(message.body().containsKey("status") && message.body().getString("status") == "error"){
                                 log.info("FAILED Send to GAR tar GZ by sftp");
                             }
