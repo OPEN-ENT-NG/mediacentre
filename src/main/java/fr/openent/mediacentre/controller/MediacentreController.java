@@ -157,7 +157,7 @@ public class MediacentreController extends ControllerHelper {
                                 sendTOGar
                                         .put("local-file", config.getString("export-archive-path") + md5File)
                                         .put("dist-file", sftpGarConfig.getString("dir-dest") + md5File);
-                                eb.send("sftp", sendTOGar, handlerToAsyncHandler(message1 -> {
+                                eb.send(node + "sftp", sendTOGar, handlerToAsyncHandler(message1 -> {
                                     if (message1.body().containsKey("status") && message1.body().getString("status") == "error") {
                                         log.info("FAILED Send to Md5 by sftp");
                                     } else {
