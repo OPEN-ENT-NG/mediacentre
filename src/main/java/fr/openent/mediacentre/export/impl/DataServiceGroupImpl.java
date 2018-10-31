@@ -220,9 +220,9 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
     private void getClassesFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (u:User)-[t:TEACHES]->(sub:Subject)-[SUBJECT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
-                //TODO ici obligé de gérer que le code matière a été suffixé par GAR- dans mon annuaire multi-académique
-                // il faut pouvoir gérer le cas mono et multi-académique
-                "with u.id as uid,  t.classes as classesList, split(sub.code,\"-\")[1] as code, s.UAI as uai " +
+                "with u.id as uid,  t.classes as classesList, " +
+                "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code, " +
+                "s.UAI as uai " +
                 "unwind(classesList) as classes ";
         String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
@@ -255,9 +255,9 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
     private void getGroupsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (u:User)-[t:TEACHES]->(sub:Subject)-[SUBJECT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
-                //TODO ici obligé de gérer que le code matière a été suffixé par GAR- dans mon annuaire multi-académique
-                // il faut pouvoir gérer le cas mono et multi-académique
-                "with u.id as uid, t.groups as grouplist, split(sub.code,\"-\")[1] as code, s.UAI as uai " +
+                "with u.id as uid, t.groups as grouplist, " +
+                "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code, " +
+                "s.UAI as uai " +
                 "unwind(grouplist) as group ";
         String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
