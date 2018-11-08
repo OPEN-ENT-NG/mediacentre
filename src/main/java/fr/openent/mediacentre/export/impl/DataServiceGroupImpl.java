@@ -185,12 +185,14 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
     private void getGroupsPersonFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String classQuery = "MATCH (u:User)-[IN]->(pg:ProfileGroup)-[DEPENDS]->(c:Class)-[BELONGS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "WHERE u.profiles = ['Student'] OR u.profiles = ['Teacher'] " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(c.externalId,\"$\")[1], c.id) as `" + GROUPS_CODE + "` " +
                 "UNION ";
         String groupsQuery = "MATCH (u:User)-[COMMUNIQUE]->(fg:FunctionalGroup)-[BELONGS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "WHERE u.profiles = ['Student'] OR u.profiles = ['Teacher'] " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as `" + GROUPS_CODE + "` ";
@@ -218,9 +220,12 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * @param handler results
      */
     private void getClassesFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (u:User)-[t:TEACHES]->(sub:Subject)-[SUBJECT]->(s:Structure)" +
+        String query =
+                "MATCH (u:User)-[IN]->(pg:ProfileGroup)-[DEPENDS]->(c:Class)-[BELONGS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
-                "with u.id as uid,  t.classes as classesList, " +
+                "WITH distinct u,s "+
+                "MATCH (u)-[t:TEACHES]->(sub:Subject)-[SUBJECT]->(s)" +
+                "WITH u.id as uid,  t.classes as classesList, " +
                 "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code, " +
                 "s.UAI as uai " +
                 "unwind(classesList) as classes ";
@@ -253,8 +258,11 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * @param handler results
      */
     private void getGroupsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (u:User)-[t:TEACHES]->(sub:Subject)-[SUBJECT]->(s:Structure)" +
+        String query =
+                "MATCH (u:User)-[IN]->(pg:ProfileGroup)-[DEPENDS]->(c:Class)-[BELONGS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "WITH distinct u,s "+
+                "MATCH (u)-[t:TEACHES]->(sub:Subject)-[SUBJECT]->(s)" +
                 "with u.id as uid, t.groups as grouplist, " +
                 "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code, " +
                 "s.UAI as uai " +
