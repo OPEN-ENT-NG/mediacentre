@@ -45,14 +45,16 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
      * @param handler results
      */
     private void getRespFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (sr:Structure)<-[ADMINISTRATIVE_ATTACHMENT]-(u:User)-[IN]->" +
-                "(n:ManualGroup{name:\"" + CONTROL_GROUP + "\"})-[DEPENDS]->(s:Structure) ";
+        String query = "MATCH (sr:Structure)<-[:ADMINISTRATIVE_ATTACHMENT]-(u:User)-[:IN]->" +
+                "(n:ManualGroup{name:\"" + CONTROL_GROUP + "\"})-[:DEPENDS]->(s:Structure) " +
+                " WHERE u.profiles = ['Teacher'] OR u.profiles = ['Personnel']";
         String dataReturn = "RETURN u.id as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_NAME + "`, " +
                 "u.firstName as `" + PERSON_FIRST_NAME + "`, " +
                 "coalesce(u.emailAcademy,sr.email) as `" + PERSON_MAIL + "`, " +
                 "collect(s.UAI) as `" + RESP_ETAB + "` " +
-                "order by `" + PERSON_ID + "`";
+                "order by `" + PERSON_ID + "` " +
+                "LIMIT 15";
         neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
     }
 

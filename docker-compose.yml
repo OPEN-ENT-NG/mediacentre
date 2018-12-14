@@ -4,6 +4,7 @@ gradle:
   volumes:
     - ./:/home/gradle/project
     - ~/.m2:/home/gradle/.m2
+    - ~/config:/home/gradle/config
     - ~/.gradle:/home/gradle/.gradle
 
 node:

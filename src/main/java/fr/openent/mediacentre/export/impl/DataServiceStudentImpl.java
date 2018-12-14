@@ -124,11 +124,11 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getStudentsInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "match (u:User)-[IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
+        String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}), " +
-                "(p:Profile)<-[HAS_PROFILE]-(pg:ProfileGroup) " +
+                "(p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
                 "where p.name = 'Student' " +
-                "OPTIONAL MATCH (u:User)-[ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) ";
+                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) ";
         String dataReturn = "return distinct " +
                 "u.id  as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_PATRO_NAME + "`, " +
@@ -202,8 +202,8 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getStudentsMefFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH  (p:Profile)<-[HAS_PROFILE]-(pg:ProfileGroup)<-[IN]-" +
-                "(u:User)-[ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
+        String query = "MATCH  (p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup)<-[:IN]-" +
+                "(u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) ";
         String dataReturn = "where p.name = 'Student' " +
                 "return distinct "+
@@ -232,8 +232,8 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getStudentsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH  (p:Profile)<-[HAS_PROFILE]-(pg:ProfileGroup)<-[IN]-(u:User)" +
-                "-[ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
+        String query = "MATCH  (p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup)<-[:IN]-(u:User)" +
+                "-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
                 "where p.name = 'Student' ";
         String dataReturn = "with u,s " +

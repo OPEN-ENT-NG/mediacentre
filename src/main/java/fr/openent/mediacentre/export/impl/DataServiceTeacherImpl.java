@@ -98,11 +98,11 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getTeachersInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "match (u:User)-[IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
+        String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}), " +
-                "(p:Profile)<-[HAS_PROFILE]-(pg:ProfileGroup) " +
+                "(p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
                 "where p.name = 'Teacher' " +
-                "OPTIONAL MATCH (u:User)-[ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) ";
+                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) ";
         String dataReturn = "return distinct u.id  as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_PATRO_NAME + "`, " +
                 "u.lastName as `" + PERSON_NAME + "`, " +
@@ -224,8 +224,8 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getTeachersMefFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH  (p:Profile)<-[HAS_PROFILE]-(pg:ProfileGroup)<-[IN]-" +
-                "(u:User)-[ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
+        String query = "MATCH  (p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup)<-[:IN]-" +
+                "(u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) ";
         String dataReturn = "where p.name = 'Teacher' " +
                 "with s,u unwind u.modules as module " +

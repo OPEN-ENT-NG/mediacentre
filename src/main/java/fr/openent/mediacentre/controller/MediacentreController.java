@@ -177,6 +177,7 @@ public class MediacentreController extends ControllerHelper {
         });
     }
 
+    //TODO prévenir les nullpointer ici
     private void emptyDIrectory (String path){
         File index = new File(path);
         String[] entries = index.list();
