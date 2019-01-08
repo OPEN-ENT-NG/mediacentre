@@ -137,8 +137,8 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
                 Map<String,String> userStructProfiles = new HashMap<>();
 
-                processProfiles(teacher, TEACHER_PROFILE, userStructProfiles);
                 processFunctions(teacher, userStructProfiles);
+                processProfiles(teacher, TEACHER_PROFILE, userStructProfiles);
 
                 if(isMandatoryFieldsAbsent(teacher, TEACHER_NODE_MANDATORY)) {
                     log.warn("Mediacentre : mandatory attribut for Teacher : " + teacher);
