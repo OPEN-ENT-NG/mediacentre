@@ -45,16 +45,20 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
      * @param handler results
      */
     private void getRespFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (sr:Structure)<-[:ADMINISTRATIVE_ATTACHMENT]-(u:User)-[:IN]->" +
-                "(n:ManualGroup{name:\"" + CONTROL_GROUP + "\"})-[:DEPENDS]->(s:Structure) " +
-                " WHERE u.profiles = ['Teacher'] OR u.profiles = ['Personnel']";
+
+        String query = "MATCH (us:User)-[:IN]->(n:ManualGroup{name:\"" + CONTROL_GROUP + "\"})-[:DEPENDS]->(s:Structure) " +
+                " WHERE us.profiles = ['Teacher'] OR us.profiles = ['Personnel'] "+
+                " WITH s, us ORDER BY s.id , us.id "+
+                " WITH s, collect(us)[..15] as uc "+    // 15 first Teachers or Personnels in each Structures
+                " UNWIND uc as u "+
+                " MATCH (sr:Structure)<-[:ADMINISTRATIVE_ATTACHMENT]-(u) ";
+        // CAUTION Don't use sr.UAI in dataReturn cause this structure is perhaps not a GAR structure
         String dataReturn = "RETURN u.id as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_NAME + "`, " +
                 "u.firstName as `" + PERSON_FIRST_NAME + "`, " +
                 "coalesce(u.emailAcademy,sr.email) as `" + PERSON_MAIL + "`, " +
                 "collect(s.UAI) as `" + RESP_ETAB + "` " +
-                "order by `" + PERSON_ID + "` " +
-                "LIMIT 15";
+                "order by `" + PERSON_ID + "` " ;
         neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
     }
 
