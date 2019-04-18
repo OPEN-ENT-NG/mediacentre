@@ -72,7 +72,7 @@ public class MediacentreController extends ControllerHelper {
     @Get("")
     @SecuredAction("mediacentre.view")
     public void render(HttpServerRequest request) {
-        renderView(request);
+        renderView(request, new JsonObject().put("demo", Mediacentre.demo));
     }
 
     @Get("/resources")
