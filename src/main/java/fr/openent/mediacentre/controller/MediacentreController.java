@@ -158,7 +158,7 @@ public class MediacentreController extends ControllerHelper {
 
                         eb.send(node+"sftp", sendTOGar, handlerToAsyncHandler(message -> {
                             if(message.body().containsKey("status") && message.body().getString("status") == "error"){
-                                log.info("FAILED Send to GAR tar GZ by sftp");
+                                log.error("FAILED Send to GAR tar GZ by sftp");
                             }
                             else {
                                 String md5File = event2.right().getValue().getString("md5File");
@@ -168,7 +168,7 @@ public class MediacentreController extends ControllerHelper {
                                         .put("dist-file", sftpGarConfig.getString("dir-dest") + md5File);
                                 eb.send(node + "sftp", sendTOGar, handlerToAsyncHandler(message1 -> {
                                     if (message1.body().containsKey("status") && message1.body().getString("status") == "error") {
-                                        log.info("FAILED Send to Md5 by sftp");
+                                        log.error("FAILED Send to Md5 by sftp");
                                     } else {
                                         log.info("SUCCESS Export and Send to GAR");
                                     }

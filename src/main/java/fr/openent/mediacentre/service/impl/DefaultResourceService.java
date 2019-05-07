@@ -69,12 +69,10 @@ public class DefaultResourceService implements ResourceService {
                         handler.handle(new Either.Left<>("[DefaultResourceService@get] Bad gar host url : " + garHost));
                     }
                     String resourcesUri = garHost + "/ressources/" + idEnt + "/" + uai + "/" + userId;
-                    log.info("Call Gar Ressource "+ resourcesUri);
                     final HttpClientRequest client = httpClient.get(resourcesUri, response -> {
-                        log.info("Call RESPONSE Gar Ressource " + response.statusCode());
                         if (response.statusCode() != 200) {
-                            log.info("Call RESPONSE Gar Ressource != 200");
-                            log.info(response);
+                            log.error("try to call " + resourcesUri);
+                            log.error(response.statusCode() + " " + response.statusMessage());
 
                             handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to connect to GAR servers: " + response.statusMessage()));
                         } else {
