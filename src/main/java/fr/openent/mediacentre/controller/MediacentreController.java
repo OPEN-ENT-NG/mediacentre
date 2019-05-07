@@ -17,12 +17,14 @@ import fr.wseduc.rs.Post;
 import fr.wseduc.security.ActionType;
 import fr.wseduc.security.SecuredAction;
 import fr.wseduc.webutils.Either;
+import fr.wseduc.webutils.http.Renders;
 import fr.wseduc.webutils.request.RequestUtils;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -81,7 +83,14 @@ public class MediacentreController extends ControllerHelper {
         UserUtils.getUserInfos(eb, request, user -> {
             String structureId = request.params().contains("structure") ? request.getParam("structure") : user.getStructures().get(0);
             String userId = user.getUserId();
-            this.resourceService.get(userId, structureId, garRessourcesConfig.getString("host"), arrayResponseHandler(request));
+            this.resourceService.get(userId, structureId, garRessourcesConfig.getString("host"), result -> {
+                            if (result.isRight()) {
+                                Renders.renderJson(request, result.right().getValue());
+                            } else {
+                                Renders.renderJson(request, new JsonArray());
+                            }
+                        }
+            );
         });
     }
 
