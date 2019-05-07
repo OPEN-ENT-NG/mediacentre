@@ -135,7 +135,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      */
     private void getGroupsInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String classQuery = "MATCH (c:Class)-[:BELONGS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "RETURN distinct "+
                 "split(c.externalId,\"$\")[1] as `" + GROUPS_CODE + "`, " +
                 "s.UAI as `" + STRUCTURE_UAI + "`, " +
@@ -145,7 +145,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` " +
                 "UNION ";
         String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->" +
-                "(s:Structure)<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "(s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "WHERE u.profiles = ['Student'] OR u.profiles = ['Teacher']" +
                 "OPTIONAL MATCH (c:Class)<-[d:DEPENDS]-(pg:ProfileGroup)<-[:IN]-(u:User) " +
                 "WHERE  u.profiles = ['Student'] " +
@@ -184,15 +184,16 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      */
     private void getGroupsPersonFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String classQuery = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "WHERE u.profiles = ['Student'] OR u.profiles = ['Teacher'] " +
+                " " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(c.externalId,\"$\")[1], c.id) as `" + GROUPS_CODE + "` " +
                 "order by `" + PERSON_ID + "`, `" + STRUCTURE_UAI + "` " +
                 "UNION ";
         String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "WHERE u.profiles = ['Student'] OR u.profiles = ['Teacher'] " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
@@ -224,7 +225,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
     private void getClassesFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query =
                 "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "WITH distinct u,s "+
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
                 "WITH u.id as uid,  t.classes as classesList, " +
@@ -262,7 +263,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
     private void getGroupsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query =
                 "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "WITH distinct u,s "+
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
                 "with u.id as uid, t.groups as grouplist, " +

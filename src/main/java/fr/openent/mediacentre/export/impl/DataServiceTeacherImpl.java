@@ -7,8 +7,6 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -76,33 +74,17 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
     }
 
     /**
-     * Process teachers mefs, validate data and save to xml
-     * @param handler result handler
-     */
-    private void getAndProcessTeachersMefs(final Handler<Either<String, JsonObject>> handler) {
-
-        getTeachersMefFromNeo4j(new Handler<Either<String, JsonArray>>() {
-            @Override
-            public void handle(Either<String, JsonArray> teacherMefs) {
-                if( validResponseNeo4j(teacherMefs, handler) ) {
-                    Either<String,JsonObject> result = processTeachersMefs( teacherMefs.right().getValue() );
-                    handler.handle(result);
-                }
-            }
-        });
-    }
-
-    /**
      * Get teachers infos from Neo4j
      * Set fields as requested by xsd, except for structures
      * @param handler results
      */
     private void getTeachersInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}), " +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}), " +
                 "(p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
                 "where p.name = 'Teacher' " +
-                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) ";
+                // ADMINISTRATIVE ATTACHMENT can reference non GAR exported structure
+                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure)";
         String dataReturn = "return distinct u.id  as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_PATRO_NAME + "`, " +
                 "u.lastName as `" + PERSON_NAME + "`, " +
@@ -197,7 +179,6 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
             if(arrFunction.length < 4) continue;
             String structID = arrFunction[0];
             if(!mapStructures.containsKey(structID)) {
-                log.error("Mediacentre : Invalid structure for profile " + o);
                 continue;
             }
             String structUAI = mapStructures.get(structID);
@@ -226,14 +207,15 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
     private void getTeachersMefFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH  (p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup)<-[:IN]-" +
                 "(u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) ";
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) ";
         String dataReturn = "where p.name = 'Teacher' " +
                 "with s,u unwind u.modules as module " +
                 "return distinct "+
-                "s.UAI as `" + STRUCTURE_UAI + "`, " +
+                "s.academy + '-' + split(module,'$')[0] as aca_structureID ," +
+                "split(module,'$')[0] as structureID ," +
                 "u.id as `" + PERSON_ID + "`, " +
                 "split(module,'$')[1] as `" + MEF_CODE + "` " +
-                "order by " + "`" + PERSON_ID + "`";
+                "order by structureID, " + "`" + MEF_CODE + "` , `" + PERSON_ID + "`";
         neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
     }
 
@@ -242,8 +224,31 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param mefs Array of mefs from Neo4j
      */
     private Either<String,JsonObject> processTeachersMefs(JsonArray mefs) {
-        //processSimpleArray(mefs, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
-        Either<String,JsonObject> event =  processSimpleArray(mefs, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
+
+        JsonArray filteredMEF = new fr.wseduc.webutils.collections.JsonArray();
+        for(Object o : mefs) {
+            if (!(o instanceof JsonObject)) continue;
+            JsonObject mef = (JsonObject) o;
+            String structID = mef.getString("structureID");
+            String UAI = mapStructures.get(structID);
+            if (UAI == null) {
+                // MEF are not prefixed with academic name by feeder
+                //so it's necessary to check in school map with academic prefix
+                //before filter this MEF
+                structID = mef.getString("aca_structureID");
+                UAI = mapStructures.get(structID);
+                if (UAI == null) continue;
+            }
+            
+            JsonObject mefFiltered = new JsonObject();
+            mefFiltered.put(STRUCTURE_UAI, UAI);
+            mefFiltered.put(PERSON_ID, mef.getValue(PERSON_ID));
+            mefFiltered.put(MEF_CODE, mef.getValue(MEF_CODE));
+            filteredMEF.add(mefFiltered);
+        }
+
+        Either<String,JsonObject> event =  processSimpleArray(filteredMEF, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
+
         if(event.isLeft()) {
             return new Either.Left<>("Error when processing teacher mefs : " + event.left().getValue());
         } else {

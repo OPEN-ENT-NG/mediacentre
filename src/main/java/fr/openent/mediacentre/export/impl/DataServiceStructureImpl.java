@@ -118,7 +118,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      * @param handler results
      */
     private void getStucturesInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (s:Structure)<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+        String query = "MATCH (s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "OPTIONAL MATCH (s2:Structure)<-[:HAS_ATTACHMENT]-(s:Structure) ";
         String dataReturn = "RETURN distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "s.name as `" + STRUCTURE_NAME + "`, " +
@@ -138,6 +138,8 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      */
     private Either<String,JsonObject> processStructuresInfo(JsonArray structures) {
         try {
+            //clean mapStructures before process structures.
+            mapStructures.clear();
             for (Object o : structures) {
                 if (!(o instanceof JsonObject)) continue;
                 JsonObject structure = (JsonObject) o;
@@ -174,7 +176,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      */
     private void getStucturesMefsFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String queryStudentsMefs = "MATCH (n:User)-[:ADMINISTRATIVE_ATTACHMENT]->" +
-                "(s:Structure)<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "(s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "where exists(n.module) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "n.module as `" + MEF_CODE + "`, " +
@@ -182,7 +184,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "order by `" + STRUCTURE_UAI + "` , `" + MEF_CODE + "` " +
                 "UNION ";
         String queryTeachersMefs = "MATCH (n:User)-[:ADMINISTRATIVE_ATTACHMENT]->" +
-                "(s:Structure)<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "(s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "where exists(n.modules) " +
                 "with s,n " +
                 "unwind n.modules as rows " +
@@ -216,7 +218,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      */
     private void getStucturesFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String queryStructureFos = "MATCH (sub:Subject)-[:SUBJECT]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "with s, sub.label as label, split(sub.code,\"-\") as codelist " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "codelist[size(codelist)-1] as `" + STUDYFIELD_CODE + "`, " +
@@ -224,7 +226,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
                 "UNION ";
         String queryStudentFos = "MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "where exists (u.fieldOfStudy) " +
                 "with s, u.fieldOfStudy as fos, u.fieldOfStudyLabels as fosl " +
                 "with s, " +

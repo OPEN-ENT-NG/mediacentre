@@ -125,7 +125,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      */
     private void getStudentsInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}), " +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}), " +
                 "(p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
                 "where p.name = 'Student' " +
                 "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) ";
@@ -204,7 +204,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
     private void getStudentsMefFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH  (p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup)<-[:IN]-" +
                 "(u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) ";
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) ";
         String dataReturn = "where p.name = 'Student' " +
                 "return distinct "+
                 "s.UAI as `" + STRUCTURE_UAI + "`, " +
@@ -234,7 +234,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
     private void getStudentsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH  (p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup)<-[:IN]-(u:User)" +
                 "-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:Group{name:\"" + CONTROL_GROUP + "\"}) " +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "where p.name = 'Student' ";
         String dataReturn = "with u,s " +
                 "unwind u.fieldOfStudy as fos " +
