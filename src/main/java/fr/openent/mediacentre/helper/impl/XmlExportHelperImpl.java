@@ -113,6 +113,7 @@ public class XmlExportHelperImpl implements XmlExportHelper {
         Element objectElement = currentDoc.createElement(key);
         for(String jsonKey : entry.fieldNames()) {
             Object o = entry.getValue(jsonKey);
+            if ( o==null ) continue;
             saveUnknownObject(jsonKey, o, objectElement);
         }
         curElt.appendChild(objectElement);

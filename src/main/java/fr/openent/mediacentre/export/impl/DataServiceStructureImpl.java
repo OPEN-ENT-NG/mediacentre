@@ -177,7 +177,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
     private void getStucturesMefsFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String queryStudentsMefs = "MATCH (n:User)-[:ADMINISTRATIVE_ATTACHMENT]->" +
                 "(s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "where exists(n.module) " +
+                "where exists(n.module) and not has(n.deleteDate) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "n.module as `" + MEF_CODE + "`, " +
                 "n.moduleName as `" + MEF_DESCRIPTION + "` " +
@@ -185,7 +185,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "UNION ";
         String queryTeachersMefs = "MATCH (n:User)-[:ADMINISTRATIVE_ATTACHMENT]->" +
                 "(s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "where exists(n.modules) " +
+                "where exists(n.modules) and not has(n.deleteDate) " +
                 "with s,n " +
                 "unwind n.modules as rows " +
                 "with s, split(rows,\"$\") as modules " +
