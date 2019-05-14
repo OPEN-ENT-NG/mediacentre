@@ -79,10 +79,9 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getTeachersInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
+        String query = "match (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}), " +
-                "(p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
-                "where p.name = 'Teacher' " +
+                "(p:Profile{name:'Teacher'})<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
                 // ADMINISTRATIVE ATTACHMENT can reference non GAR exported structure
                 "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure)";
         String dataReturn = "return distinct u.id  as `" + PERSON_ID + "`, " +
@@ -239,7 +238,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 UAI = mapStructures.get(structID);
                 if (UAI == null) continue;
             }
-            
+
             JsonObject mefFiltered = new JsonObject();
             mefFiltered.put(STRUCTURE_UAI, UAI);
             mefFiltered.put(PERSON_ID, mef.getValue(PERSON_ID));
