@@ -90,7 +90,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 "u.firstName as `" + PERSON_FIRST_NAME + "`, " +
                 "coalesce(u.otherNames, [u.firstName]) as `" + PERSON_OTHER_NAMES + "`, " +
                 //TODO GARPersonCivilite
-                "sr.UAI as `" + PERSON_STRUCT_ATTACH + "`, " +
+                "collect(distinct sr.UAI)[0] as `" + PERSON_STRUCT_ATTACH + "`, " +
                 "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
                 "u.functions as functions, " +
                 "collect(distinct s.UAI) as profiles " +
