@@ -19,7 +19,7 @@ export interface ParameterService {
 
 export const ParameterService = ng.service('ParameterService', (): ParameterService => ({
     export: () => {
-        const url = '/mediacentre/launchExport';
+        const url = '/gar/launchExport';
         window.open(url);
     },
 
@@ -49,6 +49,6 @@ export const ParameterService = ng.service('ParameterService', (): ParameterServ
         }
     },
 
-    undeployStructure: async (id: string) => await http.delete(`/mediacentre/structures/${id}`)
+    undeployStructure: async (id: string) => await http.delete(`/gar/structures/${id}`)
 }));
 
