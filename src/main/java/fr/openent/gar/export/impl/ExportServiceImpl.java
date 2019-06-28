@@ -1,7 +1,7 @@
-package fr.openent.mediacentre.export.impl;
+package fr.openent.gar.export.impl;
 
-import fr.openent.mediacentre.export.DataService;
-import fr.openent.mediacentre.export.ExportService;
+import fr.openent.gar.export.DataService;
+import fr.openent.gar.export.ExportService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.Message;
@@ -11,7 +11,6 @@ import io.vertx.core.json.JsonObject;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 

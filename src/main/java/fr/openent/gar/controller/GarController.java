@@ -1,14 +1,16 @@
-package fr.openent.mediacentre.controller;
+package fr.openent.gar.controller;
 
-import fr.openent.mediacentre.Mediacentre;
-import fr.openent.mediacentre.export.ExportService;
-import fr.openent.mediacentre.export.impl.ExportServiceImpl;
-import fr.openent.mediacentre.security.WorkflowUtils;
-import fr.openent.mediacentre.service.EventService;
-import fr.openent.mediacentre.service.ResourceService;
-import fr.openent.mediacentre.service.impl.DefaultEventService;
-import fr.openent.mediacentre.service.impl.DefaultResourceService;
-import fr.openent.mediacentre.export.impl.ExportWorker;
+import fr.openent.gar.Gar;
+import fr.openent.gar.export.ExportService;
+import fr.openent.gar.export.impl.ExportServiceImpl;
+import fr.openent.gar.security.WorkflowUtils;
+import fr.openent.gar.service.EventService;
+import fr.openent.gar.service.ResourceService;
+import fr.openent.gar.service.TarService;
+import fr.openent.gar.service.impl.DefaultTarService;
+import fr.openent.gar.service.impl.DefaultEventService;
+import fr.openent.gar.service.impl.DefaultResourceService;
+import fr.openent.gar.export.impl.ExportWorker;
 import fr.wseduc.bus.BusAddress;
 import fr.wseduc.cron.CronTrigger;
 import fr.wseduc.rs.Get;
@@ -34,17 +36,17 @@ import java.text.ParseException;
 import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
 import static fr.wseduc.webutils.http.response.DefaultResponseHandler.defaultResponseHandler;
 
-public class MediacentreController extends ControllerHelper {
+public class GarController extends ControllerHelper {
 
     private final ResourceService resourceService;
     private final EventService eventService;
     private final Vertx vertx;
     private JsonObject garRessourcesConfig = null;
-    private Logger log = LoggerFactory.getLogger(MediacentreController.class);
+    private Logger log = LoggerFactory.getLogger(GarController.class);
     private EventBus eb = null;
     private JsonObject config;
 
-    public MediacentreController(Vertx vertx, JsonObject config) {
+    public GarController(Vertx vertx, JsonObject config) {
         super();
         eb = vertx.eventBus();
         this.config = config;
@@ -62,9 +64,9 @@ public class MediacentreController extends ControllerHelper {
     }
 
     @Get("")
-    @SecuredAction("mediacentre.view")
+    @SecuredAction("gar.view")
     public void render(HttpServerRequest request) {
-        renderView(request, new JsonObject().put("demo", Mediacentre.demo));
+        renderView(request, new JsonObject().put("demo", Gar.demo));
     }
 
     @Get("/resources")
@@ -125,7 +127,7 @@ public class MediacentreController extends ControllerHelper {
                 handlerToAsyncHandler(event -> log.info("Export Gar Launched")));
     }
 
-    @BusAddress(Mediacentre.MEDIACENTRE_ADDRESS)
+    @BusAddress(Gar.GAR_ADDRESS)
     public void addressHandler(Message<JsonObject> message) {
         String action = message.body().getString("action", "");
         switch (action) {
@@ -139,7 +141,7 @@ public class MediacentreController extends ControllerHelper {
                 message.reply(data);
                 break;
             default:
-                log.error("Mediacentre invalid.action " + action);
+                log.error("Gar invalid.action " + action);
                 JsonObject json = (new JsonObject())
                         .put("status", "error")
                         .put("message", "invalid.action");

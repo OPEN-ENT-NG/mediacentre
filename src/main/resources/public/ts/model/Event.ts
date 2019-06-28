@@ -37,7 +37,7 @@ export class Event {
   }
 
   async save(): Promise<any> {
-    return await http.post("/mediacentre/event", this.toJSON());
+    return await http.post("/gar/event", this.toJSON());
   }
 
   toJSON() {

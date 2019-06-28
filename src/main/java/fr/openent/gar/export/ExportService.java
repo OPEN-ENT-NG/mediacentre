@@ -1,4 +1,4 @@
-package fr.openent.mediacentre.export;
+package fr.openent.gar.export;
 
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;

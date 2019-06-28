@@ -1,4 +1,4 @@
-package fr.openent.mediacentre.helper;
+package fr.openent.gar.helper;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;

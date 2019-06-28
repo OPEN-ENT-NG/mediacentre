@@ -54,7 +54,7 @@ export class Resources {
       `Loading resources for structure ${structure.getId()} - ${structure.getName()}`
     );
 
-    let url = `/mediacentre/resources?structure=${structure.getId()}`;
+    let url = `/gar/resources?structure=${structure.getId()}`;
     let {data} = await http.get(url);
 
     this.all = Mix.castArrayAs(Resource, data);

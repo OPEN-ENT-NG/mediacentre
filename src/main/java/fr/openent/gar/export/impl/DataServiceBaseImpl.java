@@ -1,7 +1,7 @@
-package fr.openent.mediacentre.export.impl;
+package fr.openent.gar.export.impl;
 
-import fr.openent.mediacentre.helper.XmlExportHelper;
-import fr.openent.mediacentre.export.DataService;
+import fr.openent.gar.helper.XmlExportHelper;
+import fr.openent.gar.export.DataService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.logging.LoggerFactory;
 import org.entcore.common.neo4j.Neo4j;
@@ -14,7 +14,7 @@ import io.vertx.core.logging.Logger;
 import java.util.HashMap;
 import java.util.Map;
 
-import static fr.openent.mediacentre.constants.GarConstants.*;
+import static fr.openent.gar.constants.GarConstants.*;
 
 abstract class DataServiceBaseImpl implements DataService{
 

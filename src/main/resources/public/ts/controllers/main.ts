@@ -25,10 +25,10 @@ export const mainController = ng.controller("MainController", [
     };
 
     $scope.labels = {
-      deselectAll: idiom.translate("mediacentre.combo.deselectAll"),
-      options: idiom.translate("mediacentre.combo.options"),
-      searchPlaceholder: idiom.translate("mediacentre.combo.searchPlaceholder"),
-      selectAll: idiom.translate("mediacentre.combo.selectAll")
+      deselectAll: idiom.translate("gar.combo.deselectAll"),
+      options: idiom.translate("gar.combo.options"),
+      searchPlaceholder: idiom.translate("gar.combo.searchPlaceholder"),
+      selectAll: idiom.translate("gar.combo.selectAll")
     };
 
     $scope.search = {

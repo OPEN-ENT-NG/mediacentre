@@ -1,6 +1,6 @@
-package fr.openent.mediacentre.service.impl;
+package fr.openent.gar.service.impl;
 
-import fr.openent.mediacentre.service.ResourceService;
+import fr.openent.gar.service.ResourceService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;

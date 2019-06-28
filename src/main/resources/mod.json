@@ -1,10 +1,10 @@
 {
-	"main" : "fr.openent.mediacentre.Mediacentre",
+	"main" : "fr.openent.gar.Gar",
 	"port" : 8102,
-	"app-name" : "Mediacentre",
-	"app-address" : "/mediacentre",
-	"app-icon" : "Mediacentre-large",
-	"app-displayName" : "Mediacentre",
+	"app-name" : "Gar Connector",
+	"app-address" : "/gar",
+	"app-icon" : "Gar-Connector-large",
+	"app-displayName" : "GAR",
 	"mode": "dev",
 	"entcore.port" : 8090,
 	"auto-redeploy": false

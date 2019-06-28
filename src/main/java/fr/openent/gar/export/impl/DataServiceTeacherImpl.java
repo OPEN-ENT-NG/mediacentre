@@ -1,8 +1,8 @@
-package fr.openent.mediacentre.export.impl;
+package fr.openent.gar.export.impl;
 
-import fr.openent.mediacentre.export.DataService;
-import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
-import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
+import fr.openent.gar.helper.impl.PaginatorHelperImpl;
+import fr.openent.gar.helper.impl.XmlExportHelperImpl;
+import fr.openent.gar.export.DataService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
@@ -11,7 +11,8 @@ import io.vertx.core.json.JsonObject;
 import java.util.HashMap;
 import java.util.Map;
 
-import static fr.openent.mediacentre.constants.GarConstants.*;
+import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
+import static fr.openent.gar.constants.GarConstants.*;
 
 public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataService{
     private PaginatorHelperImpl paginator;
@@ -123,7 +124,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 JsonObject teacher = (JsonObject) o;
                 JsonArray profiles = teacher.getJsonArray("profiles", null);
                 if(profiles == null || profiles.size() == 0) {
-                    log.error("Mediacentre : Teacher with no profile or function for export, id "
+                    log.error("Gar : Teacher with no profile or function for export, id "
                             + teacher.getString("u.id", "unknown"));
                     continue;
                 }
@@ -134,7 +135,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 processProfiles(teacher, TEACHER_PROFILE, userStructProfiles);
 
                 if(isMandatoryFieldsAbsent(teacher, TEACHER_NODE_MANDATORY)) {
-                    log.warn("Mediacentre : mandatory attribut for Teacher : " + teacher);
+                    log.warn("Gar : mandatory attribut for Teacher : " + teacher);
                     continue;
                 }
 
