@@ -140,6 +140,25 @@ public class GarController extends ControllerHelper {
                         .put("message", config);
                 message.reply(data);
                 break;
+            case "getResources":
+                JsonObject body = message.body();
+                String structureId = body.getString("structure");
+                String userId = body.getString("user");
+                this.resourceService.get(userId, structureId, garRessourcesConfig.getString("host"), result -> {
+                            if (result.isRight()) {
+                                JsonObject response = new JsonObject()
+                                        .put("status", "ok")
+                                        .put("message", result.right().getValue());
+                                message.reply(response);
+                            } else {
+                                JsonObject response = new JsonObject()
+                                        .put("status", "ko")
+                                        .put("message", result.left().getValue());
+                                message.reply(response);
+                            }
+                        }
+                );
+                break;
             default:
                 log.error("Gar invalid.action " + action);
                 JsonObject json = (new JsonObject())
