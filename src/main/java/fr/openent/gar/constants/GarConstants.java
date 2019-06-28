@@ -1,4 +1,4 @@
-package fr.openent.mediacentre.constants;
+package fr.openent.gar.constants;
 
 public class GarConstants {
 

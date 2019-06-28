@@ -1,14 +1,14 @@
-package fr.openent.mediacentre.export.impl;
+package fr.openent.gar.export.impl;
 
-import fr.openent.mediacentre.export.DataService;
-import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
-import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
+import fr.openent.gar.helper.impl.PaginatorHelperImpl;
+import fr.openent.gar.helper.impl.XmlExportHelperImpl;
+import fr.openent.gar.export.DataService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-import static fr.openent.mediacentre.constants.GarConstants.*;
+import static fr.openent.gar.constants.GarConstants.*;
 
 public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataService{
     private PaginatorHelperImpl paginator;
@@ -167,7 +167,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 JsonObject student = (JsonObject) o;
                 JsonArray profiles = student.getJsonArray("profiles", null);
                 if(profiles == null || profiles.size() == 0) {
-                    log.warn("Mediacentre : Student with no profile for export, id "
+                    log.warn("Gar : Student with no profile for export, id "
                             + student.getString("u.id", "unknown"));
                     continue;
                 }
@@ -175,7 +175,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 processProfiles(student, STUDENT_PROFILE, null);
 
                 if(isMandatoryFieldsAbsent(student, STUDENT_NODE_MANDATORY)) {
-                    log.warn("Mediacentre : mandatory attribut for Student : " + student);
+                    log.warn("Gar : mandatory attribut for Student : " + student);
                     continue;
                 }
 

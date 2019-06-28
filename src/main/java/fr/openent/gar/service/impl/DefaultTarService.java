@@ -1,6 +1,6 @@
-package fr.openent.mediacentre.service.impl;
+package fr.openent.gar.service.impl;
 
-import fr.openent.mediacentre.service.TarService;
+import fr.openent.gar.service.TarService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;

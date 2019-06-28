@@ -1,8 +1,8 @@
-package fr.openent.mediacentre.export.impl;
+package fr.openent.gar.export.impl;
 
-import fr.openent.mediacentre.export.DataService;
-import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
-import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
+import fr.openent.gar.helper.impl.PaginatorHelperImpl;
+import fr.openent.gar.helper.impl.XmlExportHelperImpl;
+import fr.openent.gar.export.DataService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
@@ -18,7 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static fr.openent.mediacentre.constants.GarConstants.*;
+import static fr.openent.gar.constants.GarConstants.*;
+import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
 public class DataServiceStructureImpl extends DataServiceBaseImpl implements DataService {
 

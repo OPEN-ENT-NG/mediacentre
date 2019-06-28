@@ -1,4 +1,4 @@
-package fr.openent.mediacentre.security;
+package fr.openent.gar.security;
 
 import org.entcore.common.user.UserInfos;
 
@@ -6,7 +6,7 @@ import java.util.List;
 
 public class WorkflowUtils {
 
-    static public final String EXPORT = "mediacentre.launch_export";
+    static public final String EXPORT = "gar.launch_export";
 
     private WorkflowUtils() {
         throw new IllegalAccessError("Utility class");

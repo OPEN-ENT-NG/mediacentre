@@ -1,6 +1,6 @@
-package fr.openent.mediacentre.helper.impl;
+package fr.openent.gar.helper.impl;
 
-import fr.openent.mediacentre.helper.XmlExportHelper;
+import fr.openent.gar.helper.XmlExportHelper;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;

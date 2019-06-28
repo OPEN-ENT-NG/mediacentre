@@ -1,11 +1,8 @@
-package fr.openent.mediacentre.export;
+package fr.openent.gar.export;
 
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public interface DataService {
 

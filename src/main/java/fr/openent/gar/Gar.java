@@ -1,8 +1,8 @@
-package fr.openent.mediacentre;
+package fr.openent.gar;
 
-import fr.openent.mediacentre.controller.MediacentreController;
+import fr.openent.gar.controller.GarController;
 import fr.openent.mediacentre.controller.SettingController;
-import fr.openent.mediacentre.export.ExportTask;
+import fr.openent.gar.export.ExportTask;
 import fr.openent.mediacentre.export.impl.ExportWorker;
 import fr.wseduc.cron.CronTrigger;
 import io.vertx.core.DeploymentOptions;
@@ -13,9 +13,9 @@ import org.entcore.common.http.BaseServer;
 import java.text.ParseException;
 import java.util.Arrays;
 
-public class Mediacentre extends BaseServer {
+public class Gar extends BaseServer {
 
-	public static final String MEDIACENTRE_ADDRESS = "openent.mediacentre";
+	public static final String GAR_ADDRESS = "openent.gar";
 	public static boolean demo;
 	public static JsonObject CONFIG;
 
@@ -24,9 +24,8 @@ public class Mediacentre extends BaseServer {
 		super.start();
 		final EventBus eb = getEventBus(vertx);
 
-		addController(new MediacentreController(vertx, config));
+		addController(new GarController(vertx, config));
 		addController(new SettingController(eb));
-
 
 		final String exportCron = config.getString("export-cron", "");
 		demo = config.getBoolean("demo", false);

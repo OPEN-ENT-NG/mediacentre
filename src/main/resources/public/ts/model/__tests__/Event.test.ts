@@ -47,7 +47,7 @@ describe("save(): Promise<any>", () => {
     // mock the post data and return it to expect the response and compare the response body with the
     // mocked event
     httpMock
-      .onPost("/mediacentre/event")
+      .onPost("/gar/event")
       .reply(config => [200, JSON.parse(config.data)]);
     const { data } = await event.save();
 
