@@ -55,7 +55,7 @@ public class GarController extends ControllerHelper {
         this.eventService = new DefaultEventService(config.getString("event-collection", "gar-events"));
         this.resourceService = new DefaultResourceService(
                 vertx,
-                garRessourcesConfig.getString("host"),
+                Gar.demo ? config.getString("host") : garRessourcesConfig.getString("host"),
                 config.getString("id-ent"),
                 garRessourcesConfig.getString("cert"),
                 garRessourcesConfig.getString("key")

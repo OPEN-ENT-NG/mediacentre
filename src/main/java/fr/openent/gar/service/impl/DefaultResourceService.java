@@ -1,5 +1,6 @@
 package fr.openent.gar.service.impl;
 
+import fr.openent.gar.Gar;
 import fr.openent.gar.service.ResourceService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
@@ -63,13 +64,20 @@ public class DefaultResourceService implements ResourceService {
                 if (results.size() > 0) {
                     String uai = results.getJsonObject(0).getString("UAI");
                     String garHostNoProtocol = "";
+                    int port = 443;
+                    String host = garHost;
                     try {
-                        garHostNoProtocol = new URL(garHost).getHost().toString();
+                        URL url = new URL(garHost);
+                        garHostNoProtocol = url.getHost();
+                        port = url.getPort();
+                        host = url.getHost();
                     } catch (Exception e) {
                         handler.handle(new Either.Left<>("[DefaultResourceService@get] Bad gar host url : " + garHost));
                     }
-                    String resourcesUri = garHost + "/ressources/" + idEnt + "/" + uai + "/" + userId;
-                    final HttpClientRequest client = httpClient.get(resourcesUri, response -> {
+                    String resourcesUri = Gar.demo
+                            ? "/gar/public/ts/model/__mocks__/resources.json"
+                            : "/ressources/" + idEnt + "/" + uai + "/" + userId;
+                    final HttpClientRequest client = httpClient.get(port, host, resourcesUri, response -> {
                         if (response.statusCode() != 200) {
                             log.error("try to call " + resourcesUri);
                             log.error(response.statusCode() + " " + response.statusMessage());
@@ -86,7 +94,7 @@ public class DefaultResourceService implements ResourceService {
                             Buffer responseBuffer = new BufferImpl();
                             response.handler(responseBuffer::appendBuffer);
                             response.endHandler(aVoid -> {
-                                JsonObject resources = new JsonObject(decompress(responseBuffer));
+                                JsonObject resources = new JsonObject(Gar.demo ? new String(responseBuffer.getBytes()) : decompress(responseBuffer));
                                 handler.handle(new Either.Right<>(resources.getJsonObject("listeRessources").getJsonArray("ressource")));
                             });
                             response.exceptionHandler(throwable -> handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to get GAR response: " + throwable.getMessage())));
