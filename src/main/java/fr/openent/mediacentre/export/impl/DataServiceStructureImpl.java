@@ -143,9 +143,10 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
             for (Object o : structures) {
                 if (!(o instanceof JsonObject)) continue;
                 JsonObject structure = (JsonObject) o;
-                updateMap(structure);
+                
+                if(isMandatoryFieldsAbsent(structure, STRUCTURE_NODE_MANDATORY)) continue;
 
-                if(isMandatoryFieldsAbsent(structure, STRUCTURE_NODE_MANDATORY))continue;
+                updateMap(structure);
                 xmlExportHelper.saveObject(STRUCTURE_NODE, structure);
             }
             return new Either.Right<>(null);
