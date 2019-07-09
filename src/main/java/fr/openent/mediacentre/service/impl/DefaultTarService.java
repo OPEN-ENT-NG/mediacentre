@@ -61,13 +61,13 @@ public class DefaultTarService implements TarService {
                 result.put("archive", archiveName + ".tar.gz");
                 result.put("md5File", archiveName + ".md5");
                 for (File child : children) {
-                    log.info("Add " + first.getName() +" on archive " + archiveName);
+
                     out.putArchiveEntry(new TarArchiveEntry(child, child.getName()));
                     try (FileInputStream in = new FileInputStream(child)) {
                         IOUtils.copy(in, out);
                     }
                     catch (Exception e) {
-                        log.info("Add file to archive failed");
+                        log.error("Add file to archive failed");
                         throw e;
                     }
                     out.closeArchiveEntry();

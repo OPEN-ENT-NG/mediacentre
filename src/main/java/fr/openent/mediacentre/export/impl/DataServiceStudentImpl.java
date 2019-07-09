@@ -1,5 +1,6 @@
 package fr.openent.mediacentre.export.impl;
 
+import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
@@ -7,17 +8,16 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-import java.util.ArrayList;
-
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
-import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
-
 public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataService{
+    private static final int LIMIT = 1000;
+    private PaginatorHelperImpl paginator;
 
     DataServiceStudentImpl(JsonObject config, String strDate) {
         super(config);
         xmlExportHelper = new XmlExportHelperImpl(config, STUDENT_ROOT, STUDENT_FILE_PARAM, strDate);
+        paginator = new PaginatorHelperImpl(LIMIT);
     }
 
     /**
@@ -140,7 +140,13 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
                 "collect(distinct s.UAI) as profiles " +
                 "order by " + "`" + PERSON_ID + "`";
-        neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
+
+
+        query = query + dataReturn;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
     /**
@@ -211,7 +217,12 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 "u.id as `" + PERSON_ID + "`, " +
                 "u.module as `" + MEF_CODE + "` " +
                 "order by " + "`" + PERSON_ID + "`";
-        neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
+
+        query = query + dataReturn;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
     /**
@@ -243,7 +254,12 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 "u.id as `" + PERSON_ID + "`, " +
                 "fos as `" + STUDYFIELD_CODE + "` " +
                 "order by " + "`" + PERSON_ID + "`";
-        neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
+
+        query = query + dataReturn;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
     /**

@@ -1,5 +1,6 @@
 package fr.openent.mediacentre.export.impl;
 
+import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
@@ -13,9 +14,13 @@ import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
 public class DataServiceRespImpl extends DataServiceBaseImpl implements DataService {
 
+    private static final int LIMIT = 1000;
+    private PaginatorHelperImpl paginator;
+
     DataServiceRespImpl(JsonObject config, String strDate) {
         super(config);
         xmlExportHelper = new XmlExportHelperImpl(config, RESP_ROOT, RESP_FILE_PARAM, strDate);
+        paginator = new PaginatorHelperImpl(LIMIT);
     }
 
     @Override
@@ -59,7 +64,12 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
                 "coalesce(u.emailAcademy,sr.email) as `" + PERSON_MAIL + "`, " +
                 "collect(s.UAI) as `" + RESP_ETAB + "` " +
                 "order by `" + PERSON_ID + "` " ;
-        neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
+
+        query = query + dataReturn;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
     /**

@@ -1,5 +1,6 @@
 package fr.openent.mediacentre.export.impl;
 
+import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
@@ -12,9 +13,13 @@ import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
 public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataService {
 
+    private static final int LIMIT = 1000;
+    private PaginatorHelperImpl paginator;
+
     DataServiceGroupImpl(JsonObject config, String strDate) {
         super(config);
         xmlExportHelper = new XmlExportHelperImpl(config, GROUPS_ROOT, GROUPS_FILE_PARAM, strDate);
+        paginator = new PaginatorHelperImpl(LIMIT);
     }
 
     /**
@@ -160,7 +165,12 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "\"" + GROUPS_GROUP_NAME + "\" as `" + GROUPS_STATUS + "`, " +
                 "dividlist as `" + GROUPS_DIVISION + "` " +
                 "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "`";
-        neo4j.execute(classQuery + groupsQuery, new JsonObject(), validResultHandler(handler));
+
+        String query = classQuery + groupsQuery;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
     /**
@@ -199,7 +209,12 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as `" + GROUPS_CODE + "` "+
                 "order by `" + PERSON_ID + "`, `" + STRUCTURE_UAI + "` ";
-        neo4j.execute(classQuery + groupsQuery, new JsonObject(), validResultHandler(handler));
+
+        String query = classQuery + groupsQuery;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
     /**
@@ -237,7 +252,12 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "split(classes,\"$\")[1] as `" + GROUPS_CODE + "`, " +
                 "collect(code) as `" + STUDYFIELD_CODE + "` " +
                 "order by `" + PERSON_ID + "`, `" + STRUCTURE_UAI + "`";
-        neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
+
+        query = query + dataReturn;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
     /**
@@ -275,7 +295,12 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "split(group,\"$\")[1] as `" + GROUPS_CODE + "`, " +
                 "collect(code) as `" + STUDYFIELD_CODE + "` " +
                 "order by `" + PERSON_ID + "`, `" + STRUCTURE_UAI + "`";
-        neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
+
+        query = query + dataReturn;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
     /**

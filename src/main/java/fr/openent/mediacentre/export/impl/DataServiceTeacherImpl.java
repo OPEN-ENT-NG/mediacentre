@@ -1,5 +1,6 @@
 package fr.openent.mediacentre.export.impl;
 
+import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
@@ -14,10 +15,13 @@ import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
 public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataService{
+    private static final int LIMIT = 1000;
+    private PaginatorHelperImpl paginator;
 
     DataServiceTeacherImpl(JsonObject config, String strDate) {
         super(config);
         xmlExportHelper = new XmlExportHelperImpl(config, TEACHER_ROOT, TEACHER_FILE_PARAM, strDate);
+        paginator = new PaginatorHelperImpl(LIMIT);
     }
 
     /**
@@ -95,7 +99,12 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 "u.functions as functions, " +
                 "collect(distinct s.UAI) as profiles " +
                 "order by " + "`" + PERSON_ID + "`";
-        neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
+
+        query = query + dataReturn;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
     /**
@@ -215,7 +224,12 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 "u.id as `" + PERSON_ID + "`, " +
                 "split(module,'$')[1] as `" + MEF_CODE + "` " +
                 "order by structureID, " + "`" + MEF_CODE + "` , `" + PERSON_ID + "`";
-        neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
+
+        query = query + dataReturn;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
     /**

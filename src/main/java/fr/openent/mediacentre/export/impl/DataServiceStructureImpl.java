@@ -1,5 +1,6 @@
 package fr.openent.mediacentre.export.impl;
 
+import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
@@ -12,10 +13,13 @@ import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
 public class DataServiceStructureImpl extends DataServiceBaseImpl implements DataService {
 
+    private static final int LIMIT = 1000;
+    private PaginatorHelperImpl paginator;
 
     DataServiceStructureImpl(JsonObject config, String strDate) {
         super(config);
         xmlExportHelper = new XmlExportHelperImpl(config, STRUCTURE_ROOT, STRUCTURE_FILE_PARAM, strDate);
+        paginator = new PaginatorHelperImpl(LIMIT);
     }
 
     /**
@@ -129,7 +133,12 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 //TODO GARStructureTelephone
                 "s.externalId  as structid " +
                 "order by " + "`" + STRUCTURE_UAI + "`";
-        neo4j.execute(query + dataReturn, new JsonObject(), validResultHandler(handler));
+
+        query = query + dataReturn;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
     /**
@@ -195,7 +204,12 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "modules[1] as `" + MEF_CODE + "`, " +
                 "modules[2] as `" + MEF_DESCRIPTION + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + MEF_CODE + "` ";
-        neo4j.execute(queryStudentsMefs + queryTeachersMefs, new JsonObject(), validResultHandler(handler));
+
+        String query = queryStudentsMefs + queryTeachersMefs;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
     /**
@@ -238,7 +252,12 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "row.code as `" + STUDYFIELD_CODE + "`, " +
                 "row.label as  `" + STUDYFIELD_DESC + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " ;
-        neo4j.execute(queryStructureFos + queryStudentFos, new JsonObject(), validResultHandler(handler));
+
+        String query = queryStructureFos + queryStudentFos;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
     /**
