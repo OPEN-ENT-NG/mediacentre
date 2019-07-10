@@ -15,19 +15,13 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-
 public class ExportServiceImpl implements ExportService{
 
     private final JsonObject config;
 
-
-
     public ExportServiceImpl(JsonObject config) {
         this.config = config;
     }
-
-
-
 
     @Override
     public void launchExport(final Message<JsonObject> message) {
@@ -49,7 +43,6 @@ public class ExportServiceImpl implements ExportService{
 
     @Override
     public void launchExport(final Handler<Either<String, JsonObject>> handler) {
-
 
         String strDate = new SimpleDateFormat("yyyyMMdd_HHmmss_").format(new Date());
 
