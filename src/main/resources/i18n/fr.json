@@ -52,6 +52,16 @@
   "mediacentre.levels": "Niveaux éducatifs",
   "mediacentre.teachingFields": "Domaines d'enseignements",
   "mediacentre.filter": "Filtrer",
+  "mediacentre.parameter": "Paramétrage",
+  "mediacentre.parameter.title": "Paramétrage des établissements GAR",
+  "mediacentre.parameter.back": "Retour",
+  "mediacentre.parameter.export": "Export",
+  "mediacentre.parameter.deploy": "Déployer",
+  "mediacentre.parameter.deployed": "Déployé",
+  "mediacentre.parameter.add.user": "Peupler",
+  "mediacentre.uai": "UAI",
+  "mediacentre.name": "Nom",
+  "mediacentre.gar": "GAR",
   "mediacentre.loading.status": "Chargement des ressources en cours...",
   "mediacentre.in": "dans"
 }

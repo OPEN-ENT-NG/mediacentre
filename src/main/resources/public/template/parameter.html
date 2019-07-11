@@ -1,0 +1,48 @@
+<div class="parameter">
+    <!--Title-->
+    <h1 class="parameter-title">
+        <i18n>mediacentre.parameter.title</i18n>
+    </h1>
+
+    <!--Header-->
+    <div class="parameter-header">
+        <button ng-click="export()"><i18n>mediacentre.parameter.export</i18n></button>
+    </div>
+
+    <!--Table-->
+    <table class="parameter-table table table-hover">
+        <thead>
+            <tr>
+                <th><i18n>mediacentre.uai</i18n></th>
+                <th><i18n>mediacentre.name</i18n></th>
+                <th><i18n>mediacentre.gar</i18n></th>
+                <th></th>
+            </tr>
+        </thead>
+
+        <tbody class="parameter-table-body">
+            <tr ng-repeat="item in structureGarLists">
+                <th>[[item.uai]]</th>
+                <th>[[item.name]]</th>
+                <th>
+                    <button ng-if="item.id == null"
+                            data-ng-disabled="createButton"
+                            ng-click="createGarGroup(item.structureId)">
+                        <i18n>mediacentre.parameter.deploy</i18n>
+                    </button>
+                    <span ng-if="item.id != null">
+                        <i18n>mediacentre.parameter.deployed</i18n>
+                    </span>
+                </th>
+                <th>
+                    <button data-ng-disabled="item.id == null || addButton"
+                            ng-click="addUser(item.id, item.structureId)">
+                        <i18n>mediacentre.parameter.add.user</i18n>
+                    </button>
+                </th>
+            </tr>
+        </tbody>
+    </table>
+
+
+</div>
