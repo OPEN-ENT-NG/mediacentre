@@ -1,11 +1,13 @@
 package fr.openent.mediacentre;
 
 import fr.openent.mediacentre.controller.MediacentreController;
+import fr.openent.mediacentre.controller.SettingController;
 import fr.openent.mediacentre.export.ExportTask;
 import fr.openent.mediacentre.service.impl.ExportWorker;
 import fr.wseduc.cron.CronTrigger;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.eventbus.EventBus;
 import org.entcore.common.http.BaseServer;
 
 import java.text.ParseException;
@@ -19,7 +21,10 @@ public class Mediacentre extends BaseServer {
 	@Override
 	public void start() throws Exception {
 		super.start();
+		final EventBus eb = getEventBus(vertx);
+
 		addController(new MediacentreController(vertx, config));
+		addController(new SettingController(eb));
 
 
 		final String exportCron = config.getString("export-cron", "");
