@@ -211,12 +211,13 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         String query = "MATCH  (p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup)<-[:IN]-" +
                 "(u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) ";
-        String dataReturn = "where p.name = 'Student' " +
-                "return distinct "+
-                "s.UAI as `" + STRUCTURE_UAI + "`, " +
-                "u.id as `" + PERSON_ID + "`, " +
-                "u.module as `" + MEF_CODE + "` " +
-                "order by " + "`" + PERSON_ID + "`";
+        String dataReturn = "WHERE p.name = 'Student' " +
+                "AND u.module  <>\"\""+
+                "RETURN DISTINCT "+
+                    "s.UAI as `" + STRUCTURE_UAI + "`, " +
+                    "u.id as `" + PERSON_ID + "`, " +
+                    "u.module as `" + MEF_CODE + "` " +
+                "ORDER BY " + "`" + PERSON_ID + "`";
 
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
