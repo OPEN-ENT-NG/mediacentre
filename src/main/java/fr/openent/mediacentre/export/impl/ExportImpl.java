@@ -1,77 +1,43 @@
-package fr.openent.mediacentre.service.impl;
+package fr.openent.mediacentre.export.impl;
 
-import fr.openent.mediacentre.controller.MediacentreController;
 import fr.openent.mediacentre.export.ExportService;
-import fr.openent.mediacentre.export.impl.ExportServiceImpl;
-import fr.openent.mediacentre.service.EventService;
-import fr.openent.mediacentre.service.ResourceService;
 import fr.openent.mediacentre.service.TarService;
+import fr.openent.mediacentre.service.impl.DefaultTarService;
 import fr.wseduc.webutils.Either;
-import fr.wseduc.webutils.collections.PersistantBuffer;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
-import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import org.vertx.java.busmods.BusModBase;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 import static fr.openent.mediacentre.Mediacentre.CONFIG;
 import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
 
-public class ExportWorker extends BusModBase implements Handler<Message<JsonObject>> {
+public class ExportImpl {
 
-    private final Map<String, PersistantBuffer> buffers = new HashMap<>();
-    private final Map<String, MessageConsumer<byte[]>> consumers = new HashMap<>();
-    private Logger log = LoggerFactory.getLogger(MediacentreController.class);
+    private Logger log = LoggerFactory.getLogger(ExportImpl.class);
     private ExportService exportService;
     private TarService tarService;
-    private JsonObject sftpGarConfig = null;
-    private JsonObject garRessourcesConfig = null;
-    private EventBus eb = null;
+    private JsonObject sftpGarConfig;
+    private EventBus eb;
     private JsonObject config;
-    private ResourceService resourceService;
-    private EventService eventService;
+    private Vertx vertx;
 
-    @Override
-    public void start() {
-        super.start();
-        vertx.eventBus().localConsumer(ExportWorker.class.getSimpleName(), this);
-        eventService = null;
-        this.config = CONFIG;
+    public ExportImpl(Vertx vertx, Handler<String> handler) {
         this.vertx = vertx;
+        this.config = CONFIG;
         this.eb = vertx.eventBus();
-        this.sftpGarConfig = config.getJsonObject("gar-sftp");
-        this.garRessourcesConfig = config.getJsonObject("gar-ressources");
         this.exportService = new ExportServiceImpl(config);
         this.tarService = new DefaultTarService();
-        this.eventService = new DefaultEventService(config.getString("event-collection", "gar-events"));
-        this.resourceService = new DefaultResourceService(
-                vertx,
-                garRessourcesConfig.getString("host"),
-                config.getString("id-ent"),
-                garRessourcesConfig.getString("cert"),
-                garRessourcesConfig.getString("key")
-        );
+        this.sftpGarConfig = config.getJsonObject("gar-sftp");
+
+        this.exportAndSend(handler);
     }
-
-    @Override
-    public void handle(Message<JsonObject> message) {
-        final String action = message.body().getString("action", "");
-        switch (action) {
-            case "exportAndSend":
-                exportAndSend(message);
-                break;
-        }
-    }
-
-
-    private void exportAndSend(Message<JsonObject> message) {
+    private void exportAndSend(Handler<String> handler) {
         log.info("Start exportAndSend GAR (Generate xml files, compress to tar.gz, generate md5, send to GAR by sftp");
         emptyDIrectory(config.getString("export-path"));
         log.info("Generate XML files");
@@ -100,7 +66,9 @@ public class ExportWorker extends BusModBase implements Handler<Message<JsonObje
 
                         eb.send(node + "sftp", sendTOGar, handlerToAsyncHandler((Message<JsonObject> messageResponse) -> {
                             if (messageResponse.body().containsKey("status") && messageResponse.body().getString("status") == "error") {
-                                log.error("FAILED Send to GAR tar GZ by sftp");
+                                String e = "Send to GAR tar GZ by sftp";
+                                log.error(e);
+                                handler.handle(e);
                             } else {
                                 String md5File = event2.right().getValue().getString("md5File");
                                 log.info("Send to GAR md5 by sftp: " + md5File);
@@ -109,19 +77,26 @@ public class ExportWorker extends BusModBase implements Handler<Message<JsonObje
                                         .put("dist-file", sftpGarConfig.getString("dir-dest") + md5File);
                                 eb.send(node + "sftp", sendTOGar, handlerToAsyncHandler(message1 -> {
                                     if (message1.body().containsKey("status") && message1.body().getString("status") == "error") {
-                                        log.error("FAILED Send to Md5 by sftp");
+                                        String e = "FAILED Send to Md5 by sftp";
+                                        log.error(e);
+                                        handler.handle(e);
                                     } else {
                                         log.info("SUCCESS Export and Send to GAR");
+                                        handler.handle("SUCCESS");
                                     }
                                 }));
                             }
                         }));
                     } else {
-                        log.error("Failed Export and Send to GAR");
+                        String e = "Failed Export and Send to GAR, tar service";
+                        log.error(e);
+                        handler.handle(e);
                     }
                 });
             } else {
-                log.error("Failed Export and Send to GAR");
+                String e = "Failed Export and Send to GAR export service";
+                log.error(e);
+                handler.handle(e);
             }
         });
     }

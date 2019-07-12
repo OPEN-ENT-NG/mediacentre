@@ -6,18 +6,15 @@ import fr.openent.mediacentre.export.impl.ExportServiceImpl;
 import fr.openent.mediacentre.security.WorkflowUtils;
 import fr.openent.mediacentre.service.EventService;
 import fr.openent.mediacentre.service.ResourceService;
-import fr.openent.mediacentre.service.TarService;
-import fr.openent.mediacentre.service.impl.DefaultTarService;
 import fr.openent.mediacentre.service.impl.DefaultEventService;
 import fr.openent.mediacentre.service.impl.DefaultResourceService;
-import fr.openent.mediacentre.service.impl.ExportWorker;
+import fr.openent.mediacentre.export.impl.ExportWorker;
 import fr.wseduc.bus.BusAddress;
 import fr.wseduc.cron.CronTrigger;
 import fr.wseduc.rs.Get;
 import fr.wseduc.rs.Post;
 import fr.wseduc.security.ActionType;
 import fr.wseduc.security.SecuredAction;
-import fr.wseduc.webutils.Either;
 import fr.wseduc.webutils.http.Renders;
 import fr.wseduc.webutils.request.RequestUtils;
 import io.vertx.core.Handler;
@@ -127,7 +124,7 @@ public class MediacentreController extends ControllerHelper {
     private void exportAndSend() {
         eb.send(ExportWorker.class.getSimpleName(),
                 new JsonObject().put("action", "exportAndSend"),
-                handlerToAsyncHandler(event -> log.info("Ok jrob verticle worker")));
+                handlerToAsyncHandler(event -> log.info("Export Gar Launched")));
     }
 
     @BusAddress(Mediacentre.MEDIACENTRE_ADDRESS)
