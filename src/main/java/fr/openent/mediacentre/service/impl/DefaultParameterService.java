@@ -2,20 +2,20 @@ package fr.openent.mediacentre.service.impl;
 
 import fr.openent.mediacentre.service.ParameterService;
 import fr.wseduc.webutils.Either;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.entcore.common.neo4j.Neo4j;
 import org.entcore.common.neo4j.Neo4jResult;
 
-import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
-import static org.entcore.common.neo4j.Neo4jResult.validUniqueResultHandler;
-
 public class DefaultParameterService implements ParameterService {
 
     private EventBus eb;
     private static final String GAR_GROUP_NAME = "RESP-AFFECT-GAR";
+    private static final String GAR_LINK_NAME = "GAR_AFFECTATION_IHM_CONNECTEUR";
     private static final String FUNCTION_DIRECTION_NAME = "DIR";
     private static final String FUNCTION_DOCUMENTATION_NAME = "DOC";
 
@@ -41,7 +41,34 @@ public class DefaultParameterService implements ParameterService {
                 .put("structureId", body.getString("structureId"))
                 .put("classId", body.getString("classId"))
                 .put("group", body);
-        eb.send( "entcore.feeder", action, handlerToAsyncHandler(validUniqueResultHandler(0, handler)));
+        eb.send( "entcore.feeder", action, (Handler<AsyncResult<Message<JsonObject>>>) createGarResult -> {
+            if (createGarResult.failed()) {
+                handler.handle(new Either.Left<>("Failed to create gar group"));
+            }
+
+            String groupId = createGarResult.result().body()
+                    .getJsonArray("results")
+                    .getJsonArray(0)
+                    .getJsonObject(0).getString("id");
+
+            String queryRole = "MATCH (a:Application)-[]->(ac:Action)<-[]-(r:Role)" +
+                    " WHERE a.name = {linkName} RETURN r.id as id";
+
+            Neo4j.getInstance().execute(queryRole, new JsonObject().put("linkName", GAR_LINK_NAME),
+                    Neo4jResult.validUniqueResultHandler(linkResult -> {
+                        if (linkResult.isLeft()) {
+                            handler.handle(new Either.Left<>("Failed to fetch role id"));
+                        }
+                        String roleId = linkResult.right().getValue().getString("id");
+                        String queryLink = "MATCH (r:Role), (g:Group) " +
+                                "WHERE r.id = {roleId} and g.id = {groupId} " +
+                                "CREATE UNIQUE (g)-[:AUTHORIZED]->(r)";
+                        JsonObject params = new JsonObject()
+                                .put("groupId", groupId)
+                                .put("roleId", roleId);
+                        Neo4j.getInstance().execute(queryLink, params, Neo4jResult.validUniqueResultHandler(handler));
+                    }));
+        });
     }
 
     @Override
