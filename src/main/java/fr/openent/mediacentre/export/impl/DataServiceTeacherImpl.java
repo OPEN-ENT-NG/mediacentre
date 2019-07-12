@@ -216,16 +216,18 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         String query = "MATCH  (p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup)<-[:IN]-" +
                 "(u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) ";
-        String dataReturn = "where p.name = 'Teacher' " +
-                "with s,u unwind u.modules as module " +
-                "return distinct "+
-                "s.academy + '-' + split(module,'$')[0] as aca_structureID ," +
-                "split(module,'$')[0] as structureID ," +
+        query +="WHERE p.name = 'Teacher' " +
+                "WITH s,u "+
+                "UNWIND u.modules as module " +
+                "WITH u, s, module " +
+                "WHERE module <>\"\" " +
+                "RETURN distinct " +
+                "s.academy + '-' + split(module,'$')[0] as aca_structureID , " +
+                "split(module,'$')[0] as structureID , " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "split(module,'$')[1] as `" + MEF_CODE + "` " +
-                "order by structureID, " + "`" + MEF_CODE + "` , `" + PERSON_ID + "`";
+                "ORDER BY structureID, " + "`" + MEF_CODE + "` , `" + PERSON_ID + "`";
 
-        query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
         JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
