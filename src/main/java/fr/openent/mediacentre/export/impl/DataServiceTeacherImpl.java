@@ -100,6 +100,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 "collect(distinct s.UAI) as profiles " +
                 "order by " + "`" + PERSON_ID + "`";
 
+
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 

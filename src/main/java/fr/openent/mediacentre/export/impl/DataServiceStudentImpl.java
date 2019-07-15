@@ -217,7 +217,8 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                     "s.UAI as `" + STRUCTURE_UAI + "`, " +
                     "u.id as `" + PERSON_ID + "`, " +
                     "u.module as `" + MEF_CODE + "` " +
-                "ORDER BY " + "`" + PERSON_ID + "`";
+                "ORDER BY " + "`" + STRUCTURE_UAI + "`, `" + PERSON_ID + "`, `" + MEF_CODE + "` ";
+
 
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
@@ -254,7 +255,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 "s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "fos as `" + STUDYFIELD_CODE + "` " +
-                "order by " + "`" + PERSON_ID + "`";
+                "order by " + "`" + STRUCTURE_UAI + "`, `" + PERSON_ID + "`, `" + STUDYFIELD_CODE + "` ";
 
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
