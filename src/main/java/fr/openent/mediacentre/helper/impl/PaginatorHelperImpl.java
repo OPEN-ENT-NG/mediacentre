@@ -7,6 +7,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.entcore.common.neo4j.Neo4j;
 
+import static fr.openent.mediacentre.Mediacentre.CONFIG;
 import static org.entcore.common.neo4j.Neo4jResult.validResult;
 
 public class PaginatorHelperImpl implements PaginatorHelper  {
@@ -14,8 +15,11 @@ public class PaginatorHelperImpl implements PaginatorHelper  {
     public static int LIMIT;
     final Neo4j neo4j = Neo4j.getInstance();
 
-    public PaginatorHelperImpl(int limit) {
-        this.LIMIT = limit;
+    public PaginatorHelperImpl() {
+        this.LIMIT = 25000;
+        if(CONFIG.containsKey("pagination-limit")){
+            this.LIMIT = CONFIG.getInteger("pagination-limit");
+        }
     }
 
 

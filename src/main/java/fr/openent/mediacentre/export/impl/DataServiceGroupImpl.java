@@ -13,13 +13,12 @@ import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
 public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataService {
 
-    private static final int LIMIT = 1000;
     private PaginatorHelperImpl paginator;
 
     DataServiceGroupImpl(JsonObject config, String strDate) {
         super(config);
         xmlExportHelper = new XmlExportHelperImpl(config, GROUPS_ROOT, GROUPS_FILE_PARAM, strDate);
-        paginator = new PaginatorHelperImpl(LIMIT);
+        paginator = new PaginatorHelperImpl();
     }
 
     /**

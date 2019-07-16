@@ -11,13 +11,12 @@ import io.vertx.core.json.JsonObject;
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
 public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataService{
-    private static final int LIMIT = 1000;
     private PaginatorHelperImpl paginator;
 
     DataServiceStudentImpl(JsonObject config, String strDate) {
         super(config);
         xmlExportHelper = new XmlExportHelperImpl(config, STUDENT_ROOT, STUDENT_FILE_PARAM, strDate);
-        paginator = new PaginatorHelperImpl(LIMIT);
+        paginator = new PaginatorHelperImpl();
     }
 
     /**

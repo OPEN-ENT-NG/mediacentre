@@ -31,7 +31,6 @@ public class Mediacentre extends BaseServer {
 		demo = config.getBoolean("demo", false);
 		CONFIG = config;
 
-		log.info("---- worker definition)");
 		vertx.deployVerticle(ExportWorker.class, new DeploymentOptions().setConfig(config).setWorker(true));
 
 		try{

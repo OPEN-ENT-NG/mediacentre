@@ -26,6 +26,7 @@
       "cert": "${garRessourcesCert}",
       "key": "${garRessourcesKey}"
     },
+    "pagination-limit": ${mediacentrePaginationLimit},
     "gar-sftp" : {
       "host": "${garSftpHost}",
       "port": ${garSftpPort},
