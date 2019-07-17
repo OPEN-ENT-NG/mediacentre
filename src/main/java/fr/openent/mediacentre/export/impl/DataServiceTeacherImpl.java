@@ -161,11 +161,10 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         //TODO GARPersonCivilite
         teacher.put(PERSON_STRUCT_ATTACH, personCopy.getValue(PERSON_STRUCT_ATTACH));
         teacher.put(PERSON_STRUCTURE, personCopy.getValue(PERSON_STRUCTURE));
-        teacher.put(TEACHER_POSITION, personCopy.getValue(TEACHER_POSITION));
-
         if(personCopy.getValue(PERSON_BIRTH_DATE) != null && !"".equals(personCopy.getValue(PERSON_BIRTH_DATE))){
             teacher.put(PERSON_BIRTH_DATE, personCopy.getValue(PERSON_BIRTH_DATE));
         }
+        teacher.put(TEACHER_POSITION, personCopy.getValue(TEACHER_POSITION));
     }
 
     /**
