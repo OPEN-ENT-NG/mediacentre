@@ -248,7 +248,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "unwind(classesList) as classes ";
         String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
-                "split(classes,\"$\")[1] as `" + GROUPS_CODE + "`, " +
+                "CASE WHEN  split(classes,\"$\")[1] IS NOT null THEN split(classes,\"$\")[1] ELSE classes END as `" + GROUPS_CODE + "`, " +
                 "collect(code) as `" + STUDYFIELD_CODE + "` " +
                 "order by `" + PERSON_ID + "`, `" + STRUCTURE_UAI + "`";
 
@@ -291,7 +291,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "unwind(grouplist) as group ";
         String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
-                "split(group,\"$\")[1] as `" + GROUPS_CODE + "`, " +
+                "CASE WHEN  split(group,\"$\")[1] IS NOT null THEN split(group,\"$\")[1] ELSE group END as `" + GROUPS_CODE + "`, " +
                 "collect(code) as `" + STUDYFIELD_CODE + "` " +
                 "order by `" + PERSON_ID + "`, `" + STRUCTURE_UAI + "`";
 
