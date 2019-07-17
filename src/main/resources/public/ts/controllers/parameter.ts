@@ -24,20 +24,12 @@ export const parameterController = ng.controller("ParameterController", [
         $scope.createButton = true;
         $scope.$apply();
 
-        await ParameterService
-            .createGroupGarToStructure(GROUP_GAR_NAME, structureId)
-            .then(async res => {
-                if (res["id"]) {
-                    $scope.structureGarLists = await ParameterService.getStructureGar();
-                    $scope.createButton = false;
-                }
-            })
-            .catch(
-                (err) => {
-                    $scope.createButton = false;
-                    throw err;
-                }
-            );
+        let response = await ParameterService.createGroupGarToStructure(GROUP_GAR_NAME, structureId);
+        if (response.status === 200) {
+            $scope.structureGarLists = await ParameterService.getStructureGar();
+            $scope.createButton = false;
+        }
+        $scope.createButton = false;
         $scope.$apply();
     };
 

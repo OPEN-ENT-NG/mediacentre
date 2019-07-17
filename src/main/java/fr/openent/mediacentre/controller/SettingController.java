@@ -51,7 +51,7 @@ public class SettingController extends ControllerHelper {
     @ApiDoc("Create group to gar structure")
     public void createGarGroupToStructure(final HttpServerRequest request) {
         RequestUtils.bodyToJson(request, parameter -> {
-            parameterService.createGarGroupToStructure(parameter, notEmptyResponseHandler(request, 201));
+            parameterService.createGarGroupToStructure(parameter, DefaultResponseHandler.defaultResponseHandler(request));
         });
 
     }
