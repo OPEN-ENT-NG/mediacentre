@@ -5,10 +5,12 @@ import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
 import org.vertx.java.busmods.BusModBase;
 
+import java.util.Calendar;
 
 public class ExportWorker extends BusModBase implements Handler<Message<JsonObject>> {
 
     ExportImpl export = null;
+    private Calendar lastExportTime = Calendar.getInstance();
 
     @Override
     public void start() {
@@ -27,7 +29,9 @@ public class ExportWorker extends BusModBase implements Handler<Message<JsonObje
     }
 
     private void export() {
-        if(this.export == null){
+        Calendar now = Calendar.getInstance();
+        if(this.export == null || ( (now.getTimeInMillis() - lastExportTime.getTimeInMillis()) / 1000 / 3600) > 1 )  {
+            this.lastExportTime = now;
             this.export = new ExportImpl(vertx, new Handler<String>() {
                 @Override
                 public void handle(String s) {
