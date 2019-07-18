@@ -31,19 +31,25 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
     @Override
     public void exportData(final Handler<Either<String, JsonObject>> handler) {
 
+        log.info("STRUCUTURE getAndProcessStructuresInfo ");
         getAndProcessStructuresInfo(new Handler<Either<String, JsonObject>>() {
             @Override
             public void handle(Either<String, JsonObject> structInfoResults) {
-                if (validResponse(structInfoResults, handler)) {
+                log.info("STRUCTURE getAndProcessStructuresInfo passed");
 
+                if (validResponse(structInfoResults, handler)) {
+                    log.info("STRUCTURE getAndProcessStructuresMefs");
                     getAndProcessStructuresMefs(new Handler<Either<String, JsonObject>>() {
                         @Override
                         public void handle(Either<String, JsonObject> structMefsResults) {
+                            log.info("STRUCTURE getAndProcessStructuresMefs passed");
                             if (validResponse(structMefsResults, handler)) {
+                                log.info("STRUCTURE getAndProcessStructuresFos ");
 
                                 getAndProcessStructuresFos(new Handler<Either<String, JsonObject>>() {
                                     @Override
                                     public void handle(Either<String, JsonObject> structFosResults) {
+                                        log.info("STRUCTURE getAndProcessStructuresFos passed");
                                         if (validResponse(structFosResults, handler)) {
 
                                             xmlExportHelper.closeFile();
@@ -71,12 +77,11 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      */
     private void getAndProcessStructuresInfo(final Handler<Either<String, JsonObject>> handler) {
 
-        getStucturesInfoFromNeo4j(new Handler<Either<String, JsonArray>>() {
+        getStucturesInfoFromNeo4j(handler, new Handler<Either<String, JsonArray>>() {
             @Override
             public void handle(Either<String, JsonArray> structResults) {
                 if( validResponseNeo4j(structResults, handler) ) {
                     Either<String,JsonObject> result = processStructuresInfo( structResults.right().getValue() );
-                    handler.handle(result);
                 }
             }
         });
@@ -88,12 +93,11 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      */
     private void getAndProcessStructuresMefs(final Handler<Either<String, JsonObject>> handler) {
 
-        getStucturesMefsFromNeo4j(new Handler<Either<String, JsonArray>>() {
+        getStucturesMefsFromNeo4j(handler, new Handler<Either<String, JsonArray>>() {
             @Override
             public void handle(Either<String, JsonArray> structResults) {
                 if( validResponseNeo4j(structResults, handler) ) {
                     Either<String,JsonObject> result = processStucturesMefs( structResults.right().getValue() );
-                    handler.handle(result);
                 }
             }
         });
@@ -105,12 +109,11 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      */
     private void getAndProcessStructuresFos(final Handler<Either<String, JsonObject>> handler) {
 
-        getStucturesFosFromNeo4j(new Handler<Either<String, JsonArray>>() {
+        getStucturesFosFromNeo4j(handler, new Handler<Either<String, JsonArray>>() {
             @Override
             public void handle(Either<String, JsonArray> structResults) {
                 if( validResponseNeo4j(structResults, handler) ) {
                     Either<String,JsonObject> result = processStucturesFos( structResults.right().getValue() );
-                    handler.handle(result);
                 }
             }
         });
@@ -120,7 +123,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      * Get structures infos from Neo4j
      * @param handler results
      */
-    private void getStucturesInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
+    private void getStucturesInfoFromNeo4j(final Handler<Either<String, JsonObject>> handleFinal, Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) ";
 // Don't export optional attachment structure attribute
 //                "OPTIONAL MATCH (g2:ManualGroup{name:\\\"\" + CONTROL_GROUP + \"\\\"})-[:DEPENDS]->(s2:Structure)<-[:HAS_ATTACHMENT]-(s:Structure) ";
@@ -137,7 +140,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
         JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+        paginator.neoStreamList(query, params, 0, handler, handleFinal);
     }
 
     /**
@@ -184,7 +187,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      *      Each teacher can have many mefs attached
      * @param handler results
      */
-    private void getStucturesMefsFromNeo4j(Handler<Either<String, JsonArray>> handler) {
+    private void getStucturesMefsFromNeo4j(final Handler<Either<String, JsonObject>> handleFinal, Handler<Either<String, JsonArray>> handler) {
         String queryStudentsMefs = "MATCH (n:User)-[:ADMINISTRATIVE_ATTACHMENT]->" +
                 "(s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "where exists(n.module) and not has(n.deleteDate) " +
@@ -208,7 +211,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
         JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+        paginator.neoStreamList(query, params, 0, handler, handleFinal);
     }
 
     /**
@@ -231,7 +234,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      *      - Students FOS codes and description are lists in two different fields and must be mapped
      * @param handler results
      */
-    private void getStucturesFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
+    private void getStucturesFosFromNeo4j(final Handler<Either<String, JsonObject>> handleFinal, Handler<Either<String, JsonArray>> handler) {
         String queryStructureFos = "MATCH (sub:Subject)-[:SUBJECT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "with s, sub.label as label, split(sub.code,\"-\") as codelist " +
@@ -256,7 +259,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
         JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+        paginator.neoStreamList(query, params, 0, handler, handleFinal);
     }
 
     /**
