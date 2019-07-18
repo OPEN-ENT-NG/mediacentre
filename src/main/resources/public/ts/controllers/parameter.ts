@@ -15,6 +15,7 @@ export const parameterController = ng.controller("ParameterController", [
     /* button handler */
     $scope.createButton = false;
     $scope.addButton = false;
+    $scope.$apply();
 
     $scope.export = () => {
         ParameterService.export();
