@@ -199,7 +199,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(c.externalId,\"$\")[1], c.id) as `" + GROUPS_CODE + "` " +
-                "order by `" + PERSON_ID + "`, `" + STRUCTURE_UAI + "` " +
+                "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "` " +
                 "UNION ";
         String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
@@ -207,7 +207,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as `" + GROUPS_CODE + "` "+
-                "order by `" + PERSON_ID + "`, `" + STRUCTURE_UAI + "` ";
+                "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "`";
 
         String query = classQuery + groupsQuery;
         query += " ASC SKIP {skip} LIMIT {limit} ";
@@ -250,7 +250,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "uid as `" + PERSON_ID + "`, " +
                 "CASE WHEN  split(classes,\"$\")[1] IS NOT null THEN split(classes,\"$\")[1] ELSE classes END as `" + GROUPS_CODE + "`, " +
                 "collect(code) as `" + STUDYFIELD_CODE + "` " +
-                "order by `" + PERSON_ID + "`, `" + STRUCTURE_UAI + "`";
+                "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "`";
 
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
@@ -293,7 +293,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "uid as `" + PERSON_ID + "`, " +
                 "CASE WHEN  split(group,\"$\")[1] IS NOT null THEN split(group,\"$\")[1] ELSE group END as `" + GROUPS_CODE + "`, " +
                 "collect(code) as `" + STUDYFIELD_CODE + "` " +
-                "order by `" + PERSON_ID + "`, `" + STRUCTURE_UAI + "`";
+                "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "`";
 
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
