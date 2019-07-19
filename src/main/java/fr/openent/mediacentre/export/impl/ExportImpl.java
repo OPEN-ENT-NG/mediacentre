@@ -39,7 +39,11 @@ public class ExportImpl {
     }
     private void exportAndSend(Handler<String> handler) {
         log.info("Start exportAndSend GAR (Generate xml files, compress to tar.gz, generate md5, send to GAR by sftp");
-        emptyDIrectory(config.getString("export-path"));
+        try {
+            emptyDIrectory(config.getString("export-path"));
+        } catch (Exception e) {
+            handler.handle(e.getMessage());
+        }
         log.info("Generate XML files");
         exportService.launchExport((Either<String, JsonObject> event1) -> {
             if (event1.isRight()) {

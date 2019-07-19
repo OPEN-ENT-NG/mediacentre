@@ -31,36 +31,27 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
     @Override
     public void exportData(final Handler<Either<String, JsonObject>> handler) {
 
-        getAndProcessStructuresInfo(new Handler<Either<String, JsonObject>>() {
-            @Override
-            public void handle(Either<String, JsonObject> structInfoResults) {
-                if (validResponse(structInfoResults, handler)) {
+        getAndProcessStructuresInfo(structInfoResults -> {
+            if (validResponse(structInfoResults, handler)) {
 
-                    getAndProcessStructuresMefs(new Handler<Either<String, JsonObject>>() {
-                        @Override
-                        public void handle(Either<String, JsonObject> structMefsResults) {
-                            if (validResponse(structMefsResults, handler)) {
+                getAndProcessStructuresMefs(structMefsResults -> {
+                    if (validResponse(structMefsResults, handler)) {
 
-                                getAndProcessStructuresFos(new Handler<Either<String, JsonObject>>() {
-                                    @Override
-                                    public void handle(Either<String, JsonObject> structFosResults) {
-                                        if (validResponse(structFosResults, handler)) {
+                        getAndProcessStructuresFos(structFosResults -> {
+                            if (validResponse(structFosResults, handler)) {
 
-                                            xmlExportHelper.closeFile();
-                                            handler.handle(new Either.Right<String, JsonObject>(
-                                                    new JsonObject().put(
-                                                            FILE_LIST_KEY,
-                                                            xmlExportHelper.getFileList()
-                                                    )));
-
-                                        }
-                                    }
-                                });
+                                xmlExportHelper.closeFile();
+                                handler.handle(new Either.Right<String, JsonObject>(
+                                        new JsonObject().put(
+                                                FILE_LIST_KEY,
+                                                xmlExportHelper.getFileList()
+                                        )));
 
                             }
-                        }
-                    });
-                }
+                        });
+
+                    }
+                });
             }
         });
     }
@@ -71,13 +62,10 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      */
     private void getAndProcessStructuresInfo(final Handler<Either<String, JsonObject>> handler) {
 
-        getStucturesInfoFromNeo4j(new Handler<Either<String, JsonArray>>() {
-            @Override
-            public void handle(Either<String, JsonArray> structResults) {
-                if( validResponseNeo4j(structResults, handler) ) {
-                    Either<String,JsonObject> result = processStructuresInfo( structResults.right().getValue() );
-                    handler.handle(result);
-                }
+        getStucturesInfoFromNeo4j(structResults -> {
+            if( validResponseNeo4j(structResults, handler) ) {
+                Either<String,JsonObject> result = processStructuresInfo( structResults.right().getValue() );
+                handler.handle(result);
             }
         });
     }
@@ -88,13 +76,10 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      */
     private void getAndProcessStructuresMefs(final Handler<Either<String, JsonObject>> handler) {
 
-        getStucturesMefsFromNeo4j(new Handler<Either<String, JsonArray>>() {
-            @Override
-            public void handle(Either<String, JsonArray> structResults) {
-                if( validResponseNeo4j(structResults, handler) ) {
-                    Either<String,JsonObject> result = processStucturesMefs( structResults.right().getValue() );
-                    handler.handle(result);
-                }
+        getStucturesMefsFromNeo4j(structResults -> {
+            if( validResponseNeo4j(structResults, handler) ) {
+                Either<String,JsonObject> result = processStucturesMefs( structResults.right().getValue() );
+                handler.handle(result);
             }
         });
     }
