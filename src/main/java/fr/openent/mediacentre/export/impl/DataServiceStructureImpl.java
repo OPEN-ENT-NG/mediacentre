@@ -178,7 +178,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "n.moduleName as `" + MEF_DESCRIPTION + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + MEF_CODE + "` " +
                 "UNION ";
-        String queryTeachersMefs = "MATCH (n:User)-[:AMEFDMINISTRATIVE_ATTACHMENT]->" +
+        String queryTeachersMefs = "MATCH (n:User)-[:ADMINISTRATIVE_ATTACHMENT]->" +
                 "(s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "where exists(n.modules) and not has(n.deleteDate) " +
                 "with s,n " +
