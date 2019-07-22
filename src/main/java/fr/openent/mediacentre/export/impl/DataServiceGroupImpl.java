@@ -163,13 +163,9 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "name as `" + GROUPS_DESC + "`, " +
                 "\"" + GROUPS_GROUP_NAME + "\" as `" + GROUPS_STATUS + "`, " +
                 "dividlist as `" + GROUPS_DIVISION + "` " +
-                "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "`";
+                "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` ";
 
-        String query = classQuery + groupsQuery;
-        query += " ASC SKIP {skip} LIMIT {limit} ";
-
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+        neo4j.execute(classQuery + groupsQuery, new JsonObject(), validResultHandler(handler));
     }
 
     /**
