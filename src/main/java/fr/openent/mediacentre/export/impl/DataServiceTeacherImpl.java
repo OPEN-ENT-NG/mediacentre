@@ -221,7 +221,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 "WITH s,u "+
                 "UNWIND u.modules as module " +
                 "WITH u, s, module " +
-                "WHERE module <>\"\" " +
+                "WHERE module <>\"\" AND s.externalId = split(module,'$')[0] " +
                 "RETURN distinct " +
                 "s.academy + '-' + split(module,'$')[0] as aca_structureID , " +
                 "split(module,'$')[0] as structureID , " +
