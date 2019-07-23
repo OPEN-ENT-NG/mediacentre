@@ -36,7 +36,6 @@ import static fr.wseduc.webutils.http.response.DefaultResponseHandler.defaultRes
 
 public class MediacentreController extends ControllerHelper {
 
-    private ExportService exportService;
     private final ResourceService resourceService;
     private final EventService eventService;
     private final Vertx vertx;
@@ -51,7 +50,6 @@ public class MediacentreController extends ControllerHelper {
         this.config = config;
         this.vertx = vertx;
         this.garRessourcesConfig = config.getJsonObject("gar-ressources");
-        this.exportService = new ExportServiceImpl(config);
         this.eventService = new DefaultEventService(config.getString("event-collection", "gar-events"));
         this.resourceService = new DefaultResourceService(
                 vertx,
@@ -131,7 +129,7 @@ public class MediacentreController extends ControllerHelper {
     public void addressHandler(Message<JsonObject> message) {
         String action = message.body().getString("action", "");
         switch (action) {
-            case "export" : exportService.launchExport(message);
+            case "export" : exportAndSend();
                 break;
             case "getConfig":
                 log.info("MEDIACENTRE GET CONFIG BUS RECEPTION");
