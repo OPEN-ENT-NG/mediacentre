@@ -63,13 +63,10 @@ public class DefaultResourceService implements ResourceService {
                 JsonArray results = event.right().getValue();
                 if (results.size() > 0) {
                     String uai = results.getJsonObject(0).getString("UAI");
-                    int port = 443;
-                    String host = garHost;
                     String garHostNoProtocol;
                     try {
                         URL url = new URL(garHost);
                         garHostNoProtocol = url.getHost();
-                        port = url.getPort() != -1 ? url.getPort() : port;
                     } catch (Exception e) {
                         handler.handle(new Either.Left<>("[DefaultResourceService@get] Bad gar host url : " + garHost));
                         return;
@@ -77,7 +74,7 @@ public class DefaultResourceService implements ResourceService {
                     String resourcesUri = Gar.demo
                             ? "/gar/public/ts/model/__mocks__/resources.json"
                             : "/ressources/" + idEnt + "/" + uai + "/" + userId;
-                    final HttpClientRequest client = httpClient.get(port, host, resourcesUri, response -> {
+                    final HttpClientRequest client = httpClient.get(resourcesUri, response -> {
                         if (response.statusCode() != 200) {
                             log.error("try to call " + resourcesUri);
                             log.error(response.statusCode() + " " + response.statusMessage());
