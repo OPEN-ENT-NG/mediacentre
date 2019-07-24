@@ -63,14 +63,13 @@ public class DefaultResourceService implements ResourceService {
                 JsonArray results = event.right().getValue();
                 if (results.size() > 0) {
                     String uai = results.getJsonObject(0).getString("UAI");
-                    String garHostNoProtocol = "";
                     int port = 443;
                     String host = garHost;
+                    String garHostNoProtocol;
                     try {
                         URL url = new URL(garHost);
                         garHostNoProtocol = url.getHost();
                         port = url.getPort() != -1 ? url.getPort() : port;
-                        host = url.getHost();
                     } catch (Exception e) {
                         handler.handle(new Either.Left<>("[DefaultResourceService@get] Bad gar host url : " + garHost));
                         return;
