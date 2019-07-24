@@ -69,7 +69,7 @@ public class DefaultResourceService implements ResourceService {
                     try {
                         URL url = new URL(garHost);
                         garHostNoProtocol = url.getHost();
-                        port = url.getPort();
+                        port = url.getPort() != -1 ? url.getPort() : port;
                         host = url.getHost();
                     } catch (Exception e) {
                         handler.handle(new Either.Left<>("[DefaultResourceService@get] Bad gar host url : " + garHost));
