@@ -73,6 +73,7 @@ public class DefaultResourceService implements ResourceService {
                         host = url.getHost();
                     } catch (Exception e) {
                         handler.handle(new Either.Left<>("[DefaultResourceService@get] Bad gar host url : " + garHost));
+                        return;
                     }
                     String resourcesUri = Gar.demo
                             ? "/gar/public/ts/model/__mocks__/resources.json"
