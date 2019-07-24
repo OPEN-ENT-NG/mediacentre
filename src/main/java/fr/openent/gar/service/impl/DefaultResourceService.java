@@ -74,7 +74,7 @@ public class DefaultResourceService implements ResourceService {
                     String resourcesUri = Gar.demo
                             ? "/gar/public/ts/model/__mocks__/resources.json"
                             : "/ressources/" + idEnt + "/" + uai + "/" + userId;
-                    final HttpClientRequest client = httpClient.get(resourcesUri, response -> {
+                    final HttpClientRequest client = httpClient.get(garHost + resourcesUri, response -> {
                         if (response.statusCode() != 200) {
                             log.error("try to call " + resourcesUri);
                             log.error(response.statusCode() + " " + response.statusMessage());
