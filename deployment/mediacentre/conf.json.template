@@ -35,6 +35,7 @@
       "sshkey": "${garSftpSshkey}",
       "dir-dest": "${garSftpDirDest}",
       "known-hosts": "${garSftpKnownHost}"
-    }
+    },
+    "academy-prefix": "${academyPrefix}"
   }
 }

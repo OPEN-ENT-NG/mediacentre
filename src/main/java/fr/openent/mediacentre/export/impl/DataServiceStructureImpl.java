@@ -14,11 +14,13 @@ import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 public class DataServiceStructureImpl extends DataServiceBaseImpl implements DataService {
 
     private PaginatorHelperImpl paginator;
+    private JsonObject conf;
 
     DataServiceStructureImpl(JsonObject config, String strDate) {
         super(config);
         xmlExportHelper = new XmlExportHelperImpl(config, STRUCTURE_ROOT, STRUCTURE_FILE_PARAM, strDate);
         paginator = new PaginatorHelperImpl();
+        this.conf = config;
     }
 
     /**
@@ -217,31 +219,39 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      * @param handler results
      */
     private void getStucturesFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String queryStructureFos = "MATCH (sub:Subject)-[:SUBJECT]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "with s, sub.label as label, split(sub.code,\"-\") as codelist " +
-                "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
-                "codelist[size(codelist)-1] as `" + STUDYFIELD_CODE + "`, " +
-                "label as `" + STUDYFIELD_DESC + "` " +
-                "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
-                "UNION ";
-        String queryStudentFos = "MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "where exists (u.fieldOfStudy) " +
-                "with s, u.fieldOfStudy as fos, u.fieldOfStudyLabels as fosl " +
-                "with s, " +
-                "reduce(x=[], idx in range(0,size(fos)-1) | x + {code:fos[idx],label:fosl[idx]}) as rows " +
-                "unwind rows as row " +
-                "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
-                "row.code as `" + STUDYFIELD_CODE + "`, " +
-                "row.label as  `" + STUDYFIELD_DESC + "` " +
-                "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " ;
+        if(conf != null && conf.containsKey("academy-prefix") && conf.getString("academy-prefix") != null){
+            String prefix = conf.getString("academy-prefix");
 
-        String query = queryStructureFos + queryStudentFos;
-        query += " ASC SKIP {skip} LIMIT {limit} ";
+            String queryStructureFos = "MATCH (sub:Subject)-[:SUBJECT]->(s:Structure)" +
+                    "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
+                    "with s, sub.label as label, " +
+                    " CASE WHEN sub.code =~ '("+ prefix+")-[A-Z0-9]+' THEN right(sub.code, size(head(split(sub.code,\"-\"))) + 1 ) ELSE sub.code END as codelist  " +
+                    "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
+                    "codelist as `" + STUDYFIELD_CODE + "`, " +
+                    "label as `" + STUDYFIELD_DESC + "` " +
+                    "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
+                    "UNION ";
+            String queryStudentFos = "MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
+                    "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
+                    "where exists (u.fieldOfStudy) " +
+                    "with s, u.fieldOfStudy as fos, u.fieldOfStudyLabels as fosl " +
+                    "with s, " +
+                    "reduce(x=[], idx in range(0,size(fos)-1) | x + {code:fos[idx],label:fosl[idx]}) as rows " +
+                    "unwind rows as row " +
+                    "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
+                    "row.code as `" + STUDYFIELD_CODE + "`, " +
+                    "row.label as  `" + STUDYFIELD_DESC + "` " +
+                    "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " ;
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+            String query = queryStructureFos + queryStudentFos;
+            query += " ASC SKIP {skip} LIMIT {limit} ";
+
+            JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+            paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+        }
+        else {
+            log.error("Can't generate getStucturesFosFromNeo4j, conf academy-prefix is missing");
+        }
     }
 
     /**

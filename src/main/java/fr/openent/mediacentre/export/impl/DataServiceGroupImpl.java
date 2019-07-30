@@ -14,11 +14,15 @@ import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataService {
 
     private PaginatorHelperImpl paginator;
+    private JsonObject conf;
+
 
     DataServiceGroupImpl(JsonObject config, String strDate) {
         super(config);
         xmlExportHelper = new XmlExportHelperImpl(config, GROUPS_ROOT, GROUPS_FILE_PARAM, strDate);
         paginator = new PaginatorHelperImpl();
+        this.conf = config;
+
     }
 
     /**
@@ -233,26 +237,33 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * @param handler results
      */
     private void getClassesFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query =
-                "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "WITH distinct u,s "+
-                "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
-                "WITH u.id as uid,  t.classes as classesList, " +
-                "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code, " +
-                "s.UAI as uai " +
-                "unwind(classesList) as classes ";
-        String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
-                "uid as `" + PERSON_ID + "`, " +
-                "CASE WHEN  split(classes,\"$\")[1] IS NOT null THEN split(classes,\"$\")[1] ELSE classes END as `" + GROUPS_CODE + "`, " +
-                "collect(code) as `" + STUDYFIELD_CODE + "` " +
-                "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "`";
+        if (conf != null && conf.containsKey("academy-prefix") && conf.getString("academy-prefix") != null) {
+            String prefix = conf.getString("academy-prefix");
 
-        query = query + dataReturn;
-        query += " ASC SKIP {skip} LIMIT {limit} ";
+            String query =
+                    "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
+                    "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
+                    "WITH distinct u,s "+
+                    "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
+                    "WITH u.id as uid,  t.classes as classesList, " +
+                    "CASE WHEN sub.code =~ '(" + prefix + ")-[A-Z0-9]+' THEN right(sub.code, size(head(split(sub.code,\"-\"))) + 1 ) ELSE sub.code END as code, " +
+                    "s.UAI as uai " +
+                    "unwind(classesList) as classes ";
+            String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
+                    "uid as `" + PERSON_ID + "`, " +
+                    "CASE WHEN  split(classes,\"$\")[1] IS NOT null THEN split(classes,\"$\")[1] ELSE classes END as `" + GROUPS_CODE + "`, " +
+                    "collect(code) as `" + STUDYFIELD_CODE + "` " +
+                    "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "`";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+            query = query + dataReturn;
+            query += " ASC SKIP {skip} LIMIT {limit} ";
+
+            JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+            paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+
+        } else {
+            log.error("Can't generate getClassesFosFromNeo4j, conf academy-prefix is missing");
+        }
     }
 
     /**
@@ -276,26 +287,33 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * @param handler results
      */
     private void getGroupsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query =
-                "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "WITH distinct u,s "+
-                "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
-                "with u.id as uid, t.groups as grouplist, " +
-                "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code, " +
-                "s.UAI as uai " +
-                "unwind(grouplist) as group ";
-        String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
-                "uid as `" + PERSON_ID + "`, " +
-                "CASE WHEN  split(group,\"$\")[1] IS NOT null THEN split(group,\"$\")[1] ELSE group END as `" + GROUPS_CODE + "`, " +
-                "collect(code) as `" + STUDYFIELD_CODE + "` " +
-                "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "`";
 
-        query = query + dataReturn;
-        query += " ASC SKIP {skip} LIMIT {limit} ";
+        if (conf != null && conf.containsKey("academy-prefix") && conf.getString("academy-prefix") != null) {
+            String prefix = conf.getString("academy-prefix");
+            String query =
+                    "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
+                    "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
+                    "WITH distinct u,s "+
+                    "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
+                    "with u.id as uid, t.groups as grouplist, " +
+                    "CASE WHEN sub.code =~ '(" + prefix + ")-[A-Z0-9]+' THEN right(sub.code, size(head(split(sub.code,\"-\"))) + 1 ) ELSE sub.code END as code, " +
+                    "s.UAI as uai " +
+                    "unwind(grouplist) as group ";
+            String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
+                    "uid as `" + PERSON_ID + "`, " +
+                    "CASE WHEN  split(group,\"$\")[1] IS NOT null THEN split(group,\"$\")[1] ELSE group END as `" + GROUPS_CODE + "`, " +
+                    "collect(code) as `" + STUDYFIELD_CODE + "` " +
+                    "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "`";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+            query = query + dataReturn;
+            query += " ASC SKIP {skip} LIMIT {limit} ";
+
+            JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+            paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+
+        } else {
+            log.error("Can't generate getClassesFosFromNeo4j, conf academy-prefix is missing");
+        }
     }
 
     /**
