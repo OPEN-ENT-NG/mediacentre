@@ -32,7 +32,7 @@ public class Mediacentre extends BaseServer {
 		demo = config.getBoolean("demo", false);
 		CONFIG = config;
 
-		vertx.deployVerticle(ExportWorker.class, new DeploymentOptions().setConfig(config)
+		vertx.deployVerticle("fr.openent.mediacentre.export.impl.ExportWorker", new DeploymentOptions().setConfig(config)
 				.setIsolationGroup("mediacentre_worker_group")
 				.setIsolatedClasses(Arrays.asList("fr.openent.mediacentre.export.impl.*",
 						"fr.openent.mediacentre.helper.impl.*", "com.sun.org.apache.xalan.internal.xsltc.trax.*"))
