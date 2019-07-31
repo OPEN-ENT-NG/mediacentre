@@ -11,6 +11,7 @@ import io.vertx.core.eventbus.EventBus;
 import org.entcore.common.http.BaseServer;
 
 import java.text.ParseException;
+import java.util.Arrays;
 
 public class Mediacentre extends BaseServer {
 
@@ -31,7 +32,11 @@ public class Mediacentre extends BaseServer {
 		demo = config.getBoolean("demo", false);
 		CONFIG = config;
 
-		vertx.deployVerticle(ExportWorker.class, new DeploymentOptions().setConfig(config).setWorker(true));
+		vertx.deployVerticle(ExportWorker.class, new DeploymentOptions().setConfig(config)
+				.setIsolationGroup("mediacentre_worker_group")
+				.setIsolatedClasses(Arrays.asList("fr.openent.mediacentre.export.impl.*",
+						"fr.openent.mediacentre.helper.impl.*", "com.sun.org.apache.xalan.internal.xsltc.trax.*"))
+				.setWorker(true));
 
 		try{
 			new CronTrigger(vertx, exportCron).schedule(new ExportTask(vertx.eventBus()));
