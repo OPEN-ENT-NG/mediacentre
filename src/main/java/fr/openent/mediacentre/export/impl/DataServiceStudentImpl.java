@@ -211,6 +211,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 "-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) ";
         String dataReturn = "WHERE head(u.profiles) = 'Student' " +
+                "AND NOT(HAS(u.deleteDate)) "+
                 "AND u.module  <>\"\""+
                 "RETURN DISTINCT "+
                     "s.UAI as `" + STRUCTURE_UAI + "`, " +
@@ -247,7 +248,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         String query = "MATCH (u:User)" +
                 "-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "WHERE head(u.profiles) = 'Student' ";
+                "WHERE head(u.profiles) = 'Student' AND NOT(HAS(u.deleteDate)) ";
         String dataReturn = "with u,s " +
                 "unwind u.fieldOfStudy as fos " +
                 "return distinct "+
