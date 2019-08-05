@@ -54,6 +54,8 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                                     }
                                 }
                             });
+                } else {
+                    log.error("[DataServiceTeacherImpl@exportData] Failed to process");
                 }
             }
         });
@@ -71,6 +73,8 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 if( validResponseNeo4j(teacherInfos, handler) ) {
                     Either<String,JsonObject> result = processTeachersInfo( teacherInfos.right().getValue() );
                     handler.handle(result);
+                } else {
+                    log.error("[DataServiceTeacherImpl@getAndProcessTeachersInfo] Failed to process");
                 }
             }
         });

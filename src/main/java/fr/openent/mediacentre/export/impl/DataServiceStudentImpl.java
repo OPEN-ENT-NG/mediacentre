@@ -74,6 +74,8 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 if( validResponseNeo4j(structResults, handler) ) {
                     Either<String,JsonObject> result = processStudentsInfo( structResults.right().getValue() );
                     handler.handle(result);
+                } else {
+                    log.error("[DataServiceStudentImpl@getAndProcessStudentsInfo] Failed to process");
                 }
             }
         });
@@ -93,6 +95,8 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 if( validResponseNeo4j(structResults, handler) ) {
                     Either<String,JsonObject> result = processStudentsMefs( structResults.right().getValue() );
                     handler.handle(result);
+                } else {
+                    log.error("[DataServiceStudentImpl@getAndProcessStudentsMefs] Failed to process");
                 }
             }
         });
@@ -112,6 +116,8 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 if( validResponseNeo4j(structResults, handler) ) {
                     Either<String,JsonObject> result = processStudentsFos( structResults.right().getValue() );
                     handler.handle(result);
+                } else {
+                    log.error("[DataServiceStudentImpl@getAndProcessStudentsFos] Failed to process");
                 }
             }
         });

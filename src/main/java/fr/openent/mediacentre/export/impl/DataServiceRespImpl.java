@@ -37,6 +37,8 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
                                     FILE_LIST_KEY,
                                     xmlExportHelper.getFileList()
                             )));
+                } else {
+                    log.error("[DataServiceRespImpl@exportData] Failed to process");
                 }
             }
         });

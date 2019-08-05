@@ -14,9 +14,11 @@ import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 public class DataServiceStructureImpl extends DataServiceBaseImpl implements DataService {
 
     private PaginatorHelperImpl paginator;
+    private JsonObject config;
 
     DataServiceStructureImpl(JsonObject config, String strDate) {
         super(config);
+        this.config = config;
         xmlExportHelper = new XmlExportHelperImpl(config, STRUCTURE_ROOT, STRUCTURE_FILE_PARAM, strDate);
         paginator = new PaginatorHelperImpl();
     }
@@ -66,6 +68,8 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
             if( validResponseNeo4j(structResults, handler) ) {
                 Either<String,JsonObject> result = processStructuresInfo( structResults.right().getValue() );
                 handler.handle(result);
+            } else {
+                log.error("[DataServiceStructureImpl@getAndProcessStructuresInfo] Failed to process");
             }
         });
     }
@@ -80,6 +84,8 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
             if( validResponseNeo4j(structResults, handler) ) {
                 Either<String,JsonObject> result = processStucturesMefs( structResults.right().getValue() );
                 handler.handle(result);
+            } else {
+                log.error("[DataServiceStructureImpl@getAndProcessStructuresMefs] Failed to process");
             }
         });
     }
@@ -96,6 +102,8 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 if( validResponseNeo4j(structResults, handler) ) {
                     Either<String,JsonObject> result = processStucturesFos( structResults.right().getValue() );
                     handler.handle(result);
+                } else {
+                    log.error("[DataServiceStructureImple@getAndProcessStructureFos] Failed to process");
                 }
             }
         });
@@ -217,11 +225,18 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      * @param handler results
      */
     private void getStucturesFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
+        String condition;
+        boolean containsAcademyPrefix = this.config.containsKey("academy-prefix") && !"".equals(this.config.getString("academy-prefix").trim());
+        if (containsAcademyPrefix) {
+            condition = "CASE WHEN sub.code =~ '("+ this.config.getString("academy-prefix") +")-[A-Z0-9]+' THEN right(sub.code, size(head(split(sub.code,\"-\"))) + 1 ) ELSE sub.code END as codelist";
+        } else {
+            condition = "split(sub.code,\"-\") as codelist";
+        }
         String queryStructureFos = "MATCH (sub:Subject)-[:SUBJECT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "with s, sub.label as label, split(sub.code,\"-\") as codelist " +
-                "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
-                "codelist[size(codelist)-1] as `" + STUDYFIELD_CODE + "`, " +
+                "with s, sub.label as label, " + condition +
+                " return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
+                (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + " as `" + STUDYFIELD_CODE + "`, " +
                 "label as `" + STUDYFIELD_DESC + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
                 "UNION ";

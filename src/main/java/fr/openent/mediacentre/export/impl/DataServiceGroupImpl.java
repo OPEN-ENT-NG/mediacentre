@@ -14,9 +14,11 @@ import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataService {
 
     private PaginatorHelperImpl paginator;
+    private JsonObject config;
 
     DataServiceGroupImpl(JsonObject config, String strDate) {
         super(config);
+        this.config = config;
         xmlExportHelper = new XmlExportHelperImpl(config, GROUPS_ROOT, GROUPS_FILE_PARAM, strDate);
         paginator = new PaginatorHelperImpl();
     }
@@ -76,6 +78,8 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 if( validResponseNeo4j(groupsResults, handler) ) {
                     Either<String,JsonObject> result = processGroupsInfo( groupsResults.right().getValue() );
                     handler.handle(result);
+                } else {
+                    log.error("[DataServiceGroupImple@getAndProcessGroupsInfoFromNeo4j] Failed to process");
                 }
             }
         });
@@ -93,6 +97,8 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 if( validResponseNeo4j(groupPersonResults, handler) ) {
                     Either<String,JsonObject> result = processGroupPersonInfo( groupPersonResults.right().getValue() );
                     handler.handle(result);
+                } else {
+                    log.error("[DataServiceGroupImpl@getAndProcessGroupsPersonFromNeo4j] Failed to process");
                 }
             }
         });
@@ -116,12 +122,16 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                                 if (validResponseNeo4j(groupFosResults, handler)) {
                                     Either<String, JsonObject> result = processClassFosInfo(groupFosResults.right().getValue());
                                     handler.handle(result);
+                                } else {
+                                    log.error("[DataServiceGroupImpl@getAndProcessGroupsFosFromNeo4j] Failed to process");
                                 }
                             }
                         });
                     }else {
                         handler.handle(result);
                     }
+                } else {
+                    log.error("[DataServiceGroupImpl@getAndProcessGroupsFosFromNeo4j] Failed to process");
                 }
             }
         });
@@ -233,14 +243,19 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * @param handler results
      */
     private void getClassesFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
+        String condition;
+        if (this.config.containsKey("academy-prefix") && !"".equals(this.config.getString("academy-prefix").trim())) {
+            condition = "CASE WHEN sub.code =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9]+' THEN right(sub.code, size(head(split(sub.code,\"-\"))) + 1 ) ELSE sub.code END as code";
+        } else {
+            condition = "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code";
+        }
         String query =
                 "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "WITH distinct u,s "+
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
-                "WITH u.id as uid,  t.classes as classesList, " +
-                "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code, " +
-                "s.UAI as uai " +
+                "WITH u.id as uid,  t.classes as classesList, " + condition +
+                ", s.UAI as uai " +
                 "unwind(classesList) as classes ";
         String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
@@ -276,14 +291,19 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * @param handler results
      */
     private void getGroupsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
+        String condition;
+        if (this.config.containsKey("academy-prefix") && !"".equals(this.config.getString("academy-prefix").trim())) {
+            condition = "CASE WHEN sub.code =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9]+' THEN right(sub.code, size(head(split(sub.code,\"-\"))) + 1 ) ELSE sub.code END as code";
+        } else {
+            condition = "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code";
+        }
         String query =
                 "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "WITH distinct u,s "+
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
-                "with u.id as uid, t.groups as grouplist, " +
-                "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code, " +
-                "s.UAI as uai " +
+                "with u.id as uid, t.groups as grouplist, " + condition +
+                ", s.UAI as uai " +
                 "unwind(grouplist) as group ";
         String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +

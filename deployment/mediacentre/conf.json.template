@@ -20,7 +20,8 @@
     "export-archive-path": "${garExportPath}data-compress/",
     "export-cron": "${garExportCron}",
     "id-ent" : "${garIdENT}",
-        "control-group" : "RESP-AFFECT-GAR",
+    "control-group" : "RESP-AFFECT-GAR",
+    "academy-prefix": "${academyPrefix}",
     "gar-ressources" : {
       "host": "${garRessourcesHost}",
       "cert": "${garRessourcesCert}",
