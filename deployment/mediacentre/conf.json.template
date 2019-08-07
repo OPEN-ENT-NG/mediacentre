@@ -28,6 +28,7 @@
       "key": "${garRessourcesKey}"
     },
     "pagination-limit": ${mediacentrePaginationLimit},
+    "xsd-recipient-list": ${xsdRecipientList},
     "gar-sftp" : {
       "host": "${garSftpHost}",
       "port": ${garSftpPort},
