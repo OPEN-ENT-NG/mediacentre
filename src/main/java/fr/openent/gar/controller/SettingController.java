@@ -1,8 +1,8 @@
-package fr.openent.mediacentre.controller;
+package fr.openent.gar.controller;
 
 import fr.openent.mediacentre.export.impl.ExportImpl;
-import fr.openent.mediacentre.service.ParameterService;
-import fr.openent.mediacentre.service.impl.DefaultParameterService;
+import fr.openent.gar.service.ParameterService;
+import fr.openent.gar.service.impl.DefaultParameterService;
 import fr.wseduc.rs.ApiDoc;
 import fr.wseduc.rs.Delete;
 import fr.wseduc.rs.Get;

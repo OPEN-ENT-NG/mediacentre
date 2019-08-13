@@ -1,13 +1,13 @@
-package fr.openent.mediacentre.helper.impl;
+package fr.openent.gar.helper.impl;
 
-import fr.openent.mediacentre.helper.PaginatorHelper;
+import fr.openent.gar.helper.PaginatorHelper;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.entcore.common.neo4j.Neo4j;
 
-import static fr.openent.mediacentre.Mediacentre.CONFIG;
+import static fr.openent.gar.Gar.CONFIG;
 import static org.entcore.common.neo4j.Neo4jResult.validResult;
 
 public class PaginatorHelperImpl implements PaginatorHelper  {

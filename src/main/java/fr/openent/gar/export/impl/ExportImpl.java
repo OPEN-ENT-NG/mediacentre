@@ -1,9 +1,9 @@
-package fr.openent.mediacentre.export.impl;
+package fr.openent.gar.export.impl;
 
-import fr.openent.mediacentre.export.ExportService;
-import fr.openent.mediacentre.export.XMLValidationHandler;
-import fr.openent.mediacentre.service.TarService;
-import fr.openent.mediacentre.service.impl.DefaultTarService;
+import fr.openent.gar.export.ExportService;
+import fr.openent.gar.export.XMLValidationHandler;
+import fr.openent.gar.service.TarService;
+import fr.openent.gar.service.impl.DefaultTarService;
 import fr.wseduc.webutils.Either;
 import fr.wseduc.webutils.data.FileResolver;
 import fr.wseduc.webutils.email.EmailSender;
@@ -29,7 +29,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static fr.openent.mediacentre.Mediacentre.CONFIG;
+import static fr.openent.gar.Gar.CONFIG;
 import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
 
 public class ExportImpl {

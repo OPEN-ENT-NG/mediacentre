@@ -1,9 +1,8 @@
 package fr.openent.gar;
 
 import fr.openent.gar.controller.GarController;
-import fr.openent.mediacentre.controller.SettingController;
+import fr.openent.gar.controller.SettingController;
 import fr.openent.gar.export.ExportTask;
-import fr.openent.mediacentre.export.impl.ExportWorker;
 import fr.wseduc.cron.CronTrigger;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonObject;
@@ -31,7 +30,7 @@ public class Gar extends BaseServer {
 		demo = config.getBoolean("demo", false);
 		CONFIG = config;
 
-		vertx.deployVerticle("fr.openent.mediacentre.export.impl.ExportWorker", new DeploymentOptions().setConfig(config)
+		vertx.deployVerticle("fr.openent.gar.export.impl.ExportWorker", new DeploymentOptions().setConfig(config)
 				.setIsolationGroup("mediacentre_worker_group")
 				.setIsolatedClasses(Arrays.asList("fr.openent.mediacentre.export.impl.*",
 						"fr.openent.mediacentre.helper.impl.*", "com.sun.org.apache.xalan.internal.xsltc.trax.*"))

@@ -1,6 +1,6 @@
-package fr.openent.mediacentre.service.impl;
+package fr.openent.gar.service.impl;
 
-import fr.openent.mediacentre.service.ParameterService;
+import fr.openent.gar.service.ParameterService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
