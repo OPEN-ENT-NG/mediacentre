@@ -9,7 +9,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import static fr.openent.gar.constants.GarConstants.*;
-import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
 public class DataServiceStructureImpl extends DataServiceBaseImpl implements DataService {
 

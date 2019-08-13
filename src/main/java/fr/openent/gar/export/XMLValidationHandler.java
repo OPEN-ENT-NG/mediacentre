@@ -1,4 +1,4 @@
-package fr.openent.mediacentre.export;
+package fr.openent.gar.export;
 
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;

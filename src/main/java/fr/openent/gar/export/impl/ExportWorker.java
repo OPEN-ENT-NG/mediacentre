@@ -1,4 +1,4 @@
-package fr.openent.mediacentre.export.impl;
+package fr.openent.gar.export.impl;
 
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.Message;

@@ -11,7 +11,6 @@ import io.vertx.core.json.JsonObject;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 import static fr.openent.gar.constants.GarConstants.*;
 
 public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataService{

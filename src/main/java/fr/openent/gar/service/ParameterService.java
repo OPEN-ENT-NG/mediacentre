@@ -1,4 +1,4 @@
-package fr.openent.mediacentre.service;
+package fr.openent.gar.service;
 
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;

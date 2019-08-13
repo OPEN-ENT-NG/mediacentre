@@ -1,6 +1,6 @@
 package fr.openent.gar.export.impl;
 
-import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
+import fr.openent.gar.helper.impl.PaginatorHelperImpl;
 import fr.openent.gar.helper.impl.XmlExportHelperImpl;
 import fr.openent.gar.export.DataService;
 import fr.wseduc.webutils.Either;
