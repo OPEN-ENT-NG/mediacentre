@@ -245,7 +245,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
     private void getClassesFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String condition;
         if (this.config.containsKey("academy-prefix") && !"".equals(this.config.getString("academy-prefix").trim())) {
-            condition = "CASE WHEN sub.code =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9]+' THEN right(sub.code, size(head(split(sub.code,\"-\"))) + 1 ) ELSE sub.code END as code";
+            condition = "CASE WHEN sub.code =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+' THEN substring(sub.code, size(head(split(sub.code,\"-\"))) + 1) ELSE sub.code END as code";
         } else {
             condition = "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code";
         }
@@ -293,7 +293,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
     private void getGroupsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String condition;
         if (this.config.containsKey("academy-prefix") && !"".equals(this.config.getString("academy-prefix").trim())) {
-            condition = "CASE WHEN sub.code =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9]+' THEN right(sub.code, size(head(split(sub.code,\"-\"))) + 1 ) ELSE sub.code END as code";
+            condition = "CASE WHEN sub.code =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+' THEN substring(sub.code, size(head(split(sub.code,\"-\"))) + 1) ELSE sub.code END as code";
         } else {
             condition = "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code";
         }
