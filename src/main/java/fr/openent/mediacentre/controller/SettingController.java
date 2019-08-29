@@ -109,4 +109,34 @@ public class SettingController extends ControllerHelper {
             });
         });
     }
+
+    @Get("/export/xsd/validation")
+    @SecuredAction(value = "", type = ActionType.RESOURCE)
+    @ResourceFilter(SuperAdminFilter.class)
+    @ApiDoc("Download xsd validation error")
+    public void xsdValidation(HttpServerRequest request) {
+        String archivePath = config.getString("export-archive-path");
+        vertx.fileSystem().readDir(archivePath, "xsd_errors\\.log", event -> {
+            if (event.failed()) {
+                renderError(request, new JsonObject().put("error", event.cause().toString()));
+                return;
+            }
+
+            List<String> files = event.result();
+            if (files.isEmpty()) notFound(request, "File not found");
+            String filename = "xsd_errors.log";
+            vertx.fileSystem().readFile(files.get(0), readEvent -> {
+                if (readEvent.failed()) {
+                    renderError(request, new JsonObject().put("error", readEvent.cause().toString()));
+                    return;
+                }
+
+                Buffer buff = readEvent.result();
+                request.response()
+                        .putHeader("Content-Type", "application/text; charset=utf-8")
+                        .putHeader("Content-Disposition", "attachment; filename=" + filename)
+                        .end(buff);
+            });
+        });
+    }
 }

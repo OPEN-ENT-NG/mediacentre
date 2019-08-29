@@ -9,6 +9,7 @@ import fr.wseduc.webutils.data.FileResolver;
 import fr.wseduc.webutils.email.EmailSender;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
@@ -74,6 +75,7 @@ public class ExportImpl {
                 boolean isValid = (boolean) validationResult.get("valid");
                 if (!isValid) {
                     log.info(validationResult.get("report"));
+                    saveXsdValidation((String) validationResult.get("report"));
                     sendReport((String) validationResult.get("report"));
                     handler.handle("XSV VALIDATION ERROR");
                     return;
@@ -142,6 +144,13 @@ public class ExportImpl {
             String recipient = recipients.getString(i);
             emailSender.sendEmail(null, recipient, null, null, subject, report, null, false, null);
         }
+    }
+
+    private void saveXsdValidation(String report) {
+        String filePath = config.getString("export-archive-path") + "xsd_errors.log";
+        vertx.fileSystem().writeFile(filePath, new BufferImpl().setBytes(0, report.getBytes()), event -> {
+            if (event.failed()) log.error("Failed to write xsd errors");
+        });
     }
 
     private Map<String, Object> validateXml(File directory) {

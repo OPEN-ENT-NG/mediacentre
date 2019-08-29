@@ -58,6 +58,7 @@
   "mediacentre.parameter.export": "Export",
   "mediacentre.parameter.test.mail": "Tester les mails",
   "mediacentre.parameter.archive.download": "Télécharger l'archive",
+  "mediacentre.parameter.xsd.download": "Télécharger la validation xsd",
   "mediacentre.parameter.deploy": "Déployer",
   "mediacentre.parameter.deployed": "Déployé",
   "mediacentre.parameter.add.user": "Peupler",
