@@ -1,6 +1,6 @@
 package fr.openent.gar.controller;
 
-import fr.openent.mediacentre.export.impl.ExportImpl;
+import fr.openent.gar.export.impl.ExportImpl;
 import fr.openent.gar.service.ParameterService;
 import fr.openent.gar.service.impl.DefaultParameterService;
 import fr.wseduc.rs.ApiDoc;
