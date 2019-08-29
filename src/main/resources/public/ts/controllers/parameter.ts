@@ -43,5 +43,5 @@ export const parameterController = ng.controller("ParameterController", [
     };
 
     $scope.testMail = () => window.open('/mediacentre/mail/test');
-
+    $scope.downloadArchive = () => window.open('/mediacentre/export/archive');
 }]);

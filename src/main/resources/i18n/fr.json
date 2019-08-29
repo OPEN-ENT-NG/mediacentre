@@ -57,6 +57,7 @@
   "mediacentre.parameter.back": "Retour",
   "mediacentre.parameter.export": "Export",
   "mediacentre.parameter.test.mail": "Tester les mails",
+  "mediacentre.parameter.archive.download": "Télécharger l'archive",
   "mediacentre.parameter.deploy": "Déployer",
   "mediacentre.parameter.deployed": "Déployé",
   "mediacentre.parameter.add.user": "Peupler",
