@@ -42,4 +42,6 @@ export const parameterController = ng.controller("ParameterController", [
         $scope.$apply();
     };
 
+    $scope.testMail = () => window.open('/mediacentre/mail/test');
+
 }]);

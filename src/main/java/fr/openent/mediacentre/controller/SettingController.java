@@ -1,5 +1,6 @@
 package fr.openent.mediacentre.controller;
 
+import fr.openent.mediacentre.export.impl.ExportImpl;
 import fr.openent.mediacentre.service.ParameterService;
 import fr.openent.mediacentre.service.impl.DefaultParameterService;
 import fr.wseduc.rs.ApiDoc;
@@ -14,8 +15,6 @@ import org.entcore.common.controller.ControllerHelper;
 import org.entcore.common.http.filter.ResourceFilter;
 import org.entcore.common.http.filter.SuperAdminFilter;
 import org.entcore.common.http.response.DefaultResponseHandler;
-
-import static org.entcore.common.http.response.DefaultResponseHandler.notEmptyResponseHandler;
 
 public class SettingController extends ControllerHelper {
 
@@ -65,5 +64,15 @@ public class SettingController extends ControllerHelper {
             parameterService.addUserToGarGroup(parameter, DefaultResponseHandler.defaultResponseHandler(request));
         });
 
+    }
+
+    @Get("/mail/test")
+    @SecuredAction(value = "", type = ActionType.RESOURCE)
+    @ResourceFilter(SuperAdminFilter.class)
+    @ApiDoc("Test send mail")
+    public void testMail(HttpServerRequest request) {
+        ExportImpl export = new ExportImpl(vertx);
+        export.sendReport("This is a test mail");
+        ok(request);
     }
 }

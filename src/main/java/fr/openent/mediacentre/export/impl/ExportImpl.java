@@ -53,6 +53,12 @@ public class ExportImpl {
 
         this.exportAndSend(handler);
     }
+
+    public ExportImpl(Vertx vertx) {
+        this.config = CONFIG;
+        this.emailSender = new EmailFactory(vertx, config).getSender();
+    }
+
     private void exportAndSend(Handler<String> handler) {
         log.info("Start exportAndSend GAR (Generate xml files, XSD validation, compress to tar.gz, generate md5, send to GAR by sftp");
         try {
@@ -129,7 +135,7 @@ public class ExportImpl {
         });
     }
 
-    private void sendReport(String report) {
+    public void sendReport(String report) {
         JsonArray recipients = config.getJsonArray("xsd-recipient-list", new JsonArray());
         String subject = "[GAR][" + config.getString("host") + "] XSD Validation error";
         for (int i = 0; i < recipients.size(); i++) {

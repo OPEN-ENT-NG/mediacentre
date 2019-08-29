@@ -56,6 +56,7 @@
   "mediacentre.parameter.title": "Paramétrage des établissements GAR",
   "mediacentre.parameter.back": "Retour",
   "mediacentre.parameter.export": "Export",
+  "mediacentre.parameter.test.mail": "Tester les mails",
   "mediacentre.parameter.deploy": "Déployer",
   "mediacentre.parameter.deployed": "Déployé",
   "mediacentre.parameter.add.user": "Peupler",
