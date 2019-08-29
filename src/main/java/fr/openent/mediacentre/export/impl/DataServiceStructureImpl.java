@@ -242,7 +242,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "UNION ";
         String queryStudentFos = "MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "where exists (u.fieldOfStudy) " +
+                "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) " +
                 "with s, u.fieldOfStudy as fos, u.fieldOfStudyLabels as fosl " +
                 "with s, " +
                 "reduce(x=[], idx in range(0,size(fos)-1) | x + {code:fos[idx],label:fosl[idx]}) as rows " +

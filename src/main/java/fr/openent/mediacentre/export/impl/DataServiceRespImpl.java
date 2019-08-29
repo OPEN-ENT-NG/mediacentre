@@ -53,7 +53,7 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
     private void getRespFromNeo4j(Handler<Either<String, JsonArray>> handler) {
 
         String query = "MATCH (us:User)-[:IN]->(n:ManualGroup{name:\"" + CONTROL_GROUP + "\"})-[:DEPENDS]->(s:Structure) " +
-                " WHERE us.profiles = ['Teacher'] OR us.profiles = ['Personnel'] "+
+                " WHERE (us.profiles = ['Teacher'] OR us.profiles = ['Personnel']) AND NOT(HAS(us.deleteDate)) "+
                 " WITH s, us ORDER BY s.id , us.id "+
                 " WITH s, collect(us)[..15] as uc "+    // 15 first Teachers or Personnels in each Structures
                 " UNWIND uc as u "+

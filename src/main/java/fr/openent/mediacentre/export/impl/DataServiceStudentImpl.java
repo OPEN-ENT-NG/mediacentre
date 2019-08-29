@@ -132,8 +132,8 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}), " +
                 "(p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
-                "where p.name = 'Student' " +
-                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) ";
+                "where p.name = 'Student' AND NOT(HAS(u.deleteDate)) " +
+                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) WHERE NOT(HAS(u.deleteDate)) ";
         String dataReturn = "return distinct " +
                 "u.id  as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_PATRO_NAME + "`, " +
