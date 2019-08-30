@@ -1,4 +1,4 @@
-import { ng, template } from "entcore";
+import { ng, template, appPrefix } from "entcore";
 import {ParameterService} from "../services";
 
 /**
@@ -42,7 +42,7 @@ export const parameterController = ng.controller("ParameterController", [
         $scope.$apply();
     };
 
-    $scope.testMail = () => window.open('/mediacentre/mail/test');
-    $scope.downloadArchive = () => window.open('/mediacentre/export/archive');
-    $scope.downloadXSDValidation = () => window.open('/mediacentre/export/xsd/validation');
+    $scope.testMail = () => window.open(`/${appPrefix}/mail/test`);
+    $scope.downloadArchive = () => window.open(`/${appPrefix}/export/archive`);
+    $scope.downloadXSDValidation = () => window.open(`/${appPrefix}/export/xsd/validation`);
 }]);
