@@ -77,8 +77,6 @@ public class ExportImpl {
                     log.info(validationResult.get("report"));
                     saveXsdValidation((String) validationResult.get("report"));
                     sendReport((String) validationResult.get("report"));
-                    handler.handle("XSV VALIDATION ERROR");
-                    return;
                 }
                 log.info("Tar.GZ to Compress");
                 emptyDIrectory(config.getString("export-archive-path"));
