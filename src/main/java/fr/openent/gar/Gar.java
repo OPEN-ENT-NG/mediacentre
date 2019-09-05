@@ -14,7 +14,7 @@ import java.util.Arrays;
 
 public class Gar extends BaseServer {
 
-	public static final String GAR_ADDRESS = "openent.gar";
+	public static final String GAR_ADDRESS = "openent.mediacentre";
 	public static boolean demo;
 	public static JsonObject CONFIG;
 
