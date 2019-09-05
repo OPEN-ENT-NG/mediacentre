@@ -219,9 +219,10 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getTeachersMefFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) ";
-        query +="WHERE head(u.profiles) = 'Teacher' AND NOT(HAS(u.deleteDate)) " +
+        String query = "MATCH (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"})," +
+                "(p:Profile{name:'Teacher'})<-[:HAS_PROFILE]-(pg:ProfileGroup) ";
+        query +="WHERE NOT(HAS(u.deleteDate)) " +
                 "WITH s,u "+
                 "UNWIND u.modules as module " +
                 "WITH u, s, module " +

@@ -213,8 +213,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getStudentsMefFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (u:User)" +
-                "-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
+        String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) ";
         String dataReturn = "WHERE head(u.profiles) = 'Student' " +
                 "AND NOT(HAS(u.deleteDate)) "+
@@ -251,8 +250,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getStudentsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (u:User)" +
-                "-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
+        String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "WHERE head(u.profiles) = 'Student' AND NOT(HAS(u.deleteDate)) ";
         String dataReturn = "with u,s " +
