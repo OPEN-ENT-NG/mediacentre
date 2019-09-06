@@ -56,13 +56,12 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
                 " WHERE (us.profiles = ['Teacher'] OR us.profiles = ['Personnel']) AND NOT(HAS(us.deleteDate)) "+
                 " WITH s, us ORDER BY s.id , us.id "+
                 " WITH s, collect(us)[..15] as uc "+    // 15 first Teachers or Personnels in each Structures
-                " UNWIND uc as u "+
-                " MATCH (sr:Structure)<-[:ADMINISTRATIVE_ATTACHMENT]-(u) ";
+                " UNWIND uc as u ";
         // CAUTION Don't use sr.UAI in dataReturn cause this structure is perhaps not a GAR structure
         String dataReturn = "RETURN u.id as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_NAME + "`, " +
                 "u.firstName as `" + PERSON_FIRST_NAME + "`, " +
-                "coalesce(u.emailAcademy,sr.email) as `" + PERSON_MAIL + "`, " +
+                "u.emailAcademy as `" + PERSON_MAIL + "`, " +
                 "collect(s.UAI) as `" + RESP_ETAB + "` " +
                 "order by `" + PERSON_ID + "` " ;
 

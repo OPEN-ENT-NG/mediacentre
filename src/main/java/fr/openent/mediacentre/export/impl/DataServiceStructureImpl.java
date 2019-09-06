@@ -178,16 +178,16 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      * @param handler results
      */
     private void getStucturesMefsFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String queryStudentsMefs = "MATCH (n:User)-[:ADMINISTRATIVE_ATTACHMENT]->" +
-                "(s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
+        String queryStudentsMefs = "MATCH (n:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "where exists(n.module) and not has(n.deleteDate) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "n.module as `" + MEF_CODE + "`, " +
                 "n.moduleName as `" + MEF_DESCRIPTION + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + MEF_CODE + "` " +
                 "UNION ";
-        String queryTeachersMefs = "MATCH (n:User)-[:ADMINISTRATIVE_ATTACHMENT]->" +
-                "(s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
+        String queryTeachersMefs = "MATCH (n:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "where exists(n.modules) and not has(n.deleteDate) " +
                 "with s,n " +
                 "unwind n.modules as rows " +
@@ -240,7 +240,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "label as `" + STUDYFIELD_DESC + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
                 "UNION ";
-        String queryStudentFos = "MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(s:Structure)" +
+        String queryStudentFos = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) " +
                 "with s, u.fieldOfStudy as fos, u.fieldOfStudyLabels as fosl " +
