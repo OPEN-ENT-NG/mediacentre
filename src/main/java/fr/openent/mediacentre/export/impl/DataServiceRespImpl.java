@@ -61,7 +61,9 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
         String dataReturn = "RETURN u.id as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_NAME + "`, " +
                 "u.firstName as `" + PERSON_FIRST_NAME + "`, " +
-                "u.emailAcademy as `" + PERSON_MAIL + "`, " +
+                // Priority = emailAcademy > emailInternal > email
+                // In case of those three properties are null, the validation check will skip the user
+                "coalesce(u.emailAcademy, u.emailInternal, u.email) as `" + PERSON_MAIL + "`, " +
                 "collect(s.UAI) as `" + RESP_ETAB + "` " +
                 "order by `" + PERSON_ID + "` " ;
 
