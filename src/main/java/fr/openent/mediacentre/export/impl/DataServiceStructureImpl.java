@@ -180,7 +180,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
     private void getStucturesMefsFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String queryStudentsMefs = "MATCH (n:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "where exists(n.module) and not has(n.deleteDate) " +
+                "WHERE exists(n.module) AND  NOT(has(n.deleteDate)) AND NOT(HAS(n.disappearanceDate)) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "n.module as `" + MEF_CODE + "`, " +
                 "n.moduleName as `" + MEF_DESCRIPTION + "` " +
@@ -188,7 +188,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "UNION ";
         String queryTeachersMefs = "MATCH (n:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "where exists(n.modules) and not has(n.deleteDate) " +
+                "where exists(n.modules) and not has(n.deleteDate) AND NOT(HAS(n.disappearanceDate)) " +
                 "with s,n " +
                 "unwind n.modules as rows " +
                 "with s, split(rows,\"$\") as modules " +
@@ -242,7 +242,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "UNION ";
         String queryStudentFos = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) " +
+                "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 "with s, u.fieldOfStudy as fos, u.fieldOfStudyLabels as fosl " +
                 "with s, " +
                 "reduce(x=[], idx in range(0,size(fos)-1) | x + {code:fos[idx],label:fosl[idx]}) as rows " +

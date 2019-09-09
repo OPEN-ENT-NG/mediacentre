@@ -132,8 +132,8 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}), " +
                 "(p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
-                "where p.name = 'Student' AND NOT(HAS(u.deleteDate)) " +
-                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) WHERE NOT(HAS(u.deleteDate)) ";
+                "where p.name = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) ";
         String dataReturn = "return distinct " +
                 "u.id  as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_PATRO_NAME + "`, " +
@@ -216,7 +216,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) ";
         String dataReturn = "WHERE head(u.profiles) = 'Student' " +
-                "AND NOT(HAS(u.deleteDate)) "+
+                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) "+
                 "AND u.module  <>\"\""+
                 "RETURN DISTINCT "+
                     "s.UAI as `" + STRUCTURE_UAI + "`, " +
@@ -252,7 +252,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
     private void getStudentsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "WHERE head(u.profiles) = 'Student' AND NOT(HAS(u.deleteDate)) ";
+                "WHERE head(u.profiles) = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) ";
         String dataReturn = "with u,s " +
                 "unwind u.fieldOfStudy as fos " +
                 "return distinct "+

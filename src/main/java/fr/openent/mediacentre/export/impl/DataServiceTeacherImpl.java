@@ -222,7 +222,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         String query = "MATCH (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"})," +
                 "(p:Profile{name:'Teacher'})<-[:HAS_PROFILE]-(pg:ProfileGroup) ";
-        query +="WHERE NOT(HAS(u.deleteDate)) " +
+        query +="WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 "WITH s,u "+
                 "UNWIND u.modules as module " +
                 "WITH u, s, module " +

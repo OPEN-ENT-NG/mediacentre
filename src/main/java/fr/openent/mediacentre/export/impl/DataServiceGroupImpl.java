@@ -160,7 +160,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "UNION ";
         String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->" +
                 "(s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "WHERE (u.profiles = ['Student'] OR u.profiles = ['Teacher']) AND NOT(HAS(u.deleteDate)) " +
+                "WHERE (u.profiles = ['Student'] OR u.profiles = ['Teacher']) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 "OPTIONAL MATCH (c:Class)<-[d:DEPENDS]-(pg:ProfileGroup)<-[:IN]-(u:User) " +
                 "WHERE  u.profiles = ['Student'] " +
                 "with s.UAI as uai, " +
@@ -201,7 +201,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         String classQuery = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "WHERE (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
-                "AND NOT(HAS(u.deleteDate)) " +
+                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(c.externalId,\"$\")[1], c.id) as `" + GROUPS_CODE + "` " +
@@ -209,7 +209,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "UNION ";
         String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "WHERE (u.profiles = ['Student'] OR u.profiles = ['Teacher']) AND NOT(HAS(u.deleteDate)) " +
+                "WHERE (u.profiles = ['Student'] OR u.profiles = ['Teacher']) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as `" + GROUPS_CODE + "` "+
@@ -251,7 +251,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         }
         String query =
                 "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) WHERE NOT(HAS(u.deleteDate)) " +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 "WITH distinct u,s "+
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
                 "WITH u.id as uid,  t.classes as classesList, " + condition +
@@ -299,7 +299,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         }
         String query =
                 "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) WHERE NOT(HAS(u.deleteDate)) " +
+                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 "WITH distinct u,s "+
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
                 "with u.id as uid, t.groups as grouplist, " + condition +
