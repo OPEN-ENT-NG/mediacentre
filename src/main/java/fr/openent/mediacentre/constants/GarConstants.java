@@ -86,5 +86,5 @@ public class GarConstants {
 
     public static final String[] TEACHER_NODE_MANDATORY = {PERSON_STRUCTURE,PERSON_ID,PERSON_PROFILES,
                                                             PERSON_NAME,PERSON_FIRST_NAME, PERSON_OTHER_NAMES};
-    public static final String[] RESP_NODE_MANDATORY = {PERSON_ID,PERSON_NAME,PERSON_FIRST_NAME};
+    public static final String[] RESP_NODE_MANDATORY = {PERSON_ID,PERSON_NAME,PERSON_FIRST_NAME,PERSON_MAIL};
 }
