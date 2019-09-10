@@ -94,7 +94,7 @@ abstract class DataServiceBaseImpl implements DataService{
     boolean isMandatoryFieldsAbsent(JsonObject obj, String[] mandatoryFields) {
         if(obj == null) return true;
         for(String s : mandatoryFields) {
-            if(!obj.containsKey(s)) return true;
+            if(!obj.containsKey(s) || null == obj.getValue(s)) return true;
         }
         return false;
     }
