@@ -154,25 +154,20 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "split(c.externalId,\"$\")[1] as `" + GROUPS_CODE + "`, " +
                 "s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "c.name as `" + GROUPS_DESC + "`, " +
-                "\"" + GROUPS_DIVISION_NAME + "\" as `" + GROUPS_STATUS + "`, " +
-                "null as `" + GROUPS_DIVISION + "` " +
+                "\"" + GROUPS_DIVISION_NAME + "\" as `" + GROUPS_STATUS + "` " +
                 "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` " +
                 "UNION ";
         String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->" +
                 "(s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
                 "WHERE (u.profiles = ['Student'] OR u.profiles = ['Teacher']) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
-                "OPTIONAL MATCH (c:Class)<-[d:DEPENDS]-(pg:ProfileGroup)<-[:IN]-(u:User) " +
-                "WHERE  u.profiles = ['Student'] " +
                 "with s.UAI as uai, " +
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as id, " +
-                "collect(distinct split(c.externalId,\"$\")[1]) as dividlist, " +
                 "fg.name as name " +
                 "return distinct " +
                 "id as `" + GROUPS_CODE + "`, " +
                 "uai as `" + STRUCTURE_UAI + "`, " +
                 "name as `" + GROUPS_DESC + "`, " +
-                "\"" + GROUPS_GROUP_NAME + "\" as `" + GROUPS_STATUS + "`, " +
-                "dividlist as `" + GROUPS_DIVISION + "` " +
+                "\"" + GROUPS_GROUP_NAME + "\" as `" + GROUPS_STATUS + "` " +
                 "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` ";
 
         neo4j.execute(classQuery + groupsQuery, new JsonObject(), validResultHandler(handler));
@@ -253,7 +248,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
                 "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 "WITH distinct u,s "+
-                "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
+                "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s) " +
                 "WITH u.id as uid,  t.classes as classesList, " + condition +
                 ", s.UAI as uai " +
                 "unwind(classesList) as classes ";
