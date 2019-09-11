@@ -14,12 +14,27 @@ export const parameterController = ng.controller("ParameterController", [
             value: 0
         };
 
+        $scope.filter = {
+            property: 'uai',
+            desc: false,
+            value: ''
+        };
+
         const GROUP_GAR_NAME = "RESP-AFFECT-GAR";
         $scope.structureGarLists = [];
         ParameterService.getStructureGar().then(structures => {
             $scope.structureGarLists = structures;
+            $scope.structureGarLists.map((structure) => structure.number_deployed = structure.deployed ? 1 : 0);
             $scope.$apply();
         });
+
+        $scope.match = function () {
+            return function (item) {
+                if ($scope.filter.value.trim() === '') return true;
+                return item.name.toLowerCase().includes($scope.filter.value.toLowerCase())
+                    || item.uai.toLowerCase().includes($scope.filter.value.toLowerCase());
+            }
+        };
 
         /* button handler */
         $scope.createButton = false;
@@ -49,6 +64,7 @@ export const parameterController = ng.controller("ParameterController", [
             }
             if (response.status === 200) {
                 $scope.structureGarLists = await ParameterService.getStructureGar();
+                $scope.structureGarLists.map((structure) => structure.number_deployed = structure.deployed ? 1 : 0);
             }
             $scope.createButton = false;
             $scope.$apply();

@@ -25,25 +25,56 @@
         </div>
     </div>
 
+    <div class="row">
+        <input type="text" class="twelve cell" i18n-placeholder="mediacentre.parameter.structure.search"
+               ng-model="filter.value">
+    </div>
+
     <!--Table-->
     <table class="parameter-table table table-hover">
         <thead>
             <tr>
-                <th><i18n>mediacentre.uai</i18n></th>
-                <th style="text-align: left">
-                    <i18n>mediacentre.name</i18n>
+                <th width="20%" ng-click="filter.property = 'uai'; filter.desc = !filter.desc">
+                    <span class="sortable">
+						<span class="icons right-spacing">
+							<i class="arrow" ng-class="{'icon-off': !(filter.property === 'uai' && !filter.desc)}"></i>
+							<i class="arrow bottom"
+                               ng-class="{'icon-off': !(filter.property === 'uai' && filter.desc)}"></i>
+						</span>
+						<span><i18n>mediacentre.uai</i18n></span>
+					</span>
                 </th>
-                <th>
-                    <i18n>mediacentre.state</i18n>
+                <th width="60%" style="text-align: left"
+                    ng-click="filter.property = 'name'; filter.desc = !filter.desc">
+                    <span class="sortable">
+						<span class="icons right-spacing">
+							<i class="arrow" ng-class="{'icon-off': !(filter.property === 'name' && !filter.desc)}"></i>
+							<i class="arrow bottom"
+                               ng-class="{'icon-off': !(filter.property === 'name' && filter.desc)}"></i>
+						</span>
+						<span><i18n>mediacentre.name</i18n></span>
+					</span>
                 </th>
-                <th></th>
+                <th width="10%" ng-click="filter.property = 'number_deployed'; filter.desc = !filter.desc">
+                    <span class="sortable">
+						<span class="icons right-spacing">
+							<i class="arrow"
+                               ng-class="{'icon-off': !(filter.property === 'number_deployed' && !filter.desc)}"></i>
+							<i class="arrow bottom"
+                               ng-class="{'icon-off': !(filter.property === 'number_deployed' && filter.desc)}"></i>
+						</span>
+						<span><i18n>mediacentre.state</i18n></span>
+					</span>
+                </th>
+                <th width="10%"></th>
             </tr>
         </thead>
 
         <tbody class="parameter-table-body">
-        <tr ng-repeat="item in structureGarLists" style="height: 40px;">
-                <th>[[item.uai]]</th>
-            <th style="text-align: left">[[item.name]]</th>
+        <tr ng-repeat="item in structureGarLists|filter:match()|orderBy:filter.property:filter.desc"
+            style="height: 40px;">
+            <th style="text-align: left; text-indent: 10px;">[[item.uai]]</th>
+            <th style="text-align: left; text-indent: 10px;">[[item.name]]</th>
                 <th>
                     <span ng-if="item.deployed">
                         <i class="validated-icon-large"></i>
