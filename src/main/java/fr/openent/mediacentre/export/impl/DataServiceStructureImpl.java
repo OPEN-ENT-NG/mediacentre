@@ -1,15 +1,14 @@
 package fr.openent.mediacentre.export.impl;
 
+import fr.openent.mediacentre.export.DataService;
 import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
-import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import static fr.openent.mediacentre.constants.GarConstants.*;
-import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
 public class DataServiceStructureImpl extends DataServiceBaseImpl implements DataService {
 
@@ -178,17 +177,17 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      * @param handler results
      */
     private void getStucturesMefsFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String queryStudentsMefs = "MATCH (n:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "WHERE exists(n.module) AND  NOT(has(n.deleteDate)) AND NOT(HAS(n.disappearanceDate)) " +
+        String queryStudentsMefs = "MATCH (n:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure) " +
+                "WHERE exists(n.module) AND  NOT(has(n.deleteDate)) AND NOT(HAS(n.disappearanceDate))" +
+                " AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "n.module as `" + MEF_CODE + "`, " +
                 "n.moduleName as `" + MEF_DESCRIPTION + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + MEF_CODE + "` " +
                 "UNION ";
         String queryTeachersMefs = "MATCH (n:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "where exists(n.modules) and not has(n.deleteDate) AND NOT(HAS(n.disappearanceDate)) " +
+                "where exists(n.modules) and not has(n.deleteDate) " +
+                "AND NOT(HAS(n.disappearanceDate)) AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 "with s,n " +
                 "unwind n.modules as rows " +
                 "with s, split(rows,\"$\") as modules " +
@@ -233,7 +232,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
             condition = "split(sub.code,\"-\") as codelist";
         }
         String queryStructureFos = "MATCH (sub:Subject)-[:SUBJECT]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
+                "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
                 "with s, sub.label as label, " + condition +
                 " return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + " as `" + STUDYFIELD_CODE + "`, " +
@@ -241,8 +240,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
                 "UNION ";
         String queryStudentFos = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 "with s, u.fieldOfStudy as fos, u.fieldOfStudyLabels as fosl " +
                 "with s, " +
                 "reduce(x=[], idx in range(0,size(fos)-1) | x + {code:fos[idx],label:fosl[idx]}) as rows " +

@@ -1,8 +1,8 @@
 package fr.openent.mediacentre.export.impl;
 
+import fr.openent.mediacentre.export.DataService;
 import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
-import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
@@ -149,7 +149,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      */
     private void getGroupsInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String classQuery = "MATCH (c:Class)-[:BELONGS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
+                "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
                 "RETURN distinct "+
                 "split(c.externalId,\"$\")[1] as `" + GROUPS_CODE + "`, " +
                 "s.UAI as `" + STRUCTURE_UAI + "`, " +
@@ -158,8 +158,11 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` " +
                 "UNION ";
         String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->" +
-                "(s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "WHERE (u.profiles = ['Student'] OR u.profiles = ['Teacher']) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                "(s:Structure) " +
+                "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
+                "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
+                "AND NOT(HAS(u.deleteDate)) " +
+                "AND NOT(HAS(u.disappearanceDate)) " +
                 "with s.UAI as uai, " +
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as id, " +
                 "fg.name as name " +
@@ -194,17 +197,19 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      */
     private void getGroupsPersonFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String classQuery = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "WHERE (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
+                "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
+                "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
                 "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(c.externalId,\"$\")[1], c.id) as `" + GROUPS_CODE + "` " +
                 "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "` " +
                 "UNION ";
-        String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "WHERE (u.profiles = ['Student'] OR u.profiles = ['Teacher']) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+        String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure) " +
+                "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
+                "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
+                "AND NOT(HAS(u.deleteDate)) " +
+                "AND NOT(HAS(u.disappearanceDate)) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as `" + GROUPS_CODE + "` "+
@@ -245,8 +250,9 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
             condition = "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code";
         }
         String query =
-                "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure) " +
+                        "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
+                        "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 "WITH distinct u,s "+
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s) " +
                 "WITH u.id as uid,  t.classes as classesList, " + condition +
@@ -293,8 +299,9 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
             condition = "CASE WHEN sub.code =~'.*-.*' THEN split(sub.code,\"-\")[1] ELSE sub.code END as code";
         }
         String query =
-                "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure) " +
+                        "WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                        "AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 "WITH distinct u,s "+
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
                 "with u.id as uid, t.groups as grouplist, " + condition +

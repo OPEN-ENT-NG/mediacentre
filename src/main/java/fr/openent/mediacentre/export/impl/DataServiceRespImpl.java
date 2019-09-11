@@ -1,16 +1,14 @@
 package fr.openent.mediacentre.export.impl;
 
+import fr.openent.mediacentre.export.DataService;
 import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
-import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-
 import static fr.openent.mediacentre.constants.GarConstants.*;
-import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 
 public class DataServiceRespImpl extends DataServiceBaseImpl implements DataService {
 
@@ -53,7 +51,10 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
     private void getRespFromNeo4j(Handler<Either<String, JsonArray>> handler) {
 
         String query = "MATCH (us:User)-[:IN]->(n:ManualGroup{name:\"" + CONTROL_GROUP + "\"})-[:DEPENDS]->(s:Structure) " +
-                " WHERE (us.profiles = ['Teacher'] OR us.profiles = ['Personnel']) AND NOT(HAS(us.deleteDate)) AND NOT(HAS(us.disappearanceDate)) "+
+                " WHERE (us.profiles = ['Teacher'] OR us.profiles = ['Personnel']) " +
+                " AND NOT(HAS(us.deleteDate)) " +
+                " AND NOT(HAS(us.disappearanceDate))" +
+                " AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 " WITH s, us ORDER BY s.id , us.id "+
                 " WITH s, collect(us)[..15] as uc "+    // 15 first Teachers or Personnels in each Structures
                 " UNWIND uc as u ";

@@ -1,8 +1,8 @@
 package fr.openent.mediacentre.export.impl;
 
+import fr.openent.mediacentre.export.DataService;
 import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
-import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
@@ -129,11 +129,11 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getStudentsInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}), " +
+        String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
                 "(p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
-                "where p.name = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
-                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) ";
+                "where p.name = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) AND 'GAR' IN s.exports " +
+                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
+                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) ";
         String dataReturn = "return distinct " +
                 "u.id  as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_PATRO_NAME + "`, " +
@@ -213,9 +213,9 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getStudentsMefFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) ";
-        String dataReturn = "WHERE head(u.profiles) = 'Student' " +
+        String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)";
+        String dataReturn = "WHERE head(u.profiles) = 'Student'" +
+                "AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) "+
                 "AND u.module  <>\"\""+
                 "RETURN DISTINCT "+
@@ -251,8 +251,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      */
     private void getStudentsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
-                "WHERE head(u.profiles) = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) ";
+                "WHERE head(u.profiles) = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) AND 'GAR' IN s.exports ";
         String dataReturn = "with u,s " +
                 "unwind u.fieldOfStudy as fos " +
                 "return distinct "+

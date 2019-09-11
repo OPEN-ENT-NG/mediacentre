@@ -1,8 +1,8 @@
 package fr.openent.mediacentre.export.impl;
 
+import fr.openent.mediacentre.export.DataService;
 import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
-import fr.openent.mediacentre.export.DataService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
@@ -11,7 +11,6 @@ import io.vertx.core.json.JsonObject;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.entcore.common.neo4j.Neo4jResult.validResultHandler;
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
 public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataService{
@@ -86,9 +85,8 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getTeachersInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "match (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}), " +
-                "(p:Profile{name:'Teacher'})<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
+        String query = "match (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
+                "(p:Profile{name:'Teacher'})<-[:HAS_PROFILE]-(pg:ProfileGroup) WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
                 // ADMINISTRATIVE ATTACHMENT can reference non GAR exported structure
                 "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure)";
         String dataReturn = "return distinct u.id  as `" + PERSON_ID + "`, " +
@@ -219,10 +217,10 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getTeachersMefFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"})," +
+        String query = "MATCH (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)," +
                 "(p:Profile{name:'Teacher'})<-[:HAS_PROFILE]-(pg:ProfileGroup) ";
-        query +="WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+        query += "WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate))" +
+                "AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 "WITH s,u "+
                 "UNWIND u.modules as module " +
                 "WITH u, s, module " +
