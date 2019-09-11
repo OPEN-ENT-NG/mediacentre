@@ -5,11 +5,24 @@
     </h1>
 
     <!--Header-->
-    <div class="parameter-header">
-        <button ng-click="export()"><i18n>mediacentre.parameter.export</i18n></button>
-        <button ng-click="testMail()"><i18n>mediacentre.parameter.test.mail</i18n></button>
-        <button ng-click="downloadArchive()"><i18n>mediacentre.parameter.archive.download</i18n></button>
-        <button ng-click="downloadXSDValidation()"><i18n>mediacentre.parameter.xsd.download</i18n></button>
+    <div class="parameter-header" style="justify-content: space-between; margin-bottom: 25px;">
+        <div class="card one" ng-show="structureGarLists.length > 0"
+             style="display: flex; align-items: center; justify-content: center;">
+            <h4><span><i18n>mediacentre.parameter.exported</i18n>:</span>
+                <span ng-bind="counter.value"></span>/<span ng-bind="structureGarLists.length"></span></h4>
+        </div>
+        <div>
+            <!--        <button ng-click="export()"><i18n>mediacentre.parameter.export</i18n></button>-->
+            <button ng-click="testMail()">
+                <i18n>mediacentre.parameter.test.mail</i18n>
+            </button>
+            <button ng-click="downloadArchive()">
+                <i18n>mediacentre.parameter.archive.download</i18n>
+            </button>
+            <button ng-click="downloadXSDValidation()">
+                <i18n>mediacentre.parameter.xsd.download</i18n>
+            </button>
+        </div>
     </div>
 
     <!--Table-->
@@ -17,31 +30,39 @@
         <thead>
             <tr>
                 <th><i18n>mediacentre.uai</i18n></th>
-                <th><i18n>mediacentre.name</i18n></th>
-                <th><i18n>mediacentre.gar</i18n></th>
+                <th style="text-align: left">
+                    <i18n>mediacentre.name</i18n>
+                </th>
+                <th>
+                    <i18n>mediacentre.state</i18n>
+                </th>
                 <th></th>
             </tr>
         </thead>
 
         <tbody class="parameter-table-body">
-            <tr ng-repeat="item in structureGarLists">
+        <tr ng-repeat="item in structureGarLists" style="height: 40px;">
                 <th>[[item.uai]]</th>
-                <th>[[item.name]]</th>
+            <th style="text-align: left">[[item.name]]</th>
                 <th>
-                    <button ng-if="item.id == null"
-                            data-ng-disabled="createButton"
-                            ng-click="createGarGroup(item.structureId)">
-                        <i18n>mediacentre.parameter.deploy</i18n>
-                    </button>
-                    <span ng-if="item.id != null">
-                        <i18n>mediacentre.parameter.deployed</i18n>
+                    <span ng-if="item.deployed">
+                        <i class="validated-icon-large"></i>
                     </span>
                 </th>
                 <th>
-                    <button data-ng-disabled="item.id == null || addButton"
-                            ng-click="addUser(item.id, item.structureId)">
-                        <i18n>mediacentre.parameter.add.user</i18n>
-                    </button>
+                    <dots-menu style="text-align: left">
+                        <opt data-ng-disabled="createButton" ng-click="createGarGroup(item)">
+                            <span ng-if="!item.deployed"><i18n>mediacentre.parameter.deploy</i18n></span>
+                            <span ng-if="item.deployed"><i18n>mediacentre.parameter.undeploy</i18n></span>
+                        </opt>
+                        <opt data-ng-if="item.deployed"
+                             ng-click="addUser(item.id, item.structureId)">
+                            <i18n>mediacentre.parameter.add.user</i18n>
+                        </opt>
+                        <opt data-ng-if="item.deployed" ng-click="showRespAffecGarGroup(item)">
+                            <i18n>mediacentre.show.users</i18n>
+                        </opt>
+                    </dots-menu>
                 </th>
             </tr>
         </tbody>

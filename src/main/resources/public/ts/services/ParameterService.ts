@@ -13,6 +13,8 @@ export interface ParameterService {
     getStructureGar(): Promise<StructureGar>;
     createGroupGarToStructure(name: string, structureId: string): Promise<any>;
     addUsersToGarGroup(groupId: string, structureId: string): Promise<void>;
+
+    undeployStructure(id: string);
 }
 
 export const ParameterService = ng.service('ParameterService', (): ParameterService => ({
@@ -45,6 +47,8 @@ export const ParameterService = ng.service('ParameterService', (): ParameterServ
         } catch (err) {
             throw err;
         }
-    }
+    },
+
+    undeployStructure: async (id: string) => await http.delete(`/mediacentre/structures/${id}`)
 }));
 

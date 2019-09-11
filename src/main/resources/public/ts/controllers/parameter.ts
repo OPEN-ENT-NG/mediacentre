@@ -1,5 +1,7 @@
-import { ng, template, appPrefix } from "entcore";
+import {appPrefix, ng, template} from "entcore";
 import {ParameterService} from "../services";
+
+declare const window: any;
 
 /**
  Parameter controller
@@ -7,42 +9,64 @@ import {ParameterService} from "../services";
  **/
 export const parameterController = ng.controller("ParameterController", [
     "$scope", "ParameterService", async ($scope, ParameterService: ParameterService) => {
-    template.open("main", "parameter");
+        template.open("main", "parameter");
+        $scope.counter = {
+            value: 0
+        };
 
-    const GROUP_GAR_NAME = "RESP-AFFECT-GAR";
-    $scope.structureGarLists = await ParameterService.getStructureGar();
+        const GROUP_GAR_NAME = "RESP-AFFECT-GAR";
+        $scope.structureGarLists = [];
+        ParameterService.getStructureGar().then(structures => {
+            $scope.structureGarLists = structures;
+            $scope.$apply();
+        });
 
-    /* button handler */
-    $scope.createButton = false;
-    $scope.addButton = false;
-    $scope.$apply();
-
-    $scope.export = () => {
-        ParameterService.export();
-    };
-
-    $scope.createGarGroup = async (structureId: string) => {
-        $scope.createButton = true;
-        $scope.$apply();
-
-        let response = await ParameterService.createGroupGarToStructure(GROUP_GAR_NAME, structureId);
-        if (response.status === 200) {
-            $scope.structureGarLists = await ParameterService.getStructureGar();
-            $scope.createButton = false;
-        }
+        /* button handler */
         $scope.createButton = false;
-        $scope.$apply();
-    };
-
-    $scope.addUser = async (groupId, structureId) => {
-        $scope.addButton = true;
-        $scope.$apply();
-        await ParameterService.addUsersToGarGroup(groupId, structureId);
         $scope.addButton = false;
         $scope.$apply();
-    };
 
-    $scope.testMail = () => window.open(`/${appPrefix}/mail/test`);
-    $scope.downloadArchive = () => window.open(`/${appPrefix}/export/archive`);
-    $scope.downloadXSDValidation = () => window.open(`/${appPrefix}/export/xsd/validation`);
-}]);
+        $scope.export = () => {
+            ParameterService.export();
+        };
+
+        function getDeployedCounter(): void {
+            let counter = 0;
+            $scope.structureGarLists.map(({deployed}) => counter += deployed);
+            $scope.counter.value = counter;
+        }
+
+        $scope.$watch(() => $scope.structureGarLists, getDeployedCounter);
+
+        $scope.createGarGroup = async ({structureId, deployed}) => {
+            let response;
+            $scope.createButton = true;
+            $scope.$apply();
+            if (!deployed) {
+                response = await ParameterService.createGroupGarToStructure(GROUP_GAR_NAME, structureId);
+            } else {
+                response = await ParameterService.undeployStructure(structureId);
+            }
+            if (response.status === 200) {
+                $scope.structureGarLists = await ParameterService.getStructureGar();
+            }
+            $scope.createButton = false;
+            $scope.$apply();
+        };
+
+        $scope.showRespAffecGarGroup = function ({structureId, id}) {
+            window.open(`/admin/${structureId}/groups/manual/${id}`);
+        };
+
+        $scope.addUser = async (groupId, structureId) => {
+            $scope.addButton = true;
+            $scope.$apply();
+            await ParameterService.addUsersToGarGroup(groupId, structureId);
+            $scope.addButton = false;
+            $scope.$apply();
+        };
+
+        $scope.testMail = () => window.open(`/${appPrefix}/mail/test`);
+        $scope.downloadArchive = () => window.open(`/${appPrefix}/export/archive`);
+        $scope.downloadXSDValidation = () => window.open(`/${appPrefix}/export/xsd/validation`);
+    }]);

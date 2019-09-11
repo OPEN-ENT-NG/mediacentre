@@ -8,6 +8,16 @@ import io.vertx.core.json.JsonObject;
 public interface ParameterService {
 
     /**
+     * Undeploy given structure.
+     * Note that it does not delete GAR-RESP-AFFECT manual group. As resp are choose by structure, we
+     * need to save it for a future deployment.
+     *
+     * @param structureId Structure identifier
+     * @param handler     Function handler returning data
+     */
+    void undeployStructureGar(String structureId, Handler<Either<String, JsonObject>> handler);
+
+    /**
      * Get Structure with optional gar group
      * @param handler Function handler returning data
      */

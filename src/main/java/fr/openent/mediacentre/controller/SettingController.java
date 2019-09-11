@@ -4,6 +4,7 @@ import fr.openent.mediacentre.export.impl.ExportImpl;
 import fr.openent.mediacentre.service.ParameterService;
 import fr.openent.mediacentre.service.impl.DefaultParameterService;
 import fr.wseduc.rs.ApiDoc;
+import fr.wseduc.rs.Delete;
 import fr.wseduc.rs.Get;
 import fr.wseduc.rs.Post;
 import fr.wseduc.security.ActionType;
@@ -57,6 +58,15 @@ public class SettingController extends ControllerHelper {
             parameterService.createGarGroupToStructure(parameter, DefaultResponseHandler.defaultResponseHandler(request));
         });
 
+    }
+
+    @Delete("/structures/:id")
+    @SecuredAction(value = "", type = ActionType.RESOURCE)
+    @ResourceFilter(SuperAdminFilter.class)
+    @ApiDoc("Undeploy given structure")
+    public void undeployStructure(HttpServerRequest request) {
+        String structureId = request.getParam("id");
+        parameterService.undeployStructureGar(structureId, DefaultResponseHandler.defaultResponseHandler(request));
     }
 
     @Post("/structure/gar/group/user")

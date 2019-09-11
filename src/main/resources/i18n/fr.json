@@ -60,11 +60,14 @@
   "mediacentre.parameter.archive.download": "Télécharger l'archive",
   "mediacentre.parameter.xsd.download": "Télécharger la validation xsd",
   "mediacentre.parameter.deploy": "Déployer",
+  "mediacentre.parameter.undeploy": "Supprimer de l'export",
   "mediacentre.parameter.deployed": "Déployé",
+  "mediacentre.parameter.exported": "Exporté",
   "mediacentre.parameter.add.user": "Peupler",
   "mediacentre.uai": "UAI",
   "mediacentre.name": "Nom",
-  "mediacentre.gar": "GAR",
+  "mediacentre.state": "Etat",
   "mediacentre.loading.status": "Chargement des ressources en cours...",
-  "mediacentre.in": "dans"
+  "mediacentre.in": "dans",
+  "mediacentre.show.users": "Voir les responsables d'affectations"
 }
