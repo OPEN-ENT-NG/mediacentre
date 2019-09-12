@@ -1,0 +1,1 @@
+MATCH (n:ManualGroup{name:"RESP-AFFECT-GAR"})-[:DEPENDS]->(s:Structure) SET s.exports = coalesce(s.exports, []) + 'GAR' RETURN s.exports, s.id
