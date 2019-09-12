@@ -1,5 +1,5 @@
 {
-  "name": "fr.openent~mediacentre~1.1.33",
+  "name": "fr.openent~mediacentre~1.2.0",
   "config": {
     "main" : "fr.openent.mediacentre.Mediacentre",
     "port" : 8102,
