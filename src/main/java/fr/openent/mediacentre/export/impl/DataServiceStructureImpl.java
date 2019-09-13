@@ -113,7 +113,8 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      * @param handler results
      */
     private void getStucturesInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) ";
+        String query = "MATCH (s:Structure)<-[:DEPENDS]-(g:ManualGroup{name:\"" + CONTROL_GROUP + "\"}) " +
+                "WHERE HAS(s.exports) AND 'GAR' IN s.exports ";
 // Don't export optional attachment structure attribute
 //                "OPTIONAL MATCH (g2:ManualGroup{name:\\\"\" + CONTROL_GROUP + \"\\\"})-[:DEPENDS]->(s2:Structure)<-[:HAS_ATTACHMENT]-(s:Structure) ";
         String dataReturn = "RETURN distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
