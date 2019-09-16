@@ -257,7 +257,10 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s) " +
                 "WITH u.id as uid,  t.classes as classesList, " + condition +
                 ", s.UAI as uai " +
-                "unwind(classesList) as classes ";
+                        "unwind(classesList) as classes " +
+                        "MATCH (c:Class)-[:BELONGS]->(s:Structure) " +
+                        "WHERE s.UAI = uai " +
+                        "AND c.externalId = classes ";
         String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
                 "CASE WHEN  split(classes,\"$\")[1] IS NOT null THEN split(classes,\"$\")[1] ELSE classes END as `" + GROUPS_CODE + "`, " +
@@ -306,7 +309,10 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
                 "with u.id as uid, t.groups as grouplist, " + condition +
                 ", s.UAI as uai " +
-                "unwind(grouplist) as group ";
+                        "unwind(grouplist) as group " +
+                        "MATCH (fg:FunctionalGroup)-[:DEPENDS]->(s:Structure) " +
+                        "WHERE fg.externalId = group " +
+                        "AND s.UAI = uai ";
         String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
                 "CASE WHEN  split(group,\"$\")[1] IS NOT null THEN split(group,\"$\")[1] ELSE group END as `" + GROUPS_CODE + "`, " +
