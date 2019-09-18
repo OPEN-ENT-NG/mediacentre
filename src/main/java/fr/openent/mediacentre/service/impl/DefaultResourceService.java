@@ -74,7 +74,14 @@ public class DefaultResourceService implements ResourceService {
                             log.error("try to call " + resourcesUri);
                             log.error(response.statusCode() + " " + response.statusMessage());
 
-                            handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to connect to GAR servers: " + response.statusMessage()));
+                            response.bodyHandler(errBuff -> {
+                                JsonObject error = new JsonObject(new String(errBuff.getBytes()));
+                                if (error.containsKey("Erreur")) {
+                                    handler.handle(new Either.Left<>(error.getJsonObject("Erreur").getString("Message")));
+                                } else {
+                                    handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to connect to GAR servers: " + response.statusMessage()));
+                                }
+                            });
                         } else {
                             Buffer responseBuffer = new BufferImpl();
                             response.handler(responseBuffer::appendBuffer);
