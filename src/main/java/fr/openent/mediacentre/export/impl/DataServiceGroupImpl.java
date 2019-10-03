@@ -264,7 +264,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
                 "CASE WHEN  split(classes,\"$\")[1] IS NOT null THEN split(classes,\"$\")[1] ELSE classes END as `" + GROUPS_CODE + "`, " +
-                "collect(code) as `" + STUDYFIELD_CODE + "` " +
+                "collect(toUpper(code)) as `" + STUDYFIELD_CODE + "` " +
                 "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "`";
 
         query = query + dataReturn;
@@ -316,7 +316,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
                 "CASE WHEN  split(group,\"$\")[1] IS NOT null THEN split(group,\"$\")[1] ELSE group END as `" + GROUPS_CODE + "`, " +
-                "collect(code) as `" + STUDYFIELD_CODE + "` " +
+                "collect(toUpper(code)) as `" + STUDYFIELD_CODE + "` " +
                 "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "`";
 
         query = query + dataReturn;

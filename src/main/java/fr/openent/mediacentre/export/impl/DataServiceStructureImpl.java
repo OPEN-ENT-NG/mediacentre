@@ -235,8 +235,8 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         String queryStructureFos = "MATCH (sub:Subject)-[:SUBJECT]->(s:Structure)" +
                 "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
                 "with s, sub.label as label, " + condition +
-                " return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
-                (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + " as `" + STUDYFIELD_CODE + "`, " +
+                " return distinct s.UAI as `" + STRUCTURE_UAI + "`, toUpper(" +
+                (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE + "`, " +
                 "label as `" + STUDYFIELD_DESC + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
                 "UNION ";
@@ -247,7 +247,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "reduce(x=[], idx in range(0,size(fos)-1) | x + {code:fos[idx],label:fosl[idx]}) as rows " +
                 "unwind rows as row " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
-                "row.code as `" + STUDYFIELD_CODE + "`, " +
+                "toUpper(row.code) as `" + STUDYFIELD_CODE + "`, " +
                 "row.label as  `" + STUDYFIELD_DESC + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " ;
 

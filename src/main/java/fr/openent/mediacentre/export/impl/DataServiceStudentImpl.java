@@ -257,7 +257,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 "return distinct "+
                 "s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
-                "fos as `" + STUDYFIELD_CODE + "` " +
+                "toUpper(fos) as `" + STUDYFIELD_CODE + "` " +
                 "order by " + "`" + STRUCTURE_UAI + "`, `" + PERSON_ID + "`, `" + STUDYFIELD_CODE + "` ";
 
         query = query + dataReturn;
