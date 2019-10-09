@@ -233,7 +233,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
             condition = "split(sub.code,\"-\") as codelist";
         }
         String queryStructureFos = "MATCH (sub:Subject)-[:SUBJECT]->(s:Structure)" +
-                "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
+                "WHERE HAS(s.exports) AND sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' AND 'GAR' IN s.exports " +
                 "with s, sub.label as label, " + condition +
                 " return distinct s.UAI as `" + STRUCTURE_UAI + "`, toUpper(" +
                 (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE + "`, " +
@@ -241,7 +241,8 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
                 "UNION ";
         String queryStudentFos = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) AND 'GAR' IN s.exports " +
+                "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) " +
+                "AND 'GAR' IN s.exports " +
                 "with s, u.fieldOfStudy as fos, u.fieldOfStudyLabels as fosl " +
                 "with s, " +
                 "reduce(x=[], idx in range(0,size(fos)-1) | x + {code:fos[idx],label:fosl[idx]}) as rows " +

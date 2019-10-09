@@ -251,7 +251,8 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      */
     private void getStudentsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "WHERE head(u.profiles) = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) AND 'GAR' IN s.exports ";
+                "WHERE head(u.profiles) = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) "+
+                " AND 'GAR' IN s.exports ";
         String dataReturn = "with u,s " +
                 "unwind u.fieldOfStudy as fos " +
                 "return distinct "+

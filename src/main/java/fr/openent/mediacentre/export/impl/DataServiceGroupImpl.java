@@ -255,6 +255,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                         "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 "WITH distinct u,s "+
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s) " +
+                "WHERE sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' "+
                 "WITH u.id as uid,  t.classes as classesList, " + condition +
                 ", s.UAI as uai " +
                         "unwind(classesList) as classes " +
@@ -307,7 +308,8 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                         "AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 "WITH distinct u,s "+
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
-                "with u.id as uid, t.groups as grouplist, " + condition +
+                "WHERE sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' " +
+                "WITH u.id as uid, t.groups as grouplist, " + condition +
                 ", s.UAI as uai " +
                         "unwind(grouplist) as group " +
                         "MATCH (fg:FunctionalGroup)-[:DEPENDS]->(s:Structure) " +
