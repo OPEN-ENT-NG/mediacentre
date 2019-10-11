@@ -71,7 +71,7 @@ export const parameterController = ng.controller("ParameterController", [
         };
 
         $scope.showRespAffecGarGroup = function ({structureId, id}) {
-            window.open(`/admin/${structureId}/groups/manual/${id}`);
+            window.open(`/admin/${structureId}/groups/manual/${id}/details`);
         };
 
         $scope.addUser = async (groupId, structureId) => {
