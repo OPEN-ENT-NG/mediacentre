@@ -138,8 +138,6 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
     }
 
 
-
-
     /**
      * Get groups info from Neo4j
      * Get classes (or divisions)
@@ -155,8 +153,8 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "c.name as `" + GROUPS_DESC + "`, " +
                 "\"" + GROUPS_DIVISION_NAME + "\" as `" + GROUPS_STATUS + "` " +
-                "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` " +
-                "UNION ";
+                "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` ";
+
         String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->" +
                 "(s:Structure) " +
                 "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
@@ -173,8 +171,27 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "\"" + GROUPS_GROUP_NAME + "\" as `" + GROUPS_STATUS + "` " +
                 "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` ";
 
-        neo4j.execute(classQuery + groupsQuery, new JsonObject(), validResultHandler(handler));
+
+        classQuery += " ASC SKIP {skip} LIMIT {limit} ";
+        groupsQuery += " ASC SKIP {skip} LIMIT {limit} ";
+
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+
+        String finalGroupsQuery = groupsQuery;
+        paginator.neoStreamList(classQuery, params, new JsonArray(), 0, new Handler<Either<String, JsonArray>>() {
+            @Override
+            public void handle(Either<String, JsonArray> result) {
+                if (result.isRight()) {
+                    paginator.neoStreamList(finalGroupsQuery, params, result.right().getValue(), 0, handler);
+
+                } else {
+                    log.error("[DataServiceGroupImple@getAndProcessGroupsInfoFromNeo4j] Failed to process classQuery");
+                }
+            }
+        });
     }
+
+
 
     /**
      * Process groups info
