@@ -220,8 +220,8 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(c.externalId,\"$\")[1], c.id) as `" + GROUPS_CODE + "` " +
-                "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "` " +
-                "UNION ";
+                "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "` ";
+        
         String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure) " +
                 "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
                 "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
@@ -232,11 +232,26 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as `" + GROUPS_CODE + "` "+
                 "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "`";
 
-        String query = classQuery + groupsQuery;
-        query += " ASC SKIP {skip} LIMIT {limit} ";
+        classQuery += " ASC SKIP {skip} LIMIT {limit} ";
+        groupsQuery += " ASC SKIP {skip} LIMIT {limit} ";
 
         JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+
+        String finalGroupsQuery = groupsQuery;
+        paginator.neoStreamList(classQuery, params, new JsonArray(), 0, new Handler<Either<String, JsonArray>>() {
+            @Override
+            public void handle(Either<String, JsonArray> result) {
+                if (result.isRight()) {
+                    paginator.neoStreamList(finalGroupsQuery, params, result.right().getValue(), 0, handler);
+
+                } else {
+                    log.error("[DataServiceGroupImple@getGroupsPersonFromNeo4j] Failed to process classQuery");
+                }
+            }
+        });
+
+
+
     }
 
     /**
