@@ -234,48 +234,29 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         }
 
 
-        String query =
-                "MATCH  (sub:Subject)-[:SUBJECT]->(s:Structure) " +
-                "WHERE  HAS(s.exports) AND sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' AND 'GAR' IN s.exports " +
-                "WITH " +
-                "	s, " +
-                "	sub.label as label, " +
-                condition +
-                " RETURN DISTINCT " +
-                "	s.UAI as `" + STRUCTURE_UAI + "`, " +
-                "	toUpper(" + (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE + "`, " +
-                "	label as `" + STUDYFIELD_DESC + "` " +
-                "ORDER BY " +
-                "	`" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
-                "UNION " +
-                "MATCH " +
-                "	(u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
-                "	(sub:Subject)-[:SUBJECT]->(s:Structure) " +
-                "WHERE " +
-                "	EXISTS (u.fieldOfStudy) AND " +
-                "	 NOT(HAS(u.deleteDate)) AND " +
-                "	 NOT(HAS(u.disappearanceDate)) AND " +
-                "	 HAS(s.exports) AND " +
-                "	 'GAR' IN s.exports " +
-                "WITH " +
-                "	s, " +
-                "	sub, " +
-                "	u.fieldOfStudy as rows " +
-                "UNWIND rows as fosCode " +
-                "WITH " +
-                "	s, " +
-                "	sub, " +
-                "	fosCode, " +
-                condition +
-                " WHERE " +
-                "	fosCode = codelist " +
-                "RETURN DISTINCT " +
-                "	s.UAI as `" + STRUCTURE_UAI + "`, " +
-                "	fosCode as `" + STUDYFIELD_CODE + "`, " +
-                "	sub.label as `" + STUDYFIELD_DESC + "` " +
-                "ORDER BY " +
-                "	`" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "`" +
-                " ASC SKIP {skip} LIMIT {limit} ";
+        String queryStructureFos = "MATCH (sub:Subject)-[:SUBJECT]->(s:Structure)" +
+                "WHERE HAS(s.exports) AND sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' AND 'GAR' IN s.exports " +
+                "with s, sub.label as label, " + condition +
+                " return distinct s.UAI as `" + STRUCTURE_UAI + "`, toUpper(" +
+                (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE + "`, " +
+                "label as `" + STUDYFIELD_DESC + "` " +
+                "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
+                "UNION ";
+        String queryStudentFos = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
+                "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) " +
+                "AND 'GAR' IN s.exports " +
+                "with s, u.fieldOfStudy as fos, u.fieldOfStudyLabels as fosl " +
+                "with s, " +
+                "reduce(x=[], idx in range(0,size(fos)-1) | x + {code:fos[idx],label:fosl[idx]}) as rows " +
+                "unwind rows as row " +
+                "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
+                "toUpper(row.code) as `" + STUDYFIELD_CODE + "`, " +
+                "row.label as  `" + STUDYFIELD_DESC + "` " +
+                "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` ";
+
+
+        String query = queryStructureFos + queryStudentFos;
+        query += " ASC SKIP {skip} LIMIT {limit} ";
 
         JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
