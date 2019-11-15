@@ -4,14 +4,12 @@ import fr.openent.mediacentre.export.DataService;
 import fr.openent.mediacentre.export.ExportService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
-import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -24,34 +22,16 @@ public class ExportServiceImpl implements ExportService{
     }
 
     @Override
-    public void launchExport(final Message<JsonObject> message) {
-        launchExport(new Handler<Either<String, JsonObject>>() {
-            @Override
-            public void handle(Either<String, JsonObject> exportResult) {
-                JsonObject json;
-                if(exportResult.isLeft()) {
-                    json = (new JsonObject())
-                            .put("status", "error")
-                            .put("message", exportResult.left().getValue());
-                } else {
-                    json = exportResult.right().getValue();
-                }
-                message.reply(json.put("status", "ok"));
-            }
-        });
-    }
-
-    @Override
-    public void launchExport(final Handler<Either<String, JsonObject>> handler) {
+    public void launchExport(final String entId, final Handler<Either<String, JsonObject>> handler) {
 
         String strDate = new SimpleDateFormat("yyyyMMdd_HHmmss_").format(new Date());
 
         final Queue<DataService> dataServiceQueue = new ConcurrentLinkedQueue<>();
-        dataServiceQueue.add(new DataServiceStructureImpl(config, strDate));
-        dataServiceQueue.add(new DataServiceStudentImpl(config, strDate));
-        dataServiceQueue.add(new DataServiceTeacherImpl(config, strDate));
-        dataServiceQueue.add(new DataServiceGroupImpl(config, strDate));
-        dataServiceQueue.add(new DataServiceRespImpl(config, strDate));
+        dataServiceQueue.add(new DataServiceStructureImpl(entId, config, strDate));
+        dataServiceQueue.add(new DataServiceStudentImpl(entId, config, strDate));
+        dataServiceQueue.add(new DataServiceTeacherImpl(entId, config, strDate));
+        dataServiceQueue.add(new DataServiceGroupImpl(entId, config, strDate));
+        dataServiceQueue.add(new DataServiceRespImpl(entId, config, strDate));
 
         JsonArray fileList = new fr.wseduc.webutils.collections.JsonArray();
         processExport(dataServiceQueue, fileList, handler);

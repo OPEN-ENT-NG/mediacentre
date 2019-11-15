@@ -1,8 +1,6 @@
 package fr.openent.mediacentre.controller;
 
 import fr.openent.mediacentre.Mediacentre;
-import fr.openent.mediacentre.export.ExportService;
-import fr.openent.mediacentre.export.impl.ExportServiceImpl;
 import fr.openent.mediacentre.security.WorkflowUtils;
 import fr.openent.mediacentre.service.EventService;
 import fr.openent.mediacentre.service.ResourceService;
@@ -10,14 +8,12 @@ import fr.openent.mediacentre.service.impl.DefaultEventService;
 import fr.openent.mediacentre.service.impl.DefaultResourceService;
 import fr.openent.mediacentre.export.impl.ExportWorker;
 import fr.wseduc.bus.BusAddress;
-import fr.wseduc.cron.CronTrigger;
 import fr.wseduc.rs.Get;
 import fr.wseduc.rs.Post;
 import fr.wseduc.security.ActionType;
 import fr.wseduc.security.SecuredAction;
 import fr.wseduc.webutils.http.Renders;
 import fr.wseduc.webutils.request.RequestUtils;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
@@ -29,8 +25,6 @@ import io.vertx.core.logging.LoggerFactory;
 import org.entcore.common.controller.ControllerHelper;
 import org.entcore.common.user.UserUtils;
 
-import java.text.ParseException;
-
 import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
 import static fr.wseduc.webutils.http.response.DefaultResponseHandler.defaultResponseHandler;
 
@@ -39,7 +33,6 @@ public class MediacentreController extends ControllerHelper {
     private final ResourceService resourceService;
     private final EventService eventService;
     private final Vertx vertx;
-    private JsonObject garRessourcesConfig = null;
     private Logger log = LoggerFactory.getLogger(MediacentreController.class);
     private EventBus eb = null;
     private JsonObject config;
@@ -49,16 +42,12 @@ public class MediacentreController extends ControllerHelper {
         eb = vertx.eventBus();
         this.config = config;
         this.vertx = vertx;
-        this.garRessourcesConfig = config.getJsonObject("gar-ressources");
         this.eventService = new DefaultEventService(config.getString("event-collection", "gar-events"));
         this.resourceService = new DefaultResourceService(
                 vertx,
-                garRessourcesConfig.getString("host"),
-                config.getString("id-ent"),
-                garRessourcesConfig.getString("cert"),
-                garRessourcesConfig.getString("key")
+                config.getJsonObject("gar-ressources"),
+                config.getJsonObject("id-ent")
         );
-        this.launchExport();
     }
 
     @Get("")
@@ -73,7 +62,7 @@ public class MediacentreController extends ControllerHelper {
         UserUtils.getUserInfos(eb, request, user -> {
             String structureId = request.params().contains("structure") ? request.getParam("structure") : user.getStructures().get(0);
             String userId = user.getUserId();
-            this.resourceService.get(userId, structureId, garRessourcesConfig.getString("host"), result -> {
+            this.resourceService.get(userId, structureId, Renders.getHost(request), result -> {
                             if (result.isRight()) {
                                 Renders.renderJson(request, result.right().getValue());
                             } else {
@@ -98,30 +87,13 @@ public class MediacentreController extends ControllerHelper {
     @Get("/launchExport")
     @SecuredAction(value = WorkflowUtils.EXPORT, type = ActionType.WORKFLOW)
     public void launchExportFromRoute(HttpServerRequest request) {
-        this.exportAndSend();
+        this.exportAndSend(config.getJsonObject("id-ent").getString(Renders.getHost(request)));
         request.response().setStatusCode(200).end("Import started");
     }
 
-    private void launchExport() {
-        log.info("Start lauchExport (CRON GAR export)------");
-        try {
-            new CronTrigger(vertx, config.getString("export-cron")).schedule(new Handler<Long>() {
-                @Override
-                public void handle(Long event) {
-                    exportAndSend();
-                }
-            });
-
-        } catch (ParseException e) {
-            log.error("cron GAR failed");
-            log.fatal(e.getMessage(), e);
-            return;
-        }
-    }
-
-    private void exportAndSend() {
+    private void exportAndSend(final String entId) {
         eb.send(ExportWorker.class.getSimpleName(),
-                new JsonObject().put("action", "exportAndSend"),
+                new JsonObject().put("action", "exportAndSend").put("entId", entId),
                 handlerToAsyncHandler(event -> log.info("Export Gar Launched")));
     }
 
@@ -129,7 +101,7 @@ public class MediacentreController extends ControllerHelper {
     public void addressHandler(Message<JsonObject> message) {
         String action = message.body().getString("action", "");
         switch (action) {
-            case "export" : exportAndSend();
+            case "export" : exportAndSend(null);
                 break;
             case "getConfig":
                 log.info("MEDIACENTRE GET CONFIG BUS RECEPTION");

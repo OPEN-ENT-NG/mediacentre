@@ -21,12 +21,10 @@ abstract class DataServiceBaseImpl implements DataService{
     static Map<String,String> mapStructures = new HashMap<>();
     XmlExportHelper xmlExportHelper;
     final Logger log = LoggerFactory.getLogger(DataServiceBaseImpl.class);
-    final String CONTROL_GROUP;
 
     final Neo4j neo4j = Neo4j.getInstance();
 
-    DataServiceBaseImpl(JsonObject config) {
-        this.CONTROL_GROUP = config.getString("control-group", DEFAULT_CONTROL_GROUP);
+    DataServiceBaseImpl() {
     }
 
     /**

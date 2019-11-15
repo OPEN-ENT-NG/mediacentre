@@ -3,7 +3,6 @@ package fr.openent.mediacentre;
 import fr.openent.mediacentre.controller.MediacentreController;
 import fr.openent.mediacentre.controller.SettingController;
 import fr.openent.mediacentre.export.ExportTask;
-import fr.openent.mediacentre.export.impl.ExportWorker;
 import fr.wseduc.cron.CronTrigger;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.json.JsonObject;
@@ -23,6 +22,35 @@ public class Mediacentre extends BaseServer {
 	public void start() throws Exception {
 		super.start();
 		final EventBus eb = getEventBus(vertx);
+
+		final String host = config.getString("host").split("//")[1];
+
+		//adapt the configuration to multi-tenant
+		if (config.getValue("id-ent") instanceof String) {
+			config.put("id-ent", new JsonObject().put(host, config.getValue("id-ent", "")));
+		}
+
+		final JsonObject garRessources = config.getJsonObject("gar-ressources", new JsonObject());
+		if (garRessources.containsKey("cert") || garRessources.containsKey("key")) {
+			garRessources.put("domains", new JsonObject().put(host,
+					new JsonObject().put("cert", garRessources.getString("cert")).put("key", garRessources.getString("key"))));
+			garRessources.remove("cert");
+			garRessources.remove("key");
+		}
+
+		final JsonObject garSftp = config.getJsonObject("gar-sftp", new JsonObject());
+		if (garSftp.containsKey("passphrase")) {
+			final JsonObject tenants = new JsonObject();
+			tenants.put(config.getJsonObject("id-ent").getString(host), new JsonObject()
+					.put("username", garSftp.getString("username")).put("passphrase", garSftp.getString("passphrase"))
+					.put("sshkey", garSftp.getString("sshkey")).put("dir-dest", garSftp.getString("dir-dest")));
+
+			garSftp.put("tenants", tenants);
+			garSftp.remove("username");
+			garSftp.remove("passphrase");
+			garSftp.remove("sshkey");
+			garSftp.remove("dir-dest");
+		}
 
 		addController(new MediacentreController(vertx, config));
 		addController(new SettingController(eb));

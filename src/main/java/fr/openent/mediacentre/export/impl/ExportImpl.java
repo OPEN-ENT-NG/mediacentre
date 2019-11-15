@@ -4,6 +4,7 @@ import fr.openent.mediacentre.export.ExportService;
 import fr.openent.mediacentre.export.XMLValidationHandler;
 import fr.openent.mediacentre.service.TarService;
 import fr.openent.mediacentre.service.impl.DefaultTarService;
+import fr.openent.mediacentre.utils.FileUtils;
 import fr.wseduc.webutils.Either;
 import fr.wseduc.webutils.data.FileResolver;
 import fr.wseduc.webutils.email.EmailSender;
@@ -43,57 +44,62 @@ public class ExportImpl {
     private Vertx vertx;
     private EmailSender emailSender;
 
-    public ExportImpl(Vertx vertx, Handler<String> handler) {
+    public ExportImpl(Vertx vertx, String entId, Handler<String> handler) {
         this.vertx = vertx;
         this.config = CONFIG;
         this.eb = vertx.eventBus();
         this.exportService = new ExportServiceImpl(config);
         this.tarService = new DefaultTarService();
         this.sftpGarConfig = config.getJsonObject("gar-sftp");
-        this.emailSender = new EmailFactory(vertx, config).getSender();
+        this.emailSender = new EmailFactory(vertx).getSender();
 
-        this.exportAndSend(handler);
+        this.exportAndSend(entId, handler);
     }
 
     public ExportImpl(Vertx vertx) {
         this.config = CONFIG;
-        this.emailSender = new EmailFactory(vertx, config).getSender();
+        this.emailSender = new EmailFactory(vertx).getSender();
     }
 
-    private void exportAndSend(Handler<String> handler) {
-        log.info("Start exportAndSend GAR (Generate xml files, XSD validation, compress to tar.gz, generate md5, send to GAR by sftp");
-        try {
-            emptyDIrectory(config.getString("export-path"));
-        } catch (Exception e) {
-            handler.handle(e.getMessage());
-        }
+    private void exportAndSend(final String entId, final Handler<String> handler) {
+        final String exportPath = FileUtils.appendPath(config.getString("export-path"), entId);
+        final String exportArchivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId);
+        //create and delete files if necessary
+        FileUtils.mkdirs(exportPath);
+        FileUtils.deleteFiles(exportPath);
+        FileUtils.mkdirs(exportArchivePath);
+        FileUtils.deleteFiles(exportArchivePath);
+
+        log.info("Start exportAndSend GAR for ENT ID : " + entId + " (Generate xml files, XSD validation, compress to tar.gz, generate md5, send to GAR by sftp");
         log.info("Generate XML files");
-        exportService.launchExport((Either<String, JsonObject> event1) -> {
+        exportService.launchExport(entId, (Either<String, JsonObject> event1) -> {
             if (event1.isRight()) {
-                File directory = new File(config.getString("export-path"));
+                File directory = new File(exportPath);
                 Map<String, Object> validationResult = validateXml(directory);
                 boolean isValid = (boolean) validationResult.get("valid");
                 if (!isValid) {
                     log.info(validationResult.get("report"));
-                    saveXsdValidation((String) validationResult.get("report"));
+                    saveXsdValidation((String) validationResult.get("report"), FileUtils.appendPath(exportArchivePath, "xsd_errors.log"));
                     sendReport((String) validationResult.get("report"));
                 }
                 log.info("Tar.GZ to Compress");
-                emptyDIrectory(config.getString("export-archive-path"));
-                tarService.compress(config.getString("export-archive-path"), directory, (Either<String, JsonObject> event2) -> {
+                tarService.compress(exportArchivePath, directory, (Either<String, JsonObject> event2) -> {
                     if (event2.isRight() && event2.right().getValue().containsKey("archive")) {
                         String archiveName = event2.right().getValue().getString("archive");
                         //SFTP sender
                         log.info("Send to GAR tar GZ by sftp: " + archiveName);
+
+                        final JsonObject tenant = sftpGarConfig.getJsonObject("tenants", new JsonObject()).getJsonObject(entId, new JsonObject());
+
                         JsonObject sendTOGar = new JsonObject().put("action", "send")
                                 .put("known-hosts", sftpGarConfig.getString("known-hosts"))
                                 .put("hostname", sftpGarConfig.getString("host"))
                                 .put("port", sftpGarConfig.getInteger("port"))
-                                .put("username", sftpGarConfig.getString("username"))
-                                .put("sshkey", sftpGarConfig.getString("sshkey"))
-                                .put("passphrase", sftpGarConfig.getString("passphrase"))
-                                .put("local-file", config.getString("export-archive-path") + archiveName)
-                                .put("dist-file", sftpGarConfig.getString("dir-dest") + archiveName);
+                                .put("username", tenant.getString("username"))
+                                .put("sshkey", tenant.getString("sshkey"))
+                                .put("passphrase", tenant.getString("passphrase"))
+                                .put("local-file", FileUtils.appendPath(exportArchivePath, archiveName))
+                                .put("dist-file", FileUtils.appendPath(tenant.getString("dir-dest"), archiveName));
 
                         String n = (String) vertx.sharedData().getLocalMap("server").get("node");
                         String node = (n != null) ? n : "";
@@ -107,8 +113,8 @@ public class ExportImpl {
                                 String md5File = event2.right().getValue().getString("md5File");
                                 log.info("Send to GAR md5 by sftp: " + md5File);
                                 sendTOGar
-                                        .put("local-file", config.getString("export-archive-path") + md5File)
-                                        .put("dist-file", sftpGarConfig.getString("dir-dest") + md5File);
+                                        .put("local-file", FileUtils.appendPath(exportArchivePath, md5File))
+                                        .put("dist-file", FileUtils.appendPath(tenant.getString("dir-dest"), md5File));
                                 eb.send(node + "sftp", sendTOGar, handlerToAsyncHandler(message1 -> {
                                     if (message1.body().containsKey("status") && message1.body().getString("status") == "error") {
                                         String e = "FAILED Send to Md5 by sftp";
@@ -144,8 +150,7 @@ public class ExportImpl {
         }
     }
 
-    private void saveXsdValidation(String report) {
-        String filePath = config.getString("export-archive-path") + "xsd_errors.log";
+    private void saveXsdValidation(String report, final String filePath) {
         vertx.fileSystem().writeFile(filePath, new BufferImpl().setBytes(0, report.getBytes()), event -> {
             if (event.failed()) log.error("Failed to write xsd errors");
         });
@@ -178,15 +183,4 @@ public class ExportImpl {
         }
         return result;
     }
-
-    //TODO prévenir les nullpointer ici
-    private void emptyDIrectory(String path) {
-        File index = new File(path);
-        String[] entries = index.list();
-        for (String s : entries) {
-            File currentFile = new File(index.getPath(), s);
-            currentFile.delete();
-        }
-    }
-
 }
