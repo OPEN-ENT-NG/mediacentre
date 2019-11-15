@@ -3,12 +3,14 @@ package fr.openent.mediacentre.controller;
 import fr.openent.mediacentre.export.impl.ExportImpl;
 import fr.openent.mediacentre.service.ParameterService;
 import fr.openent.mediacentre.service.impl.DefaultParameterService;
+import fr.openent.mediacentre.utils.FileUtils;
 import fr.wseduc.rs.ApiDoc;
 import fr.wseduc.rs.Delete;
 import fr.wseduc.rs.Get;
 import fr.wseduc.rs.Post;
 import fr.wseduc.security.ActionType;
 import fr.wseduc.security.SecuredAction;
+import fr.wseduc.webutils.http.Renders;
 import fr.wseduc.webutils.request.RequestUtils;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.EventBus;
@@ -46,7 +48,8 @@ public class SettingController extends ControllerHelper {
     @ResourceFilter(SuperAdminFilter.class)
     @ApiDoc("get gar structure")
     public void getStructureGar(final HttpServerRequest request) {
-        parameterService.getStructureGar(DefaultResponseHandler.arrayResponseHandler(request));
+        final String entId = config.getJsonObject("id-ent").getString(Renders.getHost(request));
+        parameterService.getStructureGar(entId, DefaultResponseHandler.arrayResponseHandler(request));
     }
 
     @Post("/structure/gar/group")
@@ -54,7 +57,9 @@ public class SettingController extends ControllerHelper {
     @ResourceFilter(SuperAdminFilter.class)
     @ApiDoc("Create group to gar structure")
     public void createGarGroupToStructure(final HttpServerRequest request) {
+        final String entId = config.getJsonObject("id-ent").getString(Renders.getHost(request));
         RequestUtils.bodyToJson(request, parameter -> {
+            parameter.put("entId", entId);
             parameterService.createGarGroupToStructure(parameter, DefaultResponseHandler.defaultResponseHandler(request));
         });
 
@@ -65,8 +70,9 @@ public class SettingController extends ControllerHelper {
     @ResourceFilter(SuperAdminFilter.class)
     @ApiDoc("Undeploy given structure")
     public void undeployStructure(HttpServerRequest request) {
+        final String entId = config.getJsonObject("id-ent").getString(Renders.getHost(request));
         String structureId = request.getParam("id");
-        parameterService.undeployStructureGar(structureId, DefaultResponseHandler.defaultResponseHandler(request));
+        parameterService.undeployStructureGar(structureId, entId, DefaultResponseHandler.defaultResponseHandler(request));
     }
 
     @Post("/structure/gar/group/user")
@@ -95,7 +101,8 @@ public class SettingController extends ControllerHelper {
     @ResourceFilter(SuperAdminFilter.class)
     @ApiDoc("Download last archive")
     public void downloadArchive(HttpServerRequest request) {
-        String archivePath = config.getString("export-archive-path");
+        final String entId = config.getJsonObject("id-ent").getString(Renders.getHost(request));
+        final String archivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId);
         vertx.fileSystem().readDir(archivePath, ".*\\.tar\\.gz", event -> {
             if (event.failed()) {
                 renderError(request, new JsonObject().put("error", event.cause().toString()));
@@ -125,7 +132,9 @@ public class SettingController extends ControllerHelper {
     @ResourceFilter(SuperAdminFilter.class)
     @ApiDoc("Download xsd validation error")
     public void xsdValidation(HttpServerRequest request) {
-        String archivePath = config.getString("export-archive-path");
+        final String entId = config.getJsonObject("id-ent").getString(Renders.getHost(request));
+        final String archivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId);
+
         vertx.fileSystem().readDir(archivePath, "xsd_errors\\.log", event -> {
             if (event.failed()) {
                 renderError(request, new JsonObject().put("error", event.cause().toString()));

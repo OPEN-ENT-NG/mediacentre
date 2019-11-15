@@ -14,11 +14,12 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
 
     private PaginatorHelperImpl paginator;
     private JsonObject config;
+    private String entId;
 
-    DataServiceStructureImpl(JsonObject config, String strDate) {
-        super(config);
+    DataServiceStructureImpl(String entId, JsonObject config, String strDate) {
+        this.entId = entId;
         this.config = config;
-        xmlExportHelper = new XmlExportHelperImpl(config, STRUCTURE_ROOT, STRUCTURE_FILE_PARAM, strDate);
+        xmlExportHelper = new XmlExportHelperImpl(entId, config, STRUCTURE_ROOT, STRUCTURE_FILE_PARAM, strDate);
         paginator = new PaginatorHelperImpl();
     }
 
@@ -114,7 +115,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      */
     private void getStucturesInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (s:Structure) " +
-                "WHERE HAS(s.exports) AND 'GAR' IN s.exports ";
+                "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports ";
 // Don't export optional attachment structure attribute
 //                "OPTIONAL MATCH (g2:ManualGroup{name:\\\"\" + CONTROL_GROUP + \"\\\"})-[:DEPENDS]->(s2:Structure)<-[:HAS_ATTACHMENT]-(s:Structure) ";
         String dataReturn = "RETURN distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
@@ -129,7 +130,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
@@ -180,7 +181,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
     private void getStucturesMefsFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String queryStudentsMefs = "MATCH (n:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure) " +
                 "WHERE exists(n.module) AND  NOT(has(n.deleteDate)) AND NOT(HAS(n.disappearanceDate))" +
-                " AND HAS(s.exports) AND 'GAR' IN s.exports " +
+                " AND HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "n.module as `" + MEF_CODE + "`, " +
                 "n.moduleName as `" + MEF_DESCRIPTION + "` " +
@@ -188,7 +189,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "UNION ";
         String queryTeachersMefs = "MATCH (n:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "where exists(n.modules) and not has(n.deleteDate) " +
-                "AND NOT(HAS(n.disappearanceDate)) AND HAS(s.exports) AND 'GAR' IN s.exports " +
+                "AND NOT(HAS(n.disappearanceDate)) AND HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "with s,n " +
                 "unwind n.modules as rows " +
                 "with s, split(rows,\"$\") as modules " +
@@ -200,7 +201,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         String query = queryStudentsMefs + queryTeachersMefs;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
@@ -235,7 +236,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
 
 
         String queryStructureFos = "MATCH (sub:Subject)-[:SUBJECT]->(s:Structure)" +
-                "WHERE HAS(s.exports) AND sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' AND 'GAR' IN s.exports " +
+                "WHERE HAS(s.exports) AND sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' AND ('GAR-' + {entId}) IN s.exports " +
                 "with s, sub.label as label, " + condition +
                 " return distinct s.UAI as `" + STRUCTURE_UAI + "`, toUpper(" +
                 (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE + "`, " +
@@ -244,7 +245,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "UNION ";
         String queryStudentFos = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) " +
-                "AND 'GAR' IN s.exports " +
+                "AND ('GAR-' + {entId}) IN s.exports " +
                 "with s, u.fieldOfStudy as fos, u.fieldOfStudyLabels as fosl " +
                 "with s, " +
                 "reduce(x=[], idx in range(0,size(fos)-1) | x + {code:fos[idx],label:fosl[idx]}) as rows " +
@@ -258,7 +259,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         String query = queryStructureFos + queryStudentFos;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 

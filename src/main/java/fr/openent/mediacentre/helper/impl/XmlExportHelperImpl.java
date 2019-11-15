@@ -1,6 +1,7 @@
 package fr.openent.mediacentre.helper.impl;
 
 import fr.openent.mediacentre.helper.XmlExportHelper;
+import fr.openent.mediacentre.utils.FileUtils;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -40,13 +41,12 @@ public class XmlExportHelperImpl implements XmlExportHelper {
      * @param root name of the root xml element
      * @param fileParamName param for the name of xml file
      */
-    public XmlExportHelperImpl(JsonObject config, String root, String fileParamName, String strDate) {
+    public XmlExportHelperImpl(final String entId, JsonObject config, String root, String fileParamName, String strDate) {
         ROOT = root;
         initNewFile();
         MAX_NODES = config.getInteger("max-nodes", 10000);
-        exportDir = config.getString("export-path", "");
-        String idEnt = config.getString("id-ent", "");
-        FILE_PREFIX = idEnt + "_GAR-ENT_Complet_" + strDate + fileParamName + "_";
+        exportDir = FileUtils.appendPath(config.getString("export-path", ""), entId);
+        FILE_PREFIX = entId + "_GAR-ENT_Complet_" + strDate + fileParamName + "_";
         fileList = new fr.wseduc.webutils.collections.JsonArray();
     }
 
@@ -83,9 +83,10 @@ public class XmlExportHelperImpl implements XmlExportHelper {
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
             DOMSource source = new DOMSource(currentDoc);
             String filename = getExportFileName(fileIndex);
-            StreamResult result = new StreamResult(new File(exportDir + filename));
+            String pathFile = FileUtils.appendPath(exportDir, filename);
+            StreamResult result = new StreamResult(new File(pathFile));
             transformer.transform(source, result);
-            fileList.add(exportDir + filename);
+            fileList.add(pathFile);
             log.info(filename + " saved");
         } catch (TransformerException tfe) {
             log.error(tfe.getMessage());

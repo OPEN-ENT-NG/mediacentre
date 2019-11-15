@@ -12,10 +12,11 @@ import static fr.openent.mediacentre.constants.GarConstants.*;
 
 public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataService{
     private PaginatorHelperImpl paginator;
+    private String entId;
 
-    DataServiceStudentImpl(JsonObject config, String strDate) {
-        super(config);
-        xmlExportHelper = new XmlExportHelperImpl(config, STUDENT_ROOT, STUDENT_FILE_PARAM, strDate);
+    DataServiceStudentImpl(String entId, JsonObject config, String strDate) {
+        this.entId = entId;
+        xmlExportHelper = new XmlExportHelperImpl(entId, config, STUDENT_ROOT, STUDENT_FILE_PARAM, strDate);
         paginator = new PaginatorHelperImpl();
     }
 
@@ -131,8 +132,8 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
     private void getStudentsInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
                 "(p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
-                "where p.name = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) AND 'GAR' IN s.exports " +
-                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
+                "where p.name = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
+                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) ";
         String dataReturn = "return distinct " +
                 "u.id  as `" + PERSON_ID + "`, " +
@@ -150,7 +151,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
@@ -215,7 +216,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
     private void getStudentsMefFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)";
         String dataReturn = "WHERE head(u.profiles) = 'Student'" +
-                "AND HAS(s.exports) AND 'GAR' IN s.exports " +
+                "AND HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) "+
                 "AND u.module  <>\"\""+
                 "RETURN DISTINCT "+
@@ -228,7 +229,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
@@ -252,7 +253,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
     private void getStudentsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "WHERE head(u.profiles) = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) "+
-                " AND 'GAR' IN s.exports ";
+                " AND ('GAR-' + {entId}) IN s.exports ";
         String dataReturn = "with u,s " +
                 "unwind u.fieldOfStudy as fos " +
                 "return distinct "+
@@ -264,7 +265,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 

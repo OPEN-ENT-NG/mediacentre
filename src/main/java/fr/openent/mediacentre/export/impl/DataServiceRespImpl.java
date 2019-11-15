@@ -13,11 +13,14 @@ import static fr.openent.mediacentre.constants.GarConstants.*;
 public class DataServiceRespImpl extends DataServiceBaseImpl implements DataService {
 
     private PaginatorHelperImpl paginator;
+    private String controlGroup;
+    private String entId;
 
-    DataServiceRespImpl(JsonObject config, String strDate) {
-        super(config);
-        xmlExportHelper = new XmlExportHelperImpl(config, RESP_ROOT, RESP_FILE_PARAM, strDate);
+    DataServiceRespImpl(String entId, JsonObject config, String strDate) {
+        this.entId = entId;
+        xmlExportHelper = new XmlExportHelperImpl(entId, config, RESP_ROOT, RESP_FILE_PARAM, strDate);
         paginator = new PaginatorHelperImpl();
+        controlGroup = config.getString("control-group", DEFAULT_CONTROL_GROUP);
     }
 
     @Override
@@ -50,11 +53,11 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
      */
     private void getRespFromNeo4j(Handler<Either<String, JsonArray>> handler) {
 
-        String query = "MATCH (us:User)-[:IN]->(n:ManualGroup{name:\"" + CONTROL_GROUP + "\"})-[:DEPENDS]->(s:Structure) " +
+        String query = "MATCH (us:User)-[:IN]->(n:ManualGroup{name:\"" + controlGroup + "\"})-[:DEPENDS]->(s:Structure) " +
                 " WHERE (us.profiles = ['Teacher'] OR us.profiles = ['Personnel']) " +
                 " AND NOT(HAS(us.deleteDate)) " +
                 " AND NOT(HAS(us.disappearanceDate))" +
-                " AND HAS(s.exports) AND 'GAR' IN s.exports" +
+                " AND HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports" +
                 " AND (HAS(us.emailAcademy) OR HAS(us.emailInternal) OR HAS(us.email)) " +
                 " WITH s, us ORDER BY s.id , us.id "+
                 " WITH s, collect(us)[..15] as uc "+    // 15 first Teachers or Personnels in each Structures
@@ -71,7 +74,7 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 

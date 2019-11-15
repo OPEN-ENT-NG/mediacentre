@@ -15,10 +15,11 @@ import static fr.openent.mediacentre.constants.GarConstants.*;
 
 public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataService{
     private PaginatorHelperImpl paginator;
+    private String entId;
 
-    DataServiceTeacherImpl(JsonObject config, String strDate) {
-        super(config);
-        xmlExportHelper = new XmlExportHelperImpl(config, TEACHER_ROOT, TEACHER_FILE_PARAM, strDate);
+    DataServiceTeacherImpl(String entId, JsonObject config, String strDate) {
+        this.entId = entId;
+        xmlExportHelper = new XmlExportHelperImpl(entId, config, TEACHER_ROOT, TEACHER_FILE_PARAM, strDate);
         paginator = new PaginatorHelperImpl();
     }
 
@@ -86,7 +87,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      */
     private void getTeachersInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "match (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
-                "(p:Profile{name:'Teacher'})<-[:HAS_PROFILE]-(pg:ProfileGroup) WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
+                "(p:Profile{name:'Teacher'})<-[:HAS_PROFILE]-(pg:ProfileGroup) WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 // ADMINISTRATIVE ATTACHMENT can reference non GAR exported structure
                 "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure)";
@@ -106,7 +107,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
@@ -221,7 +222,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         String query = "MATCH (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)," +
                 "(p:Profile{name:'Teacher'})<-[:HAS_PROFILE]-(pg:ProfileGroup) ";
         query += "WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate))" +
-                "AND HAS(s.exports) AND 'GAR' IN s.exports " +
+                "AND HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "WITH s,u "+
                 "UNWIND u.modules as module " +
                 "WITH u, s, module " +
@@ -235,7 +236,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
