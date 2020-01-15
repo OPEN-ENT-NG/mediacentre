@@ -4,9 +4,19 @@ import fr.openent.mediacentre.export.DataService;
 import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.wseduc.webutils.Either;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import org.entcore.common.neo4j.Neo4jResult;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
@@ -95,17 +105,57 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      */
     private void getAndProcessStructuresFos(final Handler<Either<String, JsonObject>> handler) {
 
-        getStucturesFosFromNeo4j(new Handler<Either<String, JsonArray>>() {
-            @Override
-            public void handle(Either<String, JsonArray> structResults) {
-                if( validResponseNeo4j(structResults, handler) ) {
-                    Either<String,JsonObject> result = processStucturesFos( structResults.right().getValue() );
+        getStucturesFosFromNeo4j(structResults -> {
+            if( validResponseNeo4j(structResults, handler) ) {
+                getFosLabelFromNeo4j(structResults.right().getValue(), structResultsWithLabel -> {
+                    Either<String,JsonObject> result = processStucturesFos(structResultsWithLabel.right().getValue());
                     handler.handle(result);
-                } else {
-                    log.error("[DataServiceStructureImple@getAndProcessStructureFos] Failed to process");
-                }
+                });
+
+            } else {
+                log.error("[DataServiceStructureImple@getAndProcessStructureFos] Failed to process");
             }
         });
+    }
+
+    private void getFosLabelFromNeo4j(JsonArray fosList, Handler<Either<String, JsonArray>> handler) {
+            String query = "MATCH (s:Structure)<-[:SUBJECT]-(sub:Subject) " +
+                    "RETURN s.UAI as UAI, sub.code as code, sub.label as label" ;
+
+            neo4j.execute(query, new JsonObject(), res -> {
+                if(res.body() != null && res.body().containsKey("result")){
+                    JsonArray queryResult = res.body().getJsonArray("result");
+
+                    Map<String, Map<String, String>> labelsByCodeUai = new HashMap<>();
+                    queryResult.forEach((entry)->{
+                        if(entry instanceof JsonObject){
+                            JsonObject field = (JsonObject) entry;
+                            String uai = field.getString("UAI", "");
+                            String code = field.getString("code", "");
+                            String label = field.getString("label", "");
+                            if(!uai.isEmpty() && !code.isEmpty() && !label.isEmpty()){
+                                if (!labelsByCodeUai.containsKey(uai)) {
+                                    labelsByCodeUai.put(uai, new HashMap<>());
+                                }
+                                labelsByCodeUai.get(uai).put(code, label);
+                            }
+                        }
+                    });
+
+
+                    for (int i = 0; i < fosList.size(); i++) {
+                        JsonObject entry = fosList.getJsonObject(i);
+                        if (entry.containsKey(STRUCTURE_UAI) && entry.containsKey(STUDYFIELD_CODE)) {
+                            String UIA = entry.getString(STRUCTURE_UAI);
+                            String fosCode = entry.getString(STUDYFIELD_CODE);
+                            if(labelsByCodeUai.containsKey(UIA) && labelsByCodeUai.get(UIA).containsKey(fosCode)){
+                                entry.put(STUDYFIELD_DESC, labelsByCodeUai.get(UIA).get(fosCode));
+                            }
+                        }
+                    }
+                }
+                handler.handle(new Either.Right<>(fosList));
+            });
     }
 
     /**
