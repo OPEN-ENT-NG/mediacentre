@@ -8,7 +8,13 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import static fr.openent.mediacentre.constants.GarConstants.*;
+import static org.entcore.common.neo4j.Neo4jResult.validResult;
 
 public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataService{
     private PaginatorHelperImpl paginator;
@@ -250,12 +256,39 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getStudentsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
+
+
+        //get all GAR structure UAI
+
+        String query1 = "MATCH (s:Structure)" +
+                "WHERE 'GAR' IN s.exports " +
+                "RETURN s.UAI as UAI";
+
+        neo4j.execute(query1, new JsonObject(), res -> {
+            if (res.body() != null && res.body().containsKey("result")) {
+                JsonArray garUAIs = res.body().getJsonArray("result");
+
+                List<String> UAIs = new ArrayList<String>();
+                garUAIs.forEach((entry) -> {
+                    if (entry instanceof JsonObject) {
+                        JsonObject field = (JsonObject) entry;
+                        UAIs.add(field.getString("UAI", ""));
+                    }
+                });
+
+                getStudentsFosByUAI(UAIs, 0, new JsonArray(), handler);
+            }
+        });
+    }
+
+    private void getStudentsFosByUAI(List<String> UAIs, int index, JsonArray finalResult, Handler<Either<String, JsonArray>> handler){
         String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "WHERE head(u.profiles) = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) "+
-                " AND 'GAR' IN s.exports ";
+                "WHERE head(u.profiles) = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) " +
+                " AND 'GAR' IN s.exports "+
+                " AND s.UAI = {uai}";
         String dataReturn = "with u,s " +
                 "unwind u.fieldOfStudy as fos " +
-                "return distinct "+
+                "return distinct " +
                 "s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "toUpper(fos) as `" + STUDYFIELD_CODE + "` " +
@@ -264,9 +297,27 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
-    }
+        JsonObject params = new JsonObject()
+                .put("uai", UAIs.get(index))
+                .put("limit", paginator.LIMIT);
+        int finalIndex = index + 1;
+        paginator.neoStreamList(query, params, new JsonArray(), 0, resultNeo -> {
+            if (resultNeo.isRight()) {
+                finalResult.addAll(resultNeo.right().getValue());
+                if(UAIs.size() > finalIndex){
+                    getStudentsFosByUAI( UAIs, finalIndex, finalResult, handler);
+                }
+                else {
+                    handler.handle(new Either.Right<>(finalResult));
+                }
+            }
+            else {
+                log.error("[DataServiceStudentImpl@getAndProcessStudentsInfo] Failed to process");
+            }
+        });
+    };
+
+
 
     /**
      * Process fields of study info
