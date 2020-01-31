@@ -284,6 +284,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         String query =
                 "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure) " +
                         "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
+                        "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
                         "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 "WITH distinct u,s "+
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s) " +
@@ -337,6 +338,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         String query =
                 "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure) " +
                         "WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                        "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
                         "AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 "WITH distinct u,s "+
                 "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
