@@ -138,6 +138,10 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                                 if (!labelsByCodeUai.containsKey(uai)) {
                                     labelsByCodeUai.put(uai, new HashMap<>());
                                 }
+                                if(this.config.containsKey("academy-prefix") &&
+                                    code.matches("("+ this.config.getString("academy-prefix")+")-[A-Z0-9-]+")){
+                                    code = code.split("-", 2)[1];
+                                }
                                 labelsByCodeUai.get(uai).put(code, label);
                             }
                         }
@@ -151,6 +155,9 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                             String fosCode = entry.getString(STUDYFIELD_CODE);
                             if(labelsByCodeUai.containsKey(UIA) && labelsByCodeUai.get(UIA).containsKey(fosCode)){
                                 entry.put(STUDYFIELD_DESC, labelsByCodeUai.get(UIA).get(fosCode));
+                            }
+                            else {
+                                entry.put(STUDYFIELD_DESC, "MATIERE INCONNUE " + fosCode);
                             }
                         }
                     }
@@ -289,20 +296,18 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "WHERE HAS(s.exports) AND sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' AND ('GAR-' + {entId}) IN s.exports " +
                 "with s, sub.label as label, " + condition +
                 " return distinct s.UAI as `" + STRUCTURE_UAI + "`, toUpper(" +
-                (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE + "`, " +
-                "label as `" + STUDYFIELD_DESC + "` " +
+                (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE +  "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
                 "UNION ";
         String queryStudentFos = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) " +
                 "AND ('GAR-' + {entId}) IN s.exports " +
-                "with s, u.fieldOfStudy as fos, u.fieldOfStudyLabels as fosl " +
+                "with s, u.fieldOfStudy as fos " +
                 "with s, " +
-                "reduce(x=[], idx in range(0,size(fos)-1) | x + {code:fos[idx],label:fosl[idx]}) as rows " +
+                "reduce(x=[], idx in range(0,size(fos)-1) | x + {code:fos[idx]}) as rows " +
                 "unwind rows as row " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
-                "toUpper(row.code) as `" + STUDYFIELD_CODE + "`, " +
-                "row.label as  `" + STUDYFIELD_DESC + "` " +
+                "toUpper(row.code) as `" + STUDYFIELD_CODE + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` ";
 
 
