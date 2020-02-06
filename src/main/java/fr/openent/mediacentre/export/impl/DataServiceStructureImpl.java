@@ -151,6 +151,9 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                             if(labelsByCodeUai.containsKey(UIA) && labelsByCodeUai.get(UIA).containsKey(fosCode)){
                                 entry.put(STUDYFIELD_DESC, labelsByCodeUai.get(UIA).get(fosCode));
                             }
+                            else {
+                                entry.put(STUDYFIELD_DESC, "MATIERE " + fosCode);
+                            }
                         }
                     }
                 }
