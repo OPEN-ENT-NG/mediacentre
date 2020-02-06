@@ -105,7 +105,7 @@ public class DefaultParameterService implements ParameterService {
         String query = "match (g:ManualGroup{name: {groupName}, id: {groupId} }), " +
                 "(u:User{profiles:['Personnel']})--(Structure{id: {structureId} }) " +
                 "WHERE ANY(function IN u.functions WHERE function CONTAINS {direction} OR function CONTAINS {documentation}) " +
-                "create unique (u)-[:IN]->(g)";
+                "create unique (u)-[:IN {source:'MANUAL'}]->(g)";
 
         JsonObject params = new JsonObject()
                 .put("groupName", GAR_GROUP_NAME)
