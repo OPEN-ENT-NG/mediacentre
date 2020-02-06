@@ -15,6 +15,7 @@ public class DefaultParameterService implements ParameterService {
 
     private EventBus eb;
     private static final String GAR_GROUP_NAME = "RESP-AFFECT-GAR";
+    private static final String GAR_GROUP_SOURCE = "MANUAL";
     private static final String GAR_LINK_NAME = "GAR_AFFECTATION_IHM_CONNECTEUR";
     private static final String FUNCTION_DIRECTION_NAME = "DIR";
     private static final String FUNCTION_DOCUMENTATION_NAME = "DOC";
@@ -88,7 +89,7 @@ public class DefaultParameterService implements ParameterService {
                             String roleId = linkResult.right().getValue().getString("id");
                             String queryLink = "MATCH (r:Role), (g:Group) " +
                                     "WHERE r.id = {roleId} and g.id = {groupId} " +
-                                    "CREATE UNIQUE (g)-[:AUTHORIZED]->(r)";
+                                    "CREATE UNIQUE (g)-[r:AUTHORIZED]->(r) ";
                             JsonObject params = new JsonObject()
                                     .put("groupId", groupId)
                                     .put("roleId", roleId);
@@ -103,10 +104,11 @@ public class DefaultParameterService implements ParameterService {
         String query = "match (g:ManualGroup{name: {groupName}, id: {groupId} }), " +
                 "(u:User{profiles:['Personnel']})--(Structure{id: {structureId} }) " +
                 "WHERE ANY(function IN u.functions WHERE function CONTAINS {direction} OR function CONTAINS {documentation}) " +
-                "create unique (u)-[:IN]->(g)";
+                "create unique (u)-[r:IN{source:{source}}]->(g) ";
 
         JsonObject params = new JsonObject()
                 .put("groupName", GAR_GROUP_NAME)
+                .put("source", GAR_GROUP_SOURCE)
                 .put("groupId", body.getString("groupId"))
                 .put("structureId", body.getString("structureId"))
                 .put("direction", FUNCTION_DIRECTION_NAME)
