@@ -156,7 +156,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                                 entry.put(STUDYFIELD_DESC, labelsByCodeUai.get(UIA).get(fosCode));
                             }
                             else {
-                                entry.put(STUDYFIELD_DESC, "MATIERE INCONNUE " + fosCode);
+                                entry.put(STUDYFIELD_DESC, "MATIERE " + fosCode);
                             }
                         }
                     }
