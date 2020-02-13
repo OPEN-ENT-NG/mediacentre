@@ -91,7 +91,7 @@ public class DefaultParameterService implements ParameterService {
                             String roleId = linkResult.right().getValue().getString("id");
                             String queryLink = "MATCH (r:Role), (g:Group) " +
                                     "WHERE r.id = {roleId} and g.id = {groupId} " +
-                                    "CREATE UNIQUE (g)-[r:AUTHORIZED]->(r) ";
+                                    "CREATE UNIQUE (g)-[:AUTHORIZED]->(r) ";
                             JsonObject params = new JsonObject()
                                     .put("groupId", groupId)
                                     .put("roleId", roleId);

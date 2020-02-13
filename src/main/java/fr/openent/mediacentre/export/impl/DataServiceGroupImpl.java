@@ -4,9 +4,15 @@ import fr.openent.mediacentre.export.DataService;
 import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.wseduc.webutils.Either;
+import fr.wseduc.webutils.Utils;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
@@ -146,16 +152,21 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * @param handler results
      */
     private void getGroupsInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String classQuery = "MATCH (c:Class)-[:BELONGS]->(s:Structure)" +
+        final Map<String, Map<String, List<String>>> mapStructGroupClasses = new HashMap<>();
+        final String divisionQuery = "MATCH (s:Structure) WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
+                "RETURN distinct s.UAI as uai, s.groups as groups";
+
+        final String classQuery = "MATCH (c:Class)-[:BELONGS]->(s:Structure)" +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "RETURN distinct "+
                 "split(c.externalId,\"$\")[1] as `" + GROUPS_CODE + "`, " +
                 "s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "c.name as `" + GROUPS_DESC + "`, " +
                 "\"" + GROUPS_DIVISION_NAME + "\" as `" + GROUPS_STATUS + "` " +
-                "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` ";
+                "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` " +
+                " ASC SKIP {skip} LIMIT {limit} ";
 
-        String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->" +
+        final String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->" +
                 "(s:Structure) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
@@ -169,24 +180,84 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "uai as `" + STRUCTURE_UAI + "`, " +
                 "name as `" + GROUPS_DESC + "`, " +
                 "\"" + GROUPS_GROUP_NAME + "\" as `" + GROUPS_STATUS + "` " +
-                "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` ";
-
-
-        classQuery += " ASC SKIP {skip} LIMIT {limit} ";
-        groupsQuery += " ASC SKIP {skip} LIMIT {limit} ";
+                "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` " +
+                " ASC SKIP {skip} LIMIT {limit} ";
 
         JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
 
-        String finalGroupsQuery = groupsQuery;
-        paginator.neoStreamList(classQuery, params, new JsonArray(), 0, new Handler<Either<String, JsonArray>>() {
-            @Override
-            public void handle(Either<String, JsonArray> result) {
-                if (result.isRight()) {
-                    paginator.neoStreamList(finalGroupsQuery, params, result.right().getValue(), 0, handler);
+        neo4j.execute(divisionQuery, params, res -> {
+            if (res.body() != null && res.body().containsKey("result")) {
+                JsonArray queryResult = Utils.getOrElse(res.body().getJsonArray("result"), new JsonArray());
 
-                } else {
-                    log.error("[DataServiceGroupImple@getAndProcessGroupsInfoFromNeo4j] Failed to process classQuery");
-                }
+                queryResult.forEach((entry) -> {
+                    if (entry instanceof JsonObject) {
+                        JsonObject field = (JsonObject) entry;
+                        String uai = field.getString("uai", "");
+                        final HashMap<String, List<String>>  mapGroup =  new HashMap<>();
+
+                        final JsonArray groups  = field.getJsonArray("groups");
+
+                        if (groups != null && !groups.isEmpty()) {
+                            groups.forEach((group) -> {
+                                String gp = (String)group;
+                                if (gp != null && !gp.isEmpty()) {
+                                    final String[] elems = gp.split("\\$");
+                                    if (elems.length >= 3) {
+                                        final List<String> classes = new ArrayList<String>();
+                                        for (int i = 2; i < elems.length; i++) {
+                                            classes.add(elems[i]);
+                                        }
+
+                                        if (!classes.isEmpty()) {
+                                            mapGroup.put(elems[0], classes);
+                                        }
+                                    }
+                                }
+                            });
+
+                            if (!mapGroup.isEmpty()) {
+                                mapStructGroupClasses.put(uai, mapGroup);
+                            }
+                        }
+                    }
+                });
+
+                paginator.neoStreamList(classQuery, params, new JsonArray(), 0, new Handler<Either<String, JsonArray>>() {
+                    @Override
+                    public void handle(Either<String, JsonArray> result) {
+                        if (result.isRight()) {
+                            paginator.neoStreamList(groupsQuery, params, result.right().getValue(), 0,  new Handler<Either<String, JsonArray>>() {
+                                @Override
+                                public void handle(Either<String, JsonArray> result) {
+                                    if (result.isRight()) {
+                                        final JsonArray results = result.right().getValue();
+                                        if (results != null && !results.isEmpty()) {
+                                            for (final Object obj : results.getList()) {
+                                                if (!(obj instanceof JsonObject)) continue;
+                                                final JsonObject jo = (JsonObject) obj;
+                                                if (GROUPS_GROUP_NAME.equals(jo.getString(GROUPS_STATUS))) {
+                                                    final Map<String, List<String>> groupClasses = mapStructGroupClasses.get(jo.getString(STRUCTURE_UAI));
+                                                    if (groupClasses != null) {
+                                                        if (groupClasses.containsKey(jo.getString(GROUPS_CODE))) {
+                                                            jo.put(GROUPS_DIVISION, new JsonArray(groupClasses.get(jo.getString(GROUPS_CODE))));
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        handler.handle(new Either.Right<>(results));
+                                    } else {
+                                        log.error("[DataServiceGroupImple@getAndProcessGroupsInfoFromNeo4j] Failed to process groupsQuery");
+                                    }
+                                }
+                            });
+                        } else {
+                            log.error("[DataServiceGroupImple@getAndProcessGroupsInfoFromNeo4j] Failed to process classQuery");
+                        }
+                    }
+                });
+            } else {
+                log.error("[DataServiceGroupImple@getAndProcessGroupsInfoFromNeo4j] Failed to process divisionQuery");
             }
         });
     }
