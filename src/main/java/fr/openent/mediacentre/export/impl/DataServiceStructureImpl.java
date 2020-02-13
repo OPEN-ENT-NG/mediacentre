@@ -313,7 +313,8 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         String condition;
         boolean containsAcademyPrefix = this.config.containsKey("academy-prefix") && !"".equals(this.config.getString("academy-prefix").trim());
         if (containsAcademyPrefix) {
-            condition = "CASE WHEN sub.code =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+' THEN substring(sub.code, size(head(split(sub.code,\"-\"))) + 1) ELSE sub.code END as codelist";
+            condition = "CASE WHEN sub.code =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+' THEN reduce(v=sub.code, prefix in split('" +
+                    this.config.getString("academy-prefix") +"', '|') | replace(v, prefix + '-', '')) ELSE sub.code END as codelist";
         } else {
             condition = "split(sub.code,\"-\") as codelist";
         }
