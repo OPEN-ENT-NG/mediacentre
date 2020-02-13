@@ -4,18 +4,11 @@ import fr.openent.mediacentre.export.DataService;
 import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
 import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.wseduc.webutils.Either;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.eventbus.Message;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import org.entcore.common.neo4j.Neo4jResult;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static fr.openent.mediacentre.constants.GarConstants.*;
@@ -122,8 +115,6 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
     }
 
     private void getFosLabelFromNeo4j(JsonArray fosList, Handler<Either<String, JsonArray>> handler) {
-
-
         String query2 = "MATCH (fos:FieldOfStudy) " +
                 "RETURN fos.externalId as id, fos.name as name ORDER BY fos.externalId";
         neo4j.execute(query2, new JsonObject(), res2 -> {
@@ -145,8 +136,6 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                     }
                 });
 
-
-
                 String query = "MATCH (s:Structure)<-[:SUBJECT]-(sub:Subject) " +
                         "RETURN s.UAI as UAI, sub.code as code, sub.label as label";
                 neo4j.execute(query, new JsonObject(), res -> {
@@ -164,9 +153,9 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                                     if (!labelsByCodeUai.containsKey(uai)) {
                                         labelsByCodeUai.put(uai, new HashMap<>());
                                     }
-                                    if (this.config.containsKey("academy-prefix") &&
+                                    if (this.config.containsKey("academy-prefix") && !"".equals(this.config.getString("academy-prefix").trim()) &&
                                             code.matches("(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+")) {
-                                        code = code.split("-", 2)[1];
+                                        code = code.replaceFirst("(" + this.config.getString("academy-prefix") + ")-", "");
                                     }
                                     labelsByCodeUai.get(uai).put(code, label);
                                 }
@@ -182,10 +171,9 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                                 if (labelsByCodeUai.containsKey(UIA) && labelsByCodeUai.get(UIA).containsKey(fosCode)) {
                                     entry.put(STUDYFIELD_DESC, labelsByCodeUai.get(UIA).get(fosCode));
                                 } else {
-                                    if(fieldOfStudyLabels.containsKey(fosCode)){
+                                    if (fieldOfStudyLabels.containsKey(fosCode)) {
                                         entry.put(STUDYFIELD_DESC, fieldOfStudyLabels.get(fosCode));
-                                    }
-                                    else{
+                                    } else {
                                         entry.put(STUDYFIELD_DESC, "MATIERE " + fosCode);
                                     }
                                 }
