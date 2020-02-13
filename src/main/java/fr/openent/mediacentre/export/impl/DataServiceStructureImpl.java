@@ -18,12 +18,14 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
     private PaginatorHelperImpl paginator;
     private JsonObject config;
     private String entId;
+    private Boolean hasAcademyPrefix;
 
     DataServiceStructureImpl(String entId, JsonObject config, String strDate) {
         this.entId = entId;
         this.config = config;
         xmlExportHelper = new XmlExportHelperImpl(entId, config, STRUCTURE_ROOT, STRUCTURE_FILE_PARAM, strDate);
         paginator = new PaginatorHelperImpl();
+        hasAcademyPrefix = this.config.containsKey("academy-prefix") && !"".equals(this.config.getString("academy-prefix").trim());
     }
 
     /**
@@ -118,7 +120,6 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         String query2 = "MATCH (fos:FieldOfStudy) " +
                 "RETURN fos.externalId as id, fos.name as name ORDER BY fos.externalId";
         neo4j.execute(query2, new JsonObject(), res2 -> {
-
             if (res2.body() != null && res2.body().containsKey("result")) {
                 JsonArray fieldOfStudyResult = res2.body().getJsonArray("result");
                 Map<String, String> fieldOfStudyLabels = new HashMap<>();
@@ -130,15 +131,18 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                         String name = field.getString("name", "");
 
                         if (!id.isEmpty() && !name.isEmpty()) {
-                            id = id.split("-", 2)[1];
+                            if (hasAcademyPrefix) {
+                                id = id.replaceFirst("(" + this.config.getString("academy-prefix") + ")-", "");
+                            }
                             fieldOfStudyLabels.put(id, name);
                         }
                     }
                 });
 
                 String query = "MATCH (s:Structure)<-[:SUBJECT]-(sub:Subject) " +
+                        "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                         "RETURN s.UAI as UAI, sub.code as code, sub.label as label";
-                neo4j.execute(query, new JsonObject(), res -> {
+                neo4j.execute(query, new JsonObject().put("entId", entId), res -> {
                     if (res.body() != null && res.body().containsKey("result")) {
                         JsonArray queryResult = res.body().getJsonArray("result");
 
@@ -153,15 +157,13 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                                     if (!labelsByCodeUai.containsKey(uai)) {
                                         labelsByCodeUai.put(uai, new HashMap<>());
                                     }
-                                    if (this.config.containsKey("academy-prefix") && !"".equals(this.config.getString("academy-prefix").trim()) &&
-                                            code.matches("(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+")) {
+                                    if (hasAcademyPrefix) {
                                         code = code.replaceFirst("(" + this.config.getString("academy-prefix") + ")-", "");
                                     }
                                     labelsByCodeUai.get(uai).put(code, label);
                                 }
                             }
                         });
-
 
                         for (int i = 0; i < fosList.size(); i++) {
                             JsonObject entry = fosList.getJsonObject(i);
@@ -311,8 +313,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      */
     private void getStucturesFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String condition;
-        boolean containsAcademyPrefix = this.config.containsKey("academy-prefix") && !"".equals(this.config.getString("academy-prefix").trim());
-        if (containsAcademyPrefix) {
+        if (hasAcademyPrefix) {
             condition = "CASE WHEN sub.code =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+' THEN reduce(v=sub.code, prefix in split('" +
                     this.config.getString("academy-prefix") +"', '|') | replace(v, prefix + '-', '')) ELSE sub.code END as codelist";
         } else {
@@ -324,7 +325,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "WHERE HAS(s.exports) AND sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' AND ('GAR-' + {entId}) IN s.exports " +
                 "with s, sub.label as label, " + condition +
                 " return distinct s.UAI as `" + STRUCTURE_UAI + "`, toUpper(" +
-                (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE + "` " +
+                (hasAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
                 "UNION ";
         String queryStudentFos = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
