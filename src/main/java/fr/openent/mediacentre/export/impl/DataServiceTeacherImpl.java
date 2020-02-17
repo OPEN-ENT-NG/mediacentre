@@ -7,13 +7,13 @@ import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import org.entcore.common.utils.StringUtils;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
-public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataService{
+public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataService {
     private PaginatorHelperImpl paginator;
     private String entId;
 
@@ -27,70 +27,89 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * Export Data to folder
      * - Export Teachers identities
      * - Export Teachers Mefs
+     *
      * @param handler response handler
      */
     @Override
     public void exportData(final Handler<Either<String, JsonObject>> handler) {
-        getTeachersInfoFromNeo4j(new Handler<Either<String, JsonArray>>() {
-            @Override
-            public void handle(Either<String, JsonArray> resultTeachers) {
-                if (validResponseNeo4j(resultTeachers, handler)) {
-
-                    processTeachersInfo(resultTeachers.right().getValue());
-                    getTeachersMefFromNeo4j(
-                            new Handler<Either<String, JsonArray>>() {
-                                @Override
-                                public void handle(Either<String, JsonArray> mefsResult) {
-                                    if (mefsResult.isLeft()) {
-                                        handler.handle(new Either.Left<String, JsonObject>(mefsResult.left().getValue()));
-                                    } else {
-                                        processTeachersMefs(mefsResult.right().getValue());
-                                        xmlExportHelper.closeFile();
-                                        handler.handle(new Either.Right<String, JsonObject>(
-                                                new JsonObject().put(
-                                                        FILE_LIST_KEY,
-                                                        xmlExportHelper.getFileList()
-                                                )));
-                                    }
-                                }
-                            });
+        final JsonArray modules = new fr.wseduc.webutils.collections.JsonArray();
+        getAndProcessTeachersInfoFromNeo4j(0, modules, resultTeachers -> {
+            if (validResponse(resultTeachers, handler)) {
+                if (validResponse(processTeachersMefs(modules), handler)) {
+                    xmlExportHelper.closeFile();
+                    handler.handle(new Either.Right<String, JsonObject>(
+                            new JsonObject().put(
+                                    FILE_LIST_KEY,
+                                    xmlExportHelper.getFileList()
+                            )));
                 } else {
                     log.error("[DataServiceTeacherImpl@exportData] Failed to process");
                 }
+            } else {
+                log.error("[DataServiceTeacherImpl@exportData] Failed to process");
             }
         });
     }
 
-    /**
-     * Process teachers info, validate data and save to xml
-     * @param handler result handler
-     */
-    private void getAndProcessTeachersInfo(final Handler<Either<String, JsonObject>> handler) {
+    private void getAndProcessTeachersInfoFromNeo4j(int skip, JsonArray modules,
+                                                    final Handler<Either<String, JsonObject>> handler) {
+        getTeachersInfoFromNeo4j(skip, teacherInfos -> {
+            if (validResponseNeo4j(teacherInfos, handler)) {
+                final JsonArray teachers = teacherInfos.right().getValue();
+                //fixme : it is necessary to order structureID, MEF_CODE, PERSON_ID
+                populateModules(modules, teachers);
+                Either<String, JsonObject> result = processTeachersInfo(teachers);
 
-        getTeachersInfoFromNeo4j(new Handler<Either<String, JsonArray>>() {
-            @Override
-            public void handle(Either<String, JsonArray> teacherInfos) {
-                if( validResponseNeo4j(teacherInfos, handler) ) {
-                    Either<String,JsonObject> result = processTeachersInfo( teacherInfos.right().getValue() );
-                    handler.handle(result);
+                if (teacherInfos.right().getValue().size() == PaginatorHelperImpl.LIMIT) {
+                    getAndProcessTeachersInfoFromNeo4j(skip + PaginatorHelperImpl.LIMIT, modules, handler);
                 } else {
-                    log.error("[DataServiceTeacherImpl@getAndProcessTeachersInfo] Failed to process");
+                    handler.handle(result);
                 }
+            } else {
+                log.error("[DataServiceTeacherImpl@getAndProcessTeachersInfoFromNeo4j] Failed to process");
             }
         });
+    }
+
+    private void populateModules(JsonArray modules, final JsonArray teachers) {
+        if (!teachers.isEmpty()) {
+            teachers.forEach(teacher -> {
+                if (teacher instanceof JsonObject) {
+                    final JsonObject fields = (JsonObject) teacher;
+                    final JsonArray userModules = fields.getJsonArray("modules");
+                    if (userModules != null && !userModules.isEmpty()) {
+                        userModules.forEach(module -> {
+                            if (module instanceof String) {
+                                final String[] mods = (StringUtils.trimToBlank((String) module)).split("\\$");
+                                //export not empty Mef only for Gar Structure
+                                if (mods.length > 1 && StringUtils.trimToNull(mapStructures.get(mods[0])) != null &&
+                                        StringUtils.trimToNull(mods[1]) != null) {
+                                    final JsonObject jo = new JsonObject();
+                                    jo.put(STRUCTURE_UAI, mapStructures.get(mods[0]));
+                                    jo.put(PERSON_ID, fields.getString(PERSON_ID));
+                                    jo.put(MEF_CODE, mods[1]);
+                                    modules.add(jo);
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        }
     }
 
     /**
      * Get teachers infos from Neo4j
      * Set fields as requested by xsd, except for structures
+     *
      * @param handler results
      */
-    private void getTeachersInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "match (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
-                "(p:Profile{name:'Teacher'})<-[:HAS_PROFILE]-(pg:ProfileGroup) WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
+    private void getTeachersInfoFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
+        String query = "match (u:User)-[:IN]->(pg:ProfileGroup {filter:'Teacher'})-[:DEPENDS]->(s:Structure) " +
+                "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 // ADMINISTRATIVE ATTACHMENT can reference non GAR exported structure
-                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure)";
+                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) ";
         String dataReturn = "return distinct u.id  as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_PATRO_NAME + "`, " +
                 "u.lastName as `" + PERSON_NAME + "`, " +
@@ -99,42 +118,42 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 //TODO GARPersonCivilite
                 "collect(distinct sr.UAI)[0] as `" + PERSON_STRUCT_ATTACH + "`, " +
                 "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
-                "u.functions as functions, " +
+                "u.functions as functions, u.modules as modules, " +
                 "collect(distinct s.UAI) as profiles " +
                 "order by " + "`" + PERSON_ID + "`";
-
 
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
         JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+        paginator.neoStream(query, params, skip, handler);
     }
 
     /**
      * Process teachers info
      * Add structures in arrays to match xsd
+     *
      * @param teachers Array of teachers from Neo4j
      */
-    private Either<String,JsonObject> processTeachersInfo(JsonArray teachers) {
+    private Either<String, JsonObject> processTeachersInfo(JsonArray teachers) {
         try {
-            for(Object o : teachers) {
-                if(!(o instanceof JsonObject)) continue;
+            for (Object o : teachers) {
+                if (!(o instanceof JsonObject)) continue;
 
                 JsonObject teacher = (JsonObject) o;
                 JsonArray profiles = teacher.getJsonArray("profiles", null);
-                if(profiles == null || profiles.size() == 0) {
+                if (profiles == null || profiles.size() == 0) {
                     log.error("Mediacentre : Teacher with no profile or function for export, id "
                             + teacher.getString("u.id", "unknown"));
                     continue;
                 }
 
-                Map<String,String> userStructProfiles = new HashMap<>();
+                Map<String, String> userStructProfiles = new HashMap<>();
 
                 processFunctions(teacher, userStructProfiles);
                 processProfiles(teacher, TEACHER_PROFILE, userStructProfiles);
 
-                if(isMandatoryFieldsAbsent(teacher, TEACHER_NODE_MANDATORY)) {
+                if (isMandatoryFieldsAbsent(teacher, TEACHER_NODE_MANDATORY)) {
                     log.warn("Mediacentre : mandatory attribut for Teacher : " + teacher);
                     continue;
                 }
@@ -151,6 +170,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
     /**
      * XSD specify precise order for xml tags
+     *
      * @param teacher
      */
     private void reorganizeNodes(JsonObject teacher) {
@@ -165,7 +185,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         //TODO GARPersonCivilite
         teacher.put(PERSON_STRUCT_ATTACH, personCopy.getValue(PERSON_STRUCT_ATTACH));
         teacher.put(PERSON_STRUCTURE, personCopy.getValue(PERSON_STRUCTURE));
-        if(personCopy.getValue(PERSON_BIRTH_DATE) != null && !"".equals(personCopy.getValue(PERSON_BIRTH_DATE))){
+        if (personCopy.getValue(PERSON_BIRTH_DATE) != null && !"".equals(personCopy.getValue(PERSON_BIRTH_DATE))) {
             teacher.put(PERSON_BIRTH_DATE, personCopy.getValue(PERSON_BIRTH_DATE));
         }
         teacher.put(TEACHER_POSITION, personCopy.getValue(TEACHER_POSITION));
@@ -177,22 +197,23 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * Teacher function is in form structID$functionCode$functionDesc$roleCode and must be splited
      * and analyzed
      * Documentalists have specific role and profile
-     * @param teacher to process functions for
+     *
+     * @param teacher   to process functions for
      * @param structMap map between structures ID and profile
      */
-    private void processFunctions(JsonObject teacher, Map<String,String> structMap) {
+    private void processFunctions(JsonObject teacher, Map<String, String> structMap) {
         JsonArray functions = teacher.getJsonArray("functions", null);
-        if(functions == null || functions.size() == 0) {
+        if (functions == null || functions.size() == 0) {
             return;
         }
 
         JsonArray garFunctions = new fr.wseduc.webutils.collections.JsonArray();
-        for(Object o : functions) {
-            if(!(o instanceof String)) continue;
-            String[] arrFunction = ((String)o).split("\\$");
-            if(arrFunction.length < 4) continue;
+        for (Object o : functions) {
+            if (!(o instanceof String)) continue;
+            String[] arrFunction = ((String) o).split("\\$");
+            if (arrFunction.length < 4) continue;
             String structID = arrFunction[0];
-            if(!mapStructures.containsKey(structID)) {
+            if (!mapStructures.containsKey(structID)) {
                 continue;
             }
             String structUAI = mapStructures.get(structID);
@@ -200,7 +221,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
             String functionDesc = arrFunction[2];
             String roleCode = arrFunction[3];
             String profileType = TEACHER_PROFILE;
-            if(DOCUMENTALIST_CODE.equals(functionCode) && DOCUMENTALIST_DESC.equals(functionDesc)) {
+            if (DOCUMENTALIST_CODE.equals(functionCode) && DOCUMENTALIST_DESC.equals(functionDesc)) {
                 profileType = DOCUMENTALIST_PROFILE;
             }
             structMap.put(structUAI, profileType);
@@ -215,62 +236,13 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
     }
 
     /**
-     * Get teachers mefs from Neo4j
-     * @param handler results
-     */
-    private void getTeachersMefFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)," +
-                "(p:Profile{name:'Teacher'})<-[:HAS_PROFILE]-(pg:ProfileGroup) ";
-        query += "WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate))" +
-                "AND HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
-                "WITH s,u "+
-                "UNWIND u.modules as module " +
-                "WITH u, s, module " +
-                "WHERE module <>\"\" AND s.externalId = split(module,'$')[0] " +
-                "RETURN distinct " +
-                "s.academy + '-' + split(module,'$')[0] as aca_structureID , " +
-                "split(module,'$')[0] as structureID , " +
-                "u.id as `" + PERSON_ID + "`, " +
-                "split(module,'$')[1] as `" + MEF_CODE + "` " +
-                "ORDER BY structureID, " + "`" + MEF_CODE + "` , `" + PERSON_ID + "`";
-
-        query += " ASC SKIP {skip} LIMIT {limit} ";
-
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
-    }
-
-    /**
      * Process mefs info
+     *
      * @param mefs Array of mefs from Neo4j
      */
-    private Either<String,JsonObject> processTeachersMefs(JsonArray mefs) {
-
-        JsonArray filteredMEF = new fr.wseduc.webutils.collections.JsonArray();
-        for(Object o : mefs) {
-            if (!(o instanceof JsonObject)) continue;
-            JsonObject mef = (JsonObject) o;
-            String structID = mef.getString("structureID");
-            String UAI = mapStructures.get(structID);
-            if (UAI == null) {
-                // MEF are not prefixed with academic name by feeder
-                //so it's necessary to check in school map with academic prefix
-                //before filter this MEF
-                structID = mef.getString("aca_structureID");
-                UAI = mapStructures.get(structID);
-                if (UAI == null) continue;
-            }
-
-            JsonObject mefFiltered = new JsonObject();
-            mefFiltered.put(STRUCTURE_UAI, UAI);
-            mefFiltered.put(PERSON_ID, mef.getValue(PERSON_ID));
-            mefFiltered.put(MEF_CODE, mef.getValue(MEF_CODE));
-            filteredMEF.add(mefFiltered);
-        }
-
-        Either<String,JsonObject> event =  processSimpleArray(filteredMEF, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
-
-        if(event.isLeft()) {
+    private Either<String, JsonObject> processTeachersMefs(JsonArray mefs) {
+        Either<String, JsonObject> event = processSimpleArray(mefs, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
+        if (event.isLeft()) {
             return new Either.Left<>("Error when processing teacher mefs : " + event.left().getValue());
         } else {
             return event;
