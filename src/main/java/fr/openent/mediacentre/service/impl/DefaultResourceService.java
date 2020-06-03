@@ -94,8 +94,15 @@ public class DefaultResourceService implements ResourceService {
                             Buffer responseBuffer = new BufferImpl();
                             response.handler(responseBuffer::appendBuffer);
                             response.endHandler(aVoid -> {
-                                JsonObject resources = new JsonObject(decompress(responseBuffer));
-                                handler.handle(new Either.Right<>(resources.getJsonObject("listeRessources").getJsonArray("ressource")));
+                                try {
+                                    JsonObject resources = new JsonObject(decompress(responseBuffer));
+                                    JsonArray resourceList = resources.getJsonObject("listeRessources", new JsonObject()).getJsonArray("ressource", new JsonArray());
+                                    log.info("GAR resources successfully retrieved: " + resourceList.size());
+                                    handler.handle(new Either.Right<>(resourceList));
+                                } catch (Exception e) {
+                                    log.error("An error occurred while parsing GAR response", e);
+                                    handler.handle(new Either.Left<>(e.getMessage()));
+                                }
                             });
                             response.exceptionHandler(throwable -> {
                                 handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to get GAR response: " + throwable.getMessage()));
