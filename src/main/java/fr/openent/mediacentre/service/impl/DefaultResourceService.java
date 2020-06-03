@@ -64,11 +64,14 @@ public class DefaultResourceService implements ResourceService {
                     String uai = results.getJsonObject(0).getString("UAI");
                     String garHostNoProtocol = "";
                     try {
-                        garHostNoProtocol = new URL(garHost).getHost().toString();
+                        garHostNoProtocol = new URL(garHost).getHost();
                     } catch (Exception e) {
                         handler.handle(new Either.Left<>("[DefaultResourceService@get] Bad gar host url : " + garHost));
+                        return;
                     }
+
                     String resourcesUri = garHost + "/ressources/" + idEnt + "/" + uai + "/" + userId;
+                    log.info("Calling GAR with uri : " + resourcesUri);
                     final HttpClientRequest client = httpClient.get(resourcesUri, response -> {
                         if (response.statusCode() != 200) {
                             log.error("try to call " + resourcesUri);
@@ -76,10 +79,15 @@ public class DefaultResourceService implements ResourceService {
 
                             response.bodyHandler(errBuff -> {
                                 JsonObject error = new JsonObject(new String(errBuff.getBytes()));
+                                log.error("An error occurred while calling GAR", error.encode());
                                 if (error.containsKey("Erreur")) {
-                                    handler.handle(new Either.Left<>(error.getJsonObject("Erreur").getString("Message")));
+                                    String message = error.getJsonObject("Erreur").getString("Message", "");
+                                    log.error(message);
+                                    handler.handle(new Either.Left<>(message));
                                 } else {
-                                    handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to connect to GAR servers: " + response.statusMessage()));
+                                    String message = "[DefaultResourceService@get] failed to connect to GAR servers: " + response.statusMessage();
+                                    log.error(message);
+                                    handler.handle(new Either.Left<>(message));
                                 }
                             });
                         } else {
@@ -89,13 +97,17 @@ public class DefaultResourceService implements ResourceService {
                                 JsonObject resources = new JsonObject(decompress(responseBuffer));
                                 handler.handle(new Either.Right<>(resources.getJsonObject("listeRessources").getJsonArray("ressource")));
                             });
-                            response.exceptionHandler(throwable -> handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to get GAR response: " + throwable.getMessage())));
+                            response.exceptionHandler(throwable -> {
+                                handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to get GAR response: " + throwable.getMessage()));
+                                log.error(throwable.getStackTrace());
+                            });
                         }
-                    }).putHeader("Accept", "application/json")
-                            .putHeader("Accept-Encoding", "gzip, deflate")
-                            .putHeader("Host", garHostNoProtocol)
-                            .putHeader("Cache-Control", "no-cache")
-                            .putHeader("Date", new Date().toString());
+                    })
+                    .putHeader("Accept", "application/json")
+                    .putHeader("Accept-Encoding", "gzip, deflate")
+                    .putHeader("Host", garHostNoProtocol)
+                    .putHeader("Cache-Control", "no-cache")
+                    .putHeader("Date", new Date().toString());
 
                     client.end();
                 } else {

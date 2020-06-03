@@ -74,13 +74,13 @@ public class MediacentreController extends ControllerHelper {
             String structureId = request.params().contains("structure") ? request.getParam("structure") : user.getStructures().get(0);
             String userId = user.getUserId();
             this.resourceService.get(userId, structureId, garRessourcesConfig.getString("host"), result -> {
-                            if (result.isRight()) {
-                                Renders.renderJson(request, result.right().getValue());
-                            } else {
-                                Renders.renderJson(request, new JsonArray());
-                            }
-                        }
-            );
+                if (result.isRight()) {
+                    Renders.renderJson(request, result.right().getValue());
+                } else {
+                    log.error("Failed to retrieve GAR resources", result.left().getValue());
+                    Renders.renderJson(request, new JsonArray());
+                }
+            });
         });
     }
 
