@@ -11,12 +11,12 @@ import org.entcore.common.utils.StringUtils;
 
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
-public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataService {
+public class DataServiceStudentImpl1d extends DataServiceBaseImpl implements DataService {
     private PaginatorHelperImpl paginator;
     private String entId;
     private String source;
 
-    DataServiceStudentImpl(String entId, String source, JsonObject config, String strDate) {
+    DataServiceStudentImpl1d(String entId, String source, JsonObject config, String strDate) {
         this.entId = entId;
         this.source = source;
         xmlExportHelper = new XmlExportHelperImpl(entId, source, config, STUDENT_ROOT, STUDENT_FILE_PARAM, strDate);
@@ -27,25 +27,21 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * Export Data to folder
      * - Export Students identities
      * - Export Students Mefs
-     * - Export Students fields of study
      *
      * @param handler response handler
      */
     @Override
     public void exportData(final Handler<Either<String, JsonObject>> handler) {
-        final JsonArray modules = new fr.wseduc.webutils.collections.JsonArray();
-        final JsonArray fos = new fr.wseduc.webutils.collections.JsonArray();
-        getAndProcessStudentsInfo(0, modules, fos, studentsResult -> {
+        final JsonArray mefs = new fr.wseduc.webutils.collections.JsonArray();
+        getAndProcessStudentsInfo(0, mefs, studentsResult -> {
             if (validResponse(studentsResult, handler)) {
-                if (validResponse(processStudentsMefs(modules), handler)) {
-                    if (validResponse(processStudentsFos(fos), handler)) {
-                        xmlExportHelper.closeFile();
-                        handler.handle(new Either.Right<String, JsonObject>(
-                                new JsonObject().put(
-                                        FILE_LIST_KEY,
-                                        xmlExportHelper.getFileList()
-                                )));
-                    }
+                if (validResponse(processStudentsMefs(mefs), handler)) {
+                    xmlExportHelper.closeFile();
+                    handler.handle(new Either.Right<String, JsonObject>(
+                            new JsonObject().put(
+                                    FILE_LIST_KEY,
+                                    xmlExportHelper.getFileList()
+                            )));
                 }
             }
         });
@@ -56,15 +52,14 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      *
      * @param handler result handler
      */
-    private void getAndProcessStudentsInfo(int skip, JsonArray modules, JsonArray fos, final Handler<Either<String, JsonObject>> handler) {
+    private void getAndProcessStudentsInfo(int skip, JsonArray mefs, final Handler<Either<String, JsonObject>> handler) {
         getStudentsInfoFromNeo4j(skip, studentResults -> {
             if (validResponseNeo4j(studentResults, handler)) {
                 final JsonArray students = studentResults.right().getValue();
-                //fixme : it is necessary to order STRUCTURE_UAI, PERSON_ID, MEF_CODE OR STUDYFIELD_CODE
-                populateModulesAndFos(modules, fos, students);
+                populateMef(mefs, students);
                 Either<String, JsonObject> result = processStudentsInfo(students);
                 if (studentResults.right().getValue().size() == PaginatorHelperImpl.LIMIT) {
-                    getAndProcessStudentsInfo(skip + PaginatorHelperImpl.LIMIT, modules, fos, handler);
+                    getAndProcessStudentsInfo(skip + PaginatorHelperImpl.LIMIT, mefs, handler);
                 } else {
                     handler.handle(result);
                 }
@@ -74,65 +69,39 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         });
     }
 
-    private void populateModulesAndFos(JsonArray modules, JsonArray fos, final JsonArray students) {
+    private void populateMef(JsonArray mefs, final JsonArray students) {
         if (!students.isEmpty()) {
             students.forEach(student -> {
                 if (student instanceof JsonObject) {
                     final JsonObject fields = (JsonObject) student;
-                    populateModule(fields, modules);
-                    populateFos(fields, fos);
+                    populateMef(fields, mefs);
                 }
             });
         }
     }
 
-    private void populateModule(final JsonObject fields, JsonArray modules) {
-        final String userModule = StringUtils.trimToNull(fields.getString("module"));
+    private void populateMef(final JsonObject fields, JsonArray mefs) {
+        final String userLevel = StringUtils.trimToNull(fields.getString("level"));
         final JsonArray uais = fields.getJsonArray("profiles");
         //export not empty Mef
-        if (userModule != null) {
-            if (uais != null && !uais.isEmpty()) {
-                uais.forEach(uai -> {
-                    if (uai instanceof String) {
-                        final String strUai = (String) uai;
-                        if (StringUtils.trimToNull(strUai) != null) {
-                            final JsonObject jo = new JsonObject();
-                            jo.put(STRUCTURE_UAI, strUai);
-                            jo.put(PERSON_ID, fields.getString(PERSON_ID));
-                            jo.put(MEF_CODE, userModule);
-                            modules.add(jo);
+        if (userLevel != null) {
+            final String[] elems = userLevel.split("\\$");
+            if (elems.length > 1) {
+                final String mefCode = StringUtils.trimToNull(elems[0]);
+                if (mefCode != null && uais != null && !uais.isEmpty()) {
+                    uais.forEach(uai -> {
+                        if (uai instanceof String) {
+                            final String strUai = (String) uai;
+                            if (StringUtils.trimToNull(strUai) != null) {
+                                final JsonObject jo = new JsonObject();
+                                jo.put(STRUCTURE_UAI, strUai);
+                                jo.put(PERSON_ID, fields.getString(PERSON_ID));
+                                jo.put(MEF_CODE_1D, mefCode);
+                                mefs.add(jo);
+                            }
                         }
-                    }
-                });
-            }
-        }
-    }
-
-    private void populateFos(final JsonObject fields, JsonArray fos) {
-        final JsonArray userFos = fields.getJsonArray("study");
-        final JsonArray uais = fields.getJsonArray("profiles");
-        //export not empty fos
-        if (userFos != null && !userFos.isEmpty()) {
-            if (uais != null && !uais.isEmpty()) {
-                uais.forEach(uai -> {
-                    if (uai instanceof String) {
-                        final String strUai = (String) uai;
-                        if (StringUtils.trimToNull(strUai) != null) {
-                            userFos.forEach(uFos -> {
-                                if (uFos instanceof String) {
-                                    final String strUfos = StringUtils.trimToNull((String) uFos);
-                                    if (strUfos != null) {
-                                        final JsonObject jo = new JsonObject();
-                                        jo.put(STRUCTURE_UAI, strUai);
-                                        jo.put(PERSON_ID, fields.getString(PERSON_ID));
-                                        jo.put(STUDYFIELD_CODE, strUfos.toUpperCase());
-                                        fos.add(jo);
-                                    }
-                                }
-                            });
-                        }
-                    }
-                });
+                    });
+                }
             }
         }
     }
@@ -158,7 +127,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 //TODO GARPersonCivilite
                 "sr.UAI as `" + PERSON_STRUCT_ATTACH + "`, " +
                 "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
-                "collect(distinct s.UAI) as profiles, u.module as module, u.fieldOfStudy as study " +
+                "collect(distinct s.UAI) as profiles, u.level as level " +
                 "order by " + "`" + PERSON_ID + "`";
 
 
@@ -231,23 +200,9 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param mefs Array of mefs from Neo4j
      */
     private Either<String, JsonObject> processStudentsMefs(JsonArray mefs) {
-        Either<String, JsonObject> event = processSimpleArray(mefs, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
+        Either<String, JsonObject> event = processSimpleArray(mefs, PERSON_MEF_1D, PERSON_MEF_NODE_MANDATORY_1D);
         if (event.isLeft()) {
             return new Either.Left<>("Error when processing students mefs : " + event.left().getValue());
-        } else {
-            return event;
-        }
-    }
-
-    /**
-     * Process fields of study info
-     *
-     * @param fos Array of fieldsOfStudy from Neo4j
-     */
-    private Either<String, JsonObject> processStudentsFos(JsonArray fos) {
-        Either<String, JsonObject> event = processSimpleArray(fos, STUDENT_STUDYFIELD, STUDENT_STUDYFIELD_NODE_MANDATORY);
-        if (event.isLeft()) {
-            return new Either.Left<>("Error when processing students fos : " + event.left().getValue());
         } else {
             return event;
         }

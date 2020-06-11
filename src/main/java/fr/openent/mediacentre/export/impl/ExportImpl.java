@@ -1,5 +1,7 @@
 package fr.openent.mediacentre.export.impl;
 
+import fr.openent.mediacentre.Mediacentre;
+import fr.openent.mediacentre.constants.GarConstants;
 import fr.openent.mediacentre.export.ExportService;
 import fr.openent.mediacentre.export.XMLValidationHandler;
 import fr.openent.mediacentre.service.TarService;
@@ -44,7 +46,7 @@ public class ExportImpl {
     private Vertx vertx;
     private EmailSender emailSender;
 
-    public ExportImpl(Vertx vertx, String entId, Handler<String> handler) {
+    public ExportImpl(Vertx vertx, String entId, String source, Handler<String> handler) {
         this.vertx = vertx;
         this.config = CONFIG;
         this.eb = vertx.eventBus();
@@ -52,8 +54,11 @@ public class ExportImpl {
         this.tarService = new DefaultTarService();
         this.sftpGarConfig = config.getJsonObject("gar-sftp");
         this.emailSender = new EmailFactory(vertx).getSender();
-
-        this.exportAndSend(entId, handler);
+        if (Mediacentre.AAF1D.equals(source)) {
+            this.exportAndSend1d(entId, source, handler);
+        } else {
+            this.exportAndSend2d(entId, source, handler);
+        }
     }
 
     public ExportImpl(Vertx vertx) {
@@ -61,21 +66,31 @@ public class ExportImpl {
         this.emailSender = new EmailFactory(vertx).getSender();
     }
 
-    private void exportAndSend(final String entId, final Handler<String> handler) {
+    private void exportAndSend1d(final String entId, final String source, final Handler<String> handler) {
+        final String exportPath = FileUtils.appendPath(config.getString("export-path"), entId + GarConstants.EXPORT_1D_SUFFIX);
+        final String exportArchivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId + GarConstants.EXPORT_1D_SUFFIX);
+        exportAndSend(entId, source, handler, exportPath, exportArchivePath);
+    }
+
+    private void exportAndSend2d(final String entId, final String source, final Handler<String> handler) {
         final String exportPath = FileUtils.appendPath(config.getString("export-path"), entId);
         final String exportArchivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId);
+        exportAndSend(entId, source, handler, exportPath, exportArchivePath);
+    }
+
+    private void exportAndSend(String entId, final String source, Handler<String> handler, String exportPath, String exportArchivePath) {
         //create and delete files if necessary
         FileUtils.mkdirs(exportPath);
         FileUtils.deleteFiles(exportPath);
         FileUtils.mkdirs(exportArchivePath);
         FileUtils.deleteFiles(exportArchivePath);
 
-        log.info("Start exportAndSend GAR for ENT ID : " + entId + " (Generate xml files, XSD validation, compress to tar.gz, generate md5, send to GAR by sftp");
+        log.info("Start exportAndSend GAR for ENT ID : " + entId + " " + source + "(Generate xml files, XSD validation, compress to tar.gz, generate md5, send to GAR by sftp");
         log.info("Generate XML files");
-        exportService.launchExport(entId, (Either<String, JsonObject> event1) -> {
+        exportService.launchExport(entId, source, (Either<String, JsonObject> event1) -> {
             if (event1.isRight()) {
                 File directory = new File(exportPath);
-                Map<String, Object> validationResult = validateXml(directory);
+                Map<String, Object> validationResult = validateXml(directory, source);
                 boolean isValid = (boolean) validationResult.get("valid");
                 if (!isValid) {
                     log.info(validationResult.get("report"));
@@ -156,13 +171,19 @@ public class ExportImpl {
         });
     }
 
-    private Map<String, Object> validateXml(File directory) {
+    private Map<String, Object> validateXml(File directory, String source) {
         Map<String, Object> result = new HashMap<>();
         XMLValidationHandler errorHandler = new XMLValidationHandler();
         try {
             SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
             String schemaPath = FileResolver.absolutePath("public/xsd");
-            Schema schema = factory.newSchema(new File(schemaPath + "/GAR-ENT.xsd"));
+            final Schema schema;
+            if (Mediacentre.AAF1D.equals(source)) {
+                schema = factory.newSchema(new File(schemaPath + "/GAR-ENT-1D.xsd"));
+            } else {
+                schema = factory.newSchema(new File(schemaPath + "/GAR-ENT.xsd"));
+            }
+
             Validator validator = schema.newValidator();
             validator.setErrorHandler(errorHandler);
             String[] files = directory.list();

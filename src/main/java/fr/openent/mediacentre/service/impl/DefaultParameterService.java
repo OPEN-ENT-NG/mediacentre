@@ -1,5 +1,6 @@
 package fr.openent.mediacentre.service.impl;
 
+import fr.openent.mediacentre.Mediacentre;
 import fr.openent.mediacentre.service.ParameterService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.AsyncResult;
@@ -37,7 +38,7 @@ public class DefaultParameterService implements ParameterService {
     @Override
     public void getStructureGar(String entId, Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (s:Structure) WHERE HAS(s.UAI) OPTIONAL MATCH (s)<-[:DEPENDS]-(g:ManualGroup{name: {groupName} })" +
-                "RETURN DISTINCT s.UAI as uai, s.name as name, s.id as structureId, (HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports) as deployed, g.id as id";
+                "RETURN DISTINCT s.UAI as uai, s.name as name, s.id as structureId, s.source as source, (HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports) as deployed, g.id as id";
 
         JsonObject params = new JsonObject().put("groupName", GAR_GROUP_NAME).put("entId", entId);
         Neo4j.getInstance().execute(query, params, Neo4jResult.validResultHandler(handler));
@@ -103,19 +104,25 @@ public class DefaultParameterService implements ParameterService {
 
     @Override
     public void addUserToGarGroup(JsonObject body, Handler<Either<String, JsonObject>> handler) {
-        String query = "match (g:ManualGroup{name: {groupName}, id: {groupId} }), " +
-                "(u:User{profiles:['Personnel']})--(Structure{id: {structureId} }) " +
-                "WHERE ANY(function IN u.functions WHERE function CONTAINS {direction} OR function CONTAINS {documentation}) " +
-                "create unique (u)-[r:IN{source:{source}}]->(g) ";
-
-        JsonObject params = new JsonObject()
+        final String query;
+        final JsonObject params = new JsonObject()
                 .put("groupName", GAR_GROUP_NAME)
                 .put("source", GAR_GROUP_SOURCE)
                 .put("groupId", body.getString("groupId"))
-                .put("structureId", body.getString("structureId"))
-                .put("direction", FUNCTION_DIRECTION_NAME)
-                .put("documentation", FUNCTION_DOCUMENTATION_NAME);
-
+                .put("structureId", body.getString("structureId"));
+        if (Mediacentre.AAF.equals(body.getString("source"))) {
+            query = "match (g:ManualGroup{name: {groupName}, id: {groupId} }), " +
+                    "(u:User{profiles:['Personnel']})--(Structure{id: {structureId} }) " +
+                    "WHERE ANY(function IN u.functions WHERE function CONTAINS {direction} OR function CONTAINS {documentation}) " +
+                    "create unique (u)-[r:IN{source:{source}}]->(g) ";
+            params.put("direction", FUNCTION_DIRECTION_NAME);
+            params.put("documentation", FUNCTION_DOCUMENTATION_NAME);
+        } else {
+            query = "MATCH (g:ManualGroup{name: {groupName}, id: {groupId} }), " +
+                    "(s:Structure {id: {structureId}})-[:DEPENDS]-(pg:ProfileGroup)-[:IN]-(u:User)-[r:HAS_FUNCTION]-n " +
+                    "WHERE n.externalId='ADMIN_LOCAL' and s.id IN r.scope " +
+                    "create unique (u)-[:IN{source:{source}}]->(g) ";
+        }
         Neo4j.getInstance().execute(query, params, Neo4jResult.validUniqueResultHandler(handler));
     }
 }

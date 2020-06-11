@@ -5,6 +5,7 @@ import fr.openent.mediacentre.controller.SettingController;
 import fr.openent.mediacentre.export.ExportTask;
 import fr.wseduc.cron.CronTrigger;
 import io.vertx.core.DeploymentOptions;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.eventbus.EventBus;
 import org.entcore.common.http.BaseServer;
@@ -17,6 +18,8 @@ public class Mediacentre extends BaseServer {
 	public static final String MEDIACENTRE_ADDRESS = "openent.mediacentre";
 	public static boolean demo;
 	public static JsonObject CONFIG;
+	public final static String AAF = "AAF";
+	public final static String AAF1D = "AAF1D";
 
 	@Override
 	public void start() throws Exception {
@@ -28,6 +31,16 @@ public class Mediacentre extends BaseServer {
 		//adapt the configuration to multi-tenant
 		if (config.getValue("id-ent") instanceof String) {
 			config.put("id-ent", new JsonObject().put(host, config.getValue("id-ent", "")));
+		}
+
+		//default AAF only
+		if (!config.containsKey("entid-sources")) {
+			final JsonArray jaSources = new JsonArray();
+			for (final Object id : config.getJsonObject("id-ent").getMap().values()) {
+				if (!(id instanceof String)) continue;
+				jaSources.add(id + "-" + AAF);
+			}
+			config.put("entid-sources", jaSources);
 		}
 
 		final JsonObject garRessources = config.getJsonObject("gar-ressources", new JsonObject());

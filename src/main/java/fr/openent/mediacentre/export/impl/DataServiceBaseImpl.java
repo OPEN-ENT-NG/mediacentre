@@ -16,12 +16,10 @@ import java.util.Map;
 
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
-abstract class DataServiceBaseImpl implements DataService{
-
+abstract class DataServiceBaseImpl implements DataService {
     static Map<String,String> mapStructures = new HashMap<>();
     XmlExportHelper xmlExportHelper;
     final Logger log = LoggerFactory.getLogger(DataServiceBaseImpl.class);
-
     final Neo4j neo4j = Neo4j.getInstance();
 
     DataServiceBaseImpl() {
@@ -128,7 +126,6 @@ abstract class DataServiceBaseImpl implements DataService{
         }
     }
 
-
     /**
      * Add a profile in profileArray
      * @param profileArray Array to fill
@@ -141,7 +138,4 @@ abstract class DataServiceBaseImpl implements DataService{
         garProfile.put(PERSON_PROFILE, profile);
         profileArray.add(garProfile);
     }
-
-
-
 }

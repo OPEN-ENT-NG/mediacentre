@@ -1,12 +1,14 @@
 package fr.openent.mediacentre.export.impl;
 
+import fr.openent.mediacentre.Mediacentre;
 import fr.openent.mediacentre.export.DataService;
 import fr.openent.mediacentre.export.ExportService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -16,22 +18,37 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class ExportServiceImpl implements ExportService{
 
     private final JsonObject config;
+    private Logger log = LoggerFactory.getLogger(ExportServiceImpl.class);
 
     public ExportServiceImpl(JsonObject config) {
         this.config = config;
     }
 
     @Override
-    public void launchExport(final String entId, final Handler<Either<String, JsonObject>> handler) {
+    public void launchExport(final String entId, final String source, final Handler<Either<String, JsonObject>> handler) {
 
         String strDate = new SimpleDateFormat("yyyyMMdd_HHmmss_").format(new Date());
 
         final Queue<DataService> dataServiceQueue = new ConcurrentLinkedQueue<>();
-        dataServiceQueue.add(new DataServiceStructureImpl(entId, config, strDate));
-        dataServiceQueue.add(new DataServiceStudentImpl(entId, config, strDate));
-        dataServiceQueue.add(new DataServiceTeacherImpl(entId, config, strDate));
-        dataServiceQueue.add(new DataServiceGroupImpl(entId, config, strDate));
-        dataServiceQueue.add(new DataServiceRespImpl(entId, config, strDate));
+
+        switch (source) {
+            case Mediacentre.AAF1D:
+                dataServiceQueue.add(new DataServiceStructureImpl1d(entId, source, config, strDate));
+                dataServiceQueue.add(new DataServiceStudentImpl1d(entId, source, config, strDate));
+                dataServiceQueue.add(new DataServiceTeacherImpl1d(entId, source, config, strDate));
+                dataServiceQueue.add(new DataServiceGroupImpl1d(entId, source, config, strDate));
+                dataServiceQueue.add(new DataServiceRespImpl(entId, source, config, strDate));
+                break;
+            case Mediacentre.AAF:
+                dataServiceQueue.add(new DataServiceStructureImpl(entId, source, config, strDate));
+                dataServiceQueue.add(new DataServiceStudentImpl(entId, source, config, strDate));
+                dataServiceQueue.add(new DataServiceTeacherImpl(entId, source, config, strDate));
+                dataServiceQueue.add(new DataServiceGroupImpl(entId, source, config, strDate));
+                dataServiceQueue.add(new DataServiceRespImpl(entId, source, config, strDate));
+                break;
+            default:
+                log.error("Invalid source : " + source);
+        }
 
         JsonArray fileList = new fr.wseduc.webutils.collections.JsonArray();
         processExport(dataServiceQueue, fileList, handler);

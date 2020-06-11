@@ -9,16 +9,17 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.entcore.common.utils.StringUtils;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import static fr.openent.mediacentre.constants.GarConstants.*;
 
-public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataService {
+public class DataServiceTeacherImpl1d extends DataServiceBaseImpl implements DataService {
     private PaginatorHelperImpl paginator;
     private String entId;
     private String source;
 
-    DataServiceTeacherImpl(String entId, String source, JsonObject config, String strDate) {
+    DataServiceTeacherImpl1d(String entId, String source, JsonObject config, String strDate) {
         this.entId = entId;
         this.source = source;
         xmlExportHelper = new XmlExportHelperImpl(entId, source, config, TEACHER_ROOT, TEACHER_FILE_PARAM, strDate);
@@ -34,6 +35,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      */
     @Override
     public void exportData(final Handler<Either<String, JsonObject>> handler) {
+        //fixme : no modules IN 1D, perhaps level in futur like student
         final JsonArray modules = new fr.wseduc.webutils.collections.JsonArray();
         getAndProcessTeachersInfoFromNeo4j(0, modules, resultTeachers -> {
             if (validResponse(resultTeachers, handler)) {
@@ -88,7 +90,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                                     final JsonObject jo = new JsonObject();
                                     jo.put(STRUCTURE_UAI, mapStructures.get(mods[0]));
                                     jo.put(PERSON_ID, fields.getString(PERSON_ID));
-                                    jo.put(MEF_CODE, mods[1]);
+                                    jo.put(MEF_CODE_1D, mods[1]);
                                     modules.add(jo);
                                 }
                             }
@@ -189,7 +191,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         if (personCopy.getValue(PERSON_BIRTH_DATE) != null && !"".equals(personCopy.getValue(PERSON_BIRTH_DATE))) {
             teacher.put(PERSON_BIRTH_DATE, personCopy.getValue(PERSON_BIRTH_DATE));
         }
-        teacher.put(TEACHER_POSITION, personCopy.getValue(TEACHER_POSITION));
+        teacher.put(TEACHER_POSITION_1D, personCopy.getValue(TEACHER_POSITION_1D));
     }
 
     /**
@@ -229,10 +231,10 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
             JsonObject function = new JsonObject();
             function.put(STRUCTURE_UAI, structUAI);
-            function.put(POSITION_CODE, roleCode);
+            function.put(POSITION_CODE_1D, roleCode);
             garFunctions.add(function);
         }
-        teacher.put(TEACHER_POSITION, garFunctions);
+        teacher.put(TEACHER_POSITION_1D, garFunctions);
         teacher.remove("functions");
     }
 
@@ -242,7 +244,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param mefs Array of mefs from Neo4j
      */
     private Either<String, JsonObject> processTeachersMefs(JsonArray mefs) {
-        Either<String, JsonObject> event = processSimpleArray(mefs, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
+        Either<String, JsonObject> event = processSimpleArray(mefs, PERSON_MEF_1D, PERSON_MEF_NODE_MANDATORY_1D);
         if (event.isLeft()) {
             return new Either.Left<>("Error when processing teacher mefs : " + event.left().getValue());
         } else {

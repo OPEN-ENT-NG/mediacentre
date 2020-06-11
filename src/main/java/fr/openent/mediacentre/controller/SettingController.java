@@ -1,5 +1,7 @@
 package fr.openent.mediacentre.controller;
 
+import fr.openent.mediacentre.Mediacentre;
+import fr.openent.mediacentre.constants.GarConstants;
 import fr.openent.mediacentre.export.impl.ExportImpl;
 import fr.openent.mediacentre.service.ParameterService;
 import fr.openent.mediacentre.service.impl.DefaultParameterService;
@@ -96,66 +98,86 @@ public class SettingController extends ControllerHelper {
         ok(request);
     }
 
-    @Get("/export/archive")
+    @Get("/export/archive/:source")
     @SecuredAction(value = "", type = ActionType.RESOURCE)
     @ResourceFilter(SuperAdminFilter.class)
     @ApiDoc("Download last archive")
     public void downloadArchive(HttpServerRequest request) {
         final String entId = config.getJsonObject("id-ent").getString(Renders.getHost(request));
-        final String archivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId);
-        vertx.fileSystem().readDir(archivePath, ".*\\.tar\\.gz", event -> {
-            if (event.failed()) {
-                renderError(request, new JsonObject().put("error", event.cause().toString()));
-                return;
+        final String source = request.getParam("source").toUpperCase();
+        if (Mediacentre.AAF1D.equals(source) || Mediacentre.AAF.equals(source)) {
+            final String archivePath;
+            if (Mediacentre.AAF1D.equals(source)) {
+                archivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId + GarConstants.EXPORT_1D_SUFFIX);
+            } else {
+                archivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId);
             }
-
-            List<String> files = event.result();
-            if (files.isEmpty()) notFound(request, "Archive not found");
-            String filename = files.get(0).replace(archivePath, "");
-            vertx.fileSystem().readFile(files.get(0), readEvent -> {
-                if (readEvent.failed()) {
-                    renderError(request, new JsonObject().put("error", readEvent.cause().toString()));
+            vertx.fileSystem().readDir(archivePath, ".*\\.tar\\.gz", event -> {
+                if (event.failed()) {
+                    renderError(request, new JsonObject().put("error", event.cause().toString()));
                     return;
                 }
 
-                Buffer buff = readEvent.result();
-                request.response()
-                        .putHeader("Content-Type", "application/gzip; charset=utf-8")
-                        .putHeader("Content-Disposition", "attachment; filename=" + filename)
-                        .end(buff);
+                List<String> files = event.result();
+                if (files.isEmpty()) notFound(request, "Archive not found");
+                String filename = files.get(0).replace(archivePath, "");
+                vertx.fileSystem().readFile(files.get(0), readEvent -> {
+                    if (readEvent.failed()) {
+                        renderError(request, new JsonObject().put("error", readEvent.cause().toString()));
+                        return;
+                    }
+
+                    Buffer buff = readEvent.result();
+                    request.response()
+                            .putHeader("Content-Type", "application/gzip; charset=utf-8")
+                            .putHeader("Content-Disposition", "attachment; filename=" + filename)
+                            .end(buff);
+                });
             });
-        });
+        } else {
+            badRequest(request);
+        }
+
     }
 
-    @Get("/export/xsd/validation")
+    @Get("/export/xsd/validation/:source")
     @SecuredAction(value = "", type = ActionType.RESOURCE)
     @ResourceFilter(SuperAdminFilter.class)
     @ApiDoc("Download xsd validation error")
     public void xsdValidation(HttpServerRequest request) {
         final String entId = config.getJsonObject("id-ent").getString(Renders.getHost(request));
-        final String archivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId);
-
-        vertx.fileSystem().readDir(archivePath, "xsd_errors\\.log", event -> {
-            if (event.failed()) {
-                renderError(request, new JsonObject().put("error", event.cause().toString()));
-                return;
+        final String source = request.getParam("source").toUpperCase();
+        if (Mediacentre.AAF1D.equals(source) || Mediacentre.AAF.equals(source)) {
+            final String archivePath;
+            if (Mediacentre.AAF1D.equals(source)) {
+                archivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId + GarConstants.EXPORT_1D_SUFFIX);
+            } else {
+                archivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId);
             }
-
-            List<String> files = event.result();
-            if (files.isEmpty()) notFound(request, "File not found");
-            String filename = "xsd_errors.log";
-            vertx.fileSystem().readFile(files.get(0), readEvent -> {
-                if (readEvent.failed()) {
-                    renderError(request, new JsonObject().put("error", readEvent.cause().toString()));
+            vertx.fileSystem().readDir(archivePath, "xsd_errors\\.log", event -> {
+                if (event.failed()) {
+                    renderError(request, new JsonObject().put("error", event.cause().toString()));
                     return;
                 }
 
-                Buffer buff = readEvent.result();
-                request.response()
-                        .putHeader("Content-Type", "application/text; charset=utf-8")
-                        .putHeader("Content-Disposition", "attachment; filename=" + filename)
-                        .end(buff);
+                List<String> files = event.result();
+                if (files.isEmpty()) notFound(request, "File not found");
+                String filename = "xsd_errors.log";
+                vertx.fileSystem().readFile(files.get(0), readEvent -> {
+                    if (readEvent.failed()) {
+                        renderError(request, new JsonObject().put("error", readEvent.cause().toString()));
+                        return;
+                    }
+
+                    Buffer buff = readEvent.result();
+                    request.response()
+                            .putHeader("Content-Type", "application/text; charset=utf-8")
+                            .putHeader("Content-Disposition", "attachment; filename=" + filename)
+                            .end(buff);
+                });
             });
-        });
+        } else {
+            badRequest(request);
+        }
     }
 }

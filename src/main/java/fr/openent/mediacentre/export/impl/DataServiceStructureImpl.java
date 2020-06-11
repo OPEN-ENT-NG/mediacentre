@@ -20,11 +20,13 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
     private JsonObject config;
     private String entId;
     private Boolean hasAcademyPrefix;
+    private String source;
 
-    DataServiceStructureImpl(String entId, JsonObject config, String strDate) {
+    DataServiceStructureImpl(String entId, String source, JsonObject config, String strDate) {
         this.entId = entId;
+        this.source = source;
         this.config = config;
-        xmlExportHelper = new XmlExportHelperImpl(entId, config, STRUCTURE_ROOT, STRUCTURE_FILE_PARAM, strDate);
+        xmlExportHelper = new XmlExportHelperImpl(entId, source, config, STRUCTURE_ROOT, STRUCTURE_FILE_PARAM, strDate);
         paginator = new PaginatorHelperImpl();
         hasAcademyPrefix = this.config.containsKey("academy-prefix") && !"".equals(this.config.getString("academy-prefix").trim());
     }
@@ -196,7 +198,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
     }
 
     private void getSubjectLabelsFromNeo4j(final Map<String, Map<String, String>> subjectLabelsByCodeUai, Handler<Either<String, Boolean>> handler) {
-        String query = "MATCH (s:Structure)<-[:SUBJECT]-(sub:Subject) " +
+        String query = "MATCH (s:Structure {source:'" + this.source + "'})<-[:SUBJECT]-(sub:Subject) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "RETURN s.UAI as UAI, sub.code as code, sub.label as label";
         neo4j.execute(query, new JsonObject().put("entId", entId), res -> {
@@ -235,7 +237,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      * @param handler results
      */
     private void getStucturesInfoFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (s:Structure) " +
+        String query = "MATCH (s:Structure {source:'" + this.source + "'}) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports ";
 // Don't export optional attachment structure attribute
 //                "OPTIONAL MATCH (g2:ManualGroup{name:\\\"\" + CONTROL_GROUP + \"\\\"})-[:DEPENDS]->(s2:Structure)<-[:HAS_ATTACHMENT]-(s:Structure) ";
@@ -302,7 +304,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      * @param handler results
      */
     private void getStucturesMefsFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
-        String queryStudentsMefs = "MATCH (n:User)-[:IN]->(pg:ProfileGroup {filter:'Student'})-[:DEPENDS]->(s:Structure) " +
+        String queryStudentsMefs = "MATCH (n:User)-[:IN]->(pg:ProfileGroup {filter:'Student'})-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 " AND exists(n.module) AND  NOT(has(n.deleteDate)) AND NOT(HAS(n.disappearanceDate)) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
@@ -310,7 +312,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "n.moduleName as `" + MEF_DESCRIPTION + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + MEF_CODE + "` " +
                 "UNION ";
-        String queryTeachersMefs = "MATCH (n:User)-[:IN]->(pg:ProfileGroup {filter:'Teacher'})-[:DEPENDS]->(s:Structure) " +
+        String queryTeachersMefs = "MATCH (n:User)-[:IN]->(pg:ProfileGroup {filter:'Teacher'})-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
                 "where HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND exists(n.modules) and not has(n.deleteDate) " +
                 "AND NOT(HAS(n.disappearanceDate)) " +
@@ -360,14 +362,14 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
             condition = "split(sub.code,\"-\") as codelist";
         }
 
-        String queryStructureFos = "MATCH (sub:Subject)-[:SUBJECT]->(s:Structure) " +
+        String queryStructureFos = "MATCH (sub:Subject)-[:SUBJECT]->(s:Structure {source:'" + this.source + "'}) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports AND sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' " +
                 "with s, sub.label as label, " + condition +
                 " return distinct s.UAI as `" + STRUCTURE_UAI + "`, toUpper(" +
                 (hasAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
                 "UNION ";
-        String queryStudentFos = "MATCH (u:User)-[:IN]->(pg:ProfileGroup {filter:'Student'})-[:DEPENDS]->(s:Structure) " +
+        String queryStudentFos = "MATCH (u:User)-[:IN]->(pg:ProfileGroup {filter:'Student'})-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
                 "where HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 "with distinct s, u.fieldOfStudy as fos " +

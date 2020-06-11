@@ -1,12 +1,12 @@
 package fr.openent.mediacentre.controller;
 
 import fr.openent.mediacentre.Mediacentre;
+import fr.openent.mediacentre.export.impl.ExportWorker;
 import fr.openent.mediacentre.security.WorkflowUtils;
 import fr.openent.mediacentre.service.EventService;
 import fr.openent.mediacentre.service.ResourceService;
 import fr.openent.mediacentre.service.impl.DefaultEventService;
 import fr.openent.mediacentre.service.impl.DefaultResourceService;
-import fr.openent.mediacentre.export.impl.ExportWorker;
 import fr.wseduc.bus.BusAddress;
 import fr.wseduc.rs.Get;
 import fr.wseduc.rs.Post;
@@ -84,16 +84,21 @@ public class MediacentreController extends ControllerHelper {
     }
 
 
-    @Get("/launchExport")
+    @Get("/launchExport/:source")
     @SecuredAction(value = WorkflowUtils.EXPORT, type = ActionType.WORKFLOW)
     public void launchExportFromRoute(HttpServerRequest request) {
-        this.exportAndSend(config.getJsonObject("id-ent").getString(Renders.getHost(request)));
-        request.response().setStatusCode(200).end("Import started");
+        final String source = request.getParam("source").toUpperCase();
+        if (Mediacentre.AAF1D.equals(source) || Mediacentre.AAF.equals(source)) {
+            this.exportAndSend(config.getJsonObject("id-ent").getString(Renders.getHost(request)), source);
+            request.response().setStatusCode(200).end("Import started");
+        } else {
+            badRequest(request);
+        }
     }
 
-    private void exportAndSend(final String entId) {
-        eb.send(ExportWorker.class.getSimpleName(),
-                new JsonObject().put("action", "exportAndSend").put("entId", entId),
+    private void exportAndSend(final String entId, final String source) {
+        final JsonObject param = new JsonObject().put("action", "exportAndSend").put("entId", entId).put("source", source);
+        eb.send(ExportWorker.EXPORTWORKER_ADDRESS, param,
                 handlerToAsyncHandler(event -> log.info("Export Gar Launched")));
     }
 
@@ -101,7 +106,7 @@ public class MediacentreController extends ControllerHelper {
     public void addressHandler(Message<JsonObject> message) {
         String action = message.body().getString("action", "");
         switch (action) {
-            case "export" : exportAndSend(null);
+            case "export" : exportAndSend(null, null);
                 break;
             case "getConfig":
                 log.info("MEDIACENTRE GET CONFIG BUS RECEPTION");

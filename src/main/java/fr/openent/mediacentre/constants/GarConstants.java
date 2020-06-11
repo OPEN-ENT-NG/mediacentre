@@ -1,7 +1,7 @@
 package fr.openent.mediacentre.constants;
 
 public class GarConstants {
-
+    public static final String EXPORT_1D_SUFFIX = "-1D";
     public static final String DEFAULT_CONTROL_GROUP = "GAR";
 
     public static final String STUDENT_ROOT = "men:GAR-ENT-Eleve";
@@ -13,14 +13,13 @@ public class GarConstants {
     public static final String DOCUMENTALIST_CODE = "DOC";
     public static final String DOCUMENTALIST_DESC= "DOCUMENTATION";
 
-
     public static final String TEACHER_ROOT = "men:GAR-ENT-Enseignant";
     public static final String TEACHER_FILE_PARAM = "Enseignant";
     public static final String TEACHER_PROFILE = "National_ens";
     public static final String DOCUMENTALIST_PROFILE = "National_doc";
     public static final String TEACHER_NODE = "men:GAREnseignant";
     public static final String TEACHER_POSITION = "men:GAREnsDisciplinesPostes";
-
+    public static final String TEACHER_POSITION_1D = "men:GAREnsSpecialitesPostes";
 
     public static final String PERSON_ID = "men:GARPersonIdentifiant";
     public static final String PERSON_BIRTH_DATE = "men:GARPersonDateNaissance";
@@ -34,7 +33,7 @@ public class GarConstants {
     public static final String PERSON_PROFILES = "men:GARPersonProfils";
     public static final String PERSON_PROFILE = "men:GARPersonProfil";
     public static final String PERSON_MEF = "men:GARPersonMEF";
-
+    public static final String PERSON_MEF_1D = "men:GARPersonMEFSTAT4";
 
     public static final String STRUCTURE_ROOT = "men:GAR-ENT-Etab";
     public static final String STRUCTURE_FILE_PARAM = "Etab";
@@ -58,7 +57,6 @@ public class GarConstants {
     public static final String GROUPS_STATUS = "men:GARGroupeStatut";
     public static final String GROUPS_DIVISION = "men:GARGroupeDivAppartenance";
 
-
     public static final String RESP_ROOT = "men:GAR-ENT-RespAff";
     public static final String RESP_NODE = "men:GARRespAff";
     public static final String RESP_ETAB = "men:GARRespAffEtab";
@@ -66,12 +64,13 @@ public class GarConstants {
 
     public static final String MEF_NODE = "men:GARMEF";
     public static final String MEF_CODE = "men:GARMEFCode";
+    public static final String MEF_CODE_1D = "men:GARMEFSTAT4Code";
     public static final String MEF_DESCRIPTION = "men:GARMEFLibelle";
     public static final String STUDYFIELD_NODE = "men:GARMatiere";
     public static final String STUDYFIELD_CODE = "men:GARMatiereCode";
     public static final String STUDYFIELD_DESC = "men:GARMatiereLibelle";
     public static final String POSITION_CODE = "men:GAREnsDisciplinePosteCode";
-
+    public static final String POSITION_CODE_1D = "men:GAREnsSpecialitePosteCode";
 
     public static final String[] STRUCTURE_NODE_MANDATORY = {STRUCTURE_UAI,STRUCTURE_NAME};
     public static final String[] MEF_NODE_MANDATORY = {STRUCTURE_UAI,MEF_CODE,MEF_DESCRIPTION};
@@ -82,6 +81,7 @@ public class GarConstants {
     public static final String[] STUDENT_NODE_MANDATORY = {PERSON_STRUCTURE,PERSON_ID,PERSON_PROFILES,
                                                             PERSON_NAME,PERSON_FIRST_NAME, PERSON_OTHER_NAMES};
     public static final String[] PERSON_MEF_NODE_MANDATORY = {STRUCTURE_UAI,PERSON_ID,MEF_CODE};
+    public static final String[] PERSON_MEF_NODE_MANDATORY_1D = {STRUCTURE_UAI,PERSON_ID,MEF_CODE_1D};
     public static final String[] STUDENT_STUDYFIELD_NODE_MANDATORY = {STRUCTURE_UAI,PERSON_ID,STUDYFIELD_CODE};
 
     public static final String[] TEACHER_NODE_MANDATORY = {PERSON_STRUCTURE,PERSON_ID,PERSON_PROFILES,

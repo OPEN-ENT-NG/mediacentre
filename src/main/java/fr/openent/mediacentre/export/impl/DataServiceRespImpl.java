@@ -15,10 +15,12 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
     private PaginatorHelperImpl paginator;
     private String controlGroup;
     private String entId;
+    private String source;
 
-    DataServiceRespImpl(String entId, JsonObject config, String strDate) {
+    DataServiceRespImpl(String entId, String source, JsonObject config, String strDate) {
         this.entId = entId;
-        xmlExportHelper = new XmlExportHelperImpl(entId, config, RESP_ROOT, RESP_FILE_PARAM, strDate);
+        this.source =source;
+        xmlExportHelper = new XmlExportHelperImpl(entId, source, config, RESP_ROOT, RESP_FILE_PARAM, strDate);
         paginator = new PaginatorHelperImpl();
         controlGroup = config.getString("control-group", DEFAULT_CONTROL_GROUP);
     }
@@ -61,7 +63,7 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
      * @param handler results
      */
     private void getRespFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (s:Structure)<-[:DEPENDS]-(n:ManualGroup{name:\"" + controlGroup + "\"})<-[:IN]-(us:User) " +
+        String query = "MATCH (s:Structure {source:'" + this.source + "'})<-[:DEPENDS]-(n:ManualGroup{name:\"" + controlGroup + "\"})<-[:IN]-(us:User) " +
                 " WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports" +
                 " AND head(us.profiles) IN ['Teacher','Personnel'] " +
                 " AND NOT(HAS(us.deleteDate)) " +

@@ -1,16 +1,18 @@
 package fr.openent.mediacentre.export.impl;
 
+import fr.openent.mediacentre.Mediacentre;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.Message;
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import org.entcore.common.utils.StringUtils;
 import org.vertx.java.busmods.BusModBase;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 
 public class ExportWorker extends BusModBase implements Handler<Message<JsonObject>> {
-
+    public static final String EXPORTWORKER_ADDRESS = "openent.exportworker";
     private ExportImpl export = null;
     private Calendar lastExportTime = Calendar.getInstance();
 
@@ -18,7 +20,7 @@ public class ExportWorker extends BusModBase implements Handler<Message<JsonObje
     @Override
     public void start() {
         super.start();
-        vertx.eventBus().localConsumer(ExportWorker.class.getSimpleName(), this);
+        vertx.eventBus().localConsumer(EXPORTWORKER_ADDRESS, this);
     }
 
     @Override
@@ -26,17 +28,19 @@ public class ExportWorker extends BusModBase implements Handler<Message<JsonObje
         final String action = message.body().getString("action", "");
         switch (action) {
             case "exportAndSend":
-                export(message.body().getString("entId"));
+                export(message.body().getString("entId"), message.body().getString("source"));
                 break;
         }
     }
 
-    private void export(final String entId) {
+    private void export(final String entId, String source) {
         Calendar now = Calendar.getInstance();
         if(this.export == null || ( (now.getTimeInMillis() - lastExportTime.getTimeInMillis()) / 1000 / 3600) > 1 )  {
             this.lastExportTime = now;
             if (entId != null) {
-                this.export = new ExportImpl(vertx, entId, new Handler<String>() {
+                //default AAF
+                source = (source == null) ? Mediacentre.AAF : source;
+                this.export = new ExportImpl(vertx, entId, source, new Handler<String>() {
                     @Override
                     public void handle(String s) {
                         export = null;
@@ -50,9 +54,10 @@ public class ExportWorker extends BusModBase implements Handler<Message<JsonObje
 
     private void export(final int index) {
         //export for each entId
-        final List<Object> ids = new ArrayList<>(config.getJsonObject("id-ent", new JsonObject()).getMap().values());
+        final List ids = config.getJsonArray("entid-sources", new JsonArray()).getList();
         if (index < ids.size()) {
-            this.export = new ExportImpl(vertx, (String)ids.get(index), new Handler<String>() {
+            final List<String> idSource = StringUtils.split((String)ids.get(index), "-");
+            this.export = new ExportImpl(vertx, idSource.get(0), idSource.get(1), new Handler<String>() {
                 @Override
                 public void handle(String s) {
                     export(index+1);
