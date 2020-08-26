@@ -8,13 +8,15 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static fr.openent.gar.constants.GarConstants.*;
 
 public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataService{
-    private PaginatorHelperImpl paginator;
+    private final PaginatorHelperImpl paginator;
 
     DataServiceTeacherImpl(JsonObject config, String strDate) {
         super(config);
@@ -30,51 +32,27 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      */
     @Override
     public void exportData(final Handler<Either<String, JsonObject>> handler) {
-        getTeachersInfoFromNeo4j(new Handler<Either<String, JsonArray>>() {
-            @Override
-            public void handle(Either<String, JsonArray> resultTeachers) {
-                if (validResponseNeo4j(resultTeachers, handler)) {
+        getTeachersInfoFromNeo4j(resultTeachers -> {
+            if (validResponseNeo4j(resultTeachers, handler)) {
 
-                    processTeachersInfo(resultTeachers.right().getValue());
-                    getTeachersMefFromNeo4j(
-                            new Handler<Either<String, JsonArray>>() {
-                                @Override
-                                public void handle(Either<String, JsonArray> mefsResult) {
-                                    if (mefsResult.isLeft()) {
-                                        handler.handle(new Either.Left<String, JsonObject>(mefsResult.left().getValue()));
-                                    } else {
-                                        processTeachersMefs(mefsResult.right().getValue());
-                                        xmlExportHelper.closeFile();
-                                        handler.handle(new Either.Right<String, JsonObject>(
-                                                new JsonObject().put(
-                                                        FILE_LIST_KEY,
-                                                        xmlExportHelper.getFileList()
-                                                )));
-                                    }
-                                }
-                            });
-                } else {
-                    log.error("[DataServiceTeacherImpl@exportData] Failed to process");
-                }
-            }
-        });
-    }
+                processTeachersInfo(resultTeachers.right().getValue());
 
-    /**
-     * Process teachers info, validate data and save to xml
-     * @param handler result handler
-     */
-    private void getAndProcessTeachersInfo(final Handler<Either<String, JsonObject>> handler) {
-
-        getTeachersInfoFromNeo4j(new Handler<Either<String, JsonArray>>() {
-            @Override
-            public void handle(Either<String, JsonArray> teacherInfos) {
-                if( validResponseNeo4j(teacherInfos, handler) ) {
-                    Either<String,JsonObject> result = processTeachersInfo( teacherInfos.right().getValue() );
-                    handler.handle(result);
-                } else {
-                    log.error("[DataServiceTeacherImpl@getAndProcessTeachersInfo] Failed to process");
-                }
+                getTeachersMefFromNeo4j(
+                        mefsResult -> {
+                            if (mefsResult.isLeft()) {
+                                handler.handle(new Either.Left<>(mefsResult.left().getValue()));
+                            } else {
+                                processTeachersMefs(mefsResult.right().getValue());
+                                xmlExportHelper.closeFile();
+                                handler.handle(new Either.Right<>(
+                                        new JsonObject().put(
+                                                FILE_LIST_KEY,
+                                                xmlExportHelper.getFileList()
+                                        )));
+                            }
+                        });
+            } else {
+                log.error("[DataServiceTeacherImpl@exportData] Failed to process");
             }
         });
     }
@@ -85,9 +63,9 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getTeachersInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "match (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
-                "(p:Profile{name:'Teacher'})<-[:HAS_PROFILE]-(pg:ProfileGroup) WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
-                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+        String query = "MATCH (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
+                "(p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup) WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
+                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND p.name IN ['Personnel','Teacher'] " +
                 // ADMINISTRATIVE ATTACHMENT can reference non GAR exported structure
                 "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure)";
         String dataReturn = "return distinct u.id  as `" + PERSON_ID + "`, " +
@@ -99,6 +77,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 "collect(distinct sr.UAI)[0] as `" + PERSON_STRUCT_ATTACH + "`, " +
                 "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
                 "u.functions as functions, " +
+                "p.name as profile, " +
                 "collect(distinct s.UAI) as profiles " +
                 "order by " + "`" + PERSON_ID + "`";
 
@@ -106,7 +85,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
@@ -184,6 +163,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         if(functions == null || functions.size() == 0) {
             return;
         }
+        String profileUser = teacher.getString("profile","Teacher");
 
         JsonArray garFunctions = new fr.wseduc.webutils.collections.JsonArray();
         for(Object o : functions) {
@@ -196,12 +176,40 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
             }
             String structUAI = mapStructures.get(structID);
             String functionCode = arrFunction[1];
-            String functionDesc = arrFunction[2];
             String roleCode = arrFunction[3];
             String profileType = TEACHER_PROFILE;
-            if(DOCUMENTALIST_CODE.equals(functionCode) && DOCUMENTALIST_DESC.equals(functionDesc)) {
-                profileType = DOCUMENTALIST_PROFILE;
+            if(profileUser.equals("Personnel"))
+                profileType = PERSONNEL_ETAB_PROFILE;
+
+            switch (functionCode) {
+                case DOCUMENTALIST_CODE :
+                    profileType = DOCUMENTALIST_PROFILE;
+                    break;
+                case DIRECTOR_CODE :
+                    profileType = DIRECTOR_PROFILE;
+                    break;
+                case COLLECTIVITE_TERRITORIALE_CODE :
+                    profileType = COLLECTIVITE_TERRITORIALE_PROFILE;
+                    break;
+                case ENSEIGNANT_CODE :
+                    profileType = TEACHER_PROFILE;
+                    break;
             }
+
+            List vie_scolaire_code = Arrays.asList(EDUCATION_CODE,EDUCATION_ASSISTANT_CODE,ACCOMPAGNEMENT_HANDICAP_2_CODE,
+                    ACCOMPAGNMENT_HANDICAP_CODE,ETRANGER_ASSISTANT_CODE,SURVEILLANCE_CODE,CPE_CODE);
+
+            List personnel_etab_code = Arrays.asList(ADMINISTRATION_CODE, PERSONNEL_ADMINISTRATIF_CODE, CHEF_DE_TRAVAUX_CODE,
+                    PSYCHOLOGUE_CODE, OUVRIER_CODE, LABORATOIRE_CODE, PERSONNEL_MEDICO_SOCIAUX_CODE, PERSONNEL_TECHNIQUE_CODE,
+                    READAPTATION_CODE, CONSEILLER_FORMATION_CONTINUE_CODE, CONSEILLER_ORIENTATION_CODE, EDUCATEUR_INTERNAT_CODE,
+                    APPRENTISSAGE_CODE, FORMATION_CONTINUE_ADULTES_CODE, APPRENTI_CLASSIQUE_PROFESSEUR_CODE, FORMATION_INSERTION_JEUNES_CODE);
+
+            if(vie_scolaire_code.contains(functionCode)){
+                profileType = VIE_SCOLAIRE_PROFILE;
+            }else if(personnel_etab_code.contains(functionCode)){
+                profileType = PERSONNEL_ETAB_PROFILE;
+            }
+
             structMap.put(structUAI, profileType);
 
             JsonObject function = new JsonObject();
@@ -235,7 +243,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 

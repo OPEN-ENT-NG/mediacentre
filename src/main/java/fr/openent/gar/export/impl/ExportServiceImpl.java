@@ -24,19 +24,16 @@ public class ExportServiceImpl implements ExportService{
 
     @Override
     public void launchExport(final Message<JsonObject> message) {
-        launchExport(new Handler<Either<String, JsonObject>>() {
-            @Override
-            public void handle(Either<String, JsonObject> exportResult) {
-                JsonObject json;
-                if(exportResult.isLeft()) {
-                    json = (new JsonObject())
-                            .put("status", "error")
-                            .put("message", exportResult.left().getValue());
-                } else {
-                    json = exportResult.right().getValue();
-                }
-                message.reply(json.put("status", "ok"));
+        launchExport(exportResult -> {
+            JsonObject json;
+            if(exportResult.isLeft()) {
+                json = (new JsonObject())
+                        .put("status", "error")
+                        .put("message", exportResult.left().getValue());
+            } else {
+                json = exportResult.right().getValue();
             }
+            message.reply(json.put("status", "ok"));
         });
     }
 
@@ -61,21 +58,18 @@ public class ExportServiceImpl implements ExportService{
                                final Handler<Either<String, JsonObject>> handler) {
         DataService service = dataServiceQueue.poll();
         if(service != null) {
-            service.exportData(new Handler<Either<String, JsonObject>>() {
-                @Override
-                public void handle(Either<String, JsonObject> exportResult) {
-                    if(exportResult.isRight()) {
+            service.exportData(exportResult -> {
+                if(exportResult.isRight()) {
 
-                        JsonArray fileListResult = exportResult.right().getValue().getJsonArray(DataService.FILE_LIST_KEY);
-                        if(fileListResult != null) {
-                            for (Object o : fileListResult) {
-                                fileList.add(o);
-                            }
+                    JsonArray fileListResult = exportResult.right().getValue().getJsonArray(DataService.FILE_LIST_KEY);
+                    if(fileListResult != null) {
+                        for (Object o : fileListResult) {
+                            fileList.add(o);
                         }
-                        processExport(dataServiceQueue, fileList, handler);
-                    } else {
-                        handler.handle(exportResult);
                     }
+                    processExport(dataServiceQueue, fileList, handler);
+                } else {
+                    handler.handle(exportResult);
                 }
             });
         } else {
@@ -86,13 +80,13 @@ public class ExportServiceImpl implements ExportService{
     private void doReporting(final JsonArray fileList, final Handler<Either<String, JsonObject>> handler) {
 
         if(fileList.size() == 0) {
-            handler.handle(new Either.Left<String, JsonObject>("No file created"));
+            handler.handle(new Either.Left<>("No file created"));
         } else  {
             JsonObject msgContent = new JsonObject();
             msgContent.put("path", fileList);
             //TODO faire le zip
             msgContent.put("zipfile", "");
-            handler.handle(new Either.Right<String, JsonObject>(new JsonObject()));
+            handler.handle(new Either.Right<>(new JsonObject()));
         }
 
     }

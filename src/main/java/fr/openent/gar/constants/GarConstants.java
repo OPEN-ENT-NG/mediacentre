@@ -10,14 +10,53 @@ public class GarConstants {
     public static final String STUDENT_NODE = "men:GAREleve";
     public static final String STUDENT_STUDYFIELD = "men:GAREleveEnseignement";
 
+    //National_doc
     public static final String DOCUMENTALIST_CODE = "DOC";
-    public static final String DOCUMENTALIST_DESC= "DOCUMENTATION";
 
+    //National_dir
+    public static final String DIRECTOR_CODE = "DIR";
+
+    //National_evs ; personnel de vie scolaire travaillant dans l’établissement
+    public static final String EDUCATION_CODE = "EDU";
+    public static final String EDUCATION_ASSISTANT_CODE = "AED";
+    public static final String ACCOMPAGNMENT_HANDICAP_CODE = "ASH";
+    public static final String ACCOMPAGNEMENT_HANDICAP_2_CODE = "AES";
+    public static final String ETRANGER_ASSISTANT_CODE = "ASE";
+    public static final String SURVEILLANCE_CODE = "SUR";
+    public static final String CPE_CODE = "CPE";
+
+    //National_eta ; personnel administratif, technique ou d’encadrement travaillant dans personnel administratif, technique ou d’encadrement travaillant dans l’établissement
+    public static final String ADMINISTRATION_CODE = "ADM";
+    public static final String PERSONNEL_ADMINISTRATIF_CODE = "ADF";
+    public static final String CHEF_DE_TRAVAUX_CODE = "CTR";
+    public static final String PSYCHOLOGUE_CODE = "PSY";
+    public static final String OUVRIER_CODE = "OUV";
+    public static final String LABORATOIRE_CODE = "LAB";
+    public static final String PERSONNEL_MEDICO_SOCIAUX_CODE = "MDS";
+    public static final String PERSONNEL_TECHNIQUE_CODE = "TEC";
+    public static final String READAPTATION_CODE = "ADA";
+    public static final String CONSEILLER_FORMATION_CONTINUE_CODE = "CFC";
+    public static final String CONSEILLER_ORIENTATION_CODE = "ORI";
+    public static final String EDUCATEUR_INTERNAT_CODE = "EEI";
+    public static final String APPRENTISSAGE_CODE = "APP";
+    public static final String FORMATION_CONTINUE_ADULTES_CODE = "FCA";
+    public static final String APPRENTI_CLASSIQUE_PROFESSEUR_CODE = "ACP";
+    public static final String FORMATION_INSERTION_JEUNES_CODE = "FIJ";
+
+    //National_col ; personnel de collectivité territoriale
+    public static final String COLLECTIVITE_TERRITORIALE_CODE = "COL";
+
+    //National_ens ; enseignant
+    public static final String ENSEIGNANT_CODE = "ENS";
 
     public static final String TEACHER_ROOT = "men:GAR-ENT-Enseignant";
     public static final String TEACHER_FILE_PARAM = "Enseignant";
     public static final String TEACHER_PROFILE = "National_ens";
     public static final String DOCUMENTALIST_PROFILE = "National_doc";
+    public static final String DIRECTOR_PROFILE = "National_dir";
+    public static final String VIE_SCOLAIRE_PROFILE = "National_evs";
+    public static final String PERSONNEL_ETAB_PROFILE = "National_eta";
+    public static final String COLLECTIVITE_TERRITORIALE_PROFILE = "National_col";
     public static final String TEACHER_NODE = "men:GAREnseignant";
     public static final String TEACHER_POSITION = "men:GAREnsDisciplinesPostes";
 
