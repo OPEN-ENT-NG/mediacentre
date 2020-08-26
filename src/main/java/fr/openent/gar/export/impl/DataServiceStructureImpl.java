@@ -334,7 +334,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "WHERE HAS(s.exports) AND sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' AND 'GAR' IN s.exports " +
                 "with s, sub.label as label, " + condition +
                 " return distinct s.UAI as `" + STRUCTURE_UAI + "`, toUpper(" +
-                (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE + "` " +
+                (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE + "`, " +
                 "label as `" + STUDYFIELD_DESC + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
                 "UNION ";

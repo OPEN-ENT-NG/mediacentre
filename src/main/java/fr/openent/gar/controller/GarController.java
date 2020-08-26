@@ -1,16 +1,12 @@
 package fr.openent.gar.controller;
 
 import fr.openent.gar.Gar;
-import fr.openent.gar.export.ExportService;
-import fr.openent.gar.export.impl.ExportServiceImpl;
+import fr.openent.gar.export.impl.ExportWorker;
 import fr.openent.gar.security.WorkflowUtils;
 import fr.openent.gar.service.EventService;
 import fr.openent.gar.service.ResourceService;
-import fr.openent.gar.service.TarService;
-import fr.openent.gar.service.impl.DefaultTarService;
 import fr.openent.gar.service.impl.DefaultEventService;
 import fr.openent.gar.service.impl.DefaultResourceService;
-import fr.openent.gar.export.impl.ExportWorker;
 import fr.wseduc.bus.BusAddress;
 import fr.wseduc.cron.CronTrigger;
 import fr.wseduc.rs.Get;
@@ -41,10 +37,10 @@ public class GarController extends ControllerHelper {
     private final ResourceService resourceService;
     private final EventService eventService;
     private final Vertx vertx;
-    private JsonObject garRessourcesConfig = null;
-    private Logger log = LoggerFactory.getLogger(GarController.class);
-    private EventBus eb = null;
-    private JsonObject config;
+    private final JsonObject garRessourcesConfig;
+    private final Logger log = LoggerFactory.getLogger(GarController.class);
+    private final EventBus eb;
+    private final JsonObject config;
 
     public GarController(Vertx vertx, JsonObject config) {
         super();

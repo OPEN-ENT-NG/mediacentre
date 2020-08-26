@@ -1,22 +1,20 @@
 package fr.openent.gar.export.impl;
 
+import fr.openent.gar.export.DataService;
 import fr.openent.gar.helper.impl.PaginatorHelperImpl;
 import fr.openent.gar.helper.impl.XmlExportHelperImpl;
-import fr.openent.gar.export.DataService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-import static fr.openent.gar.constants.GarConstants.*;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import static org.entcore.common.neo4j.Neo4jResult.validResult;
+import static fr.openent.gar.constants.GarConstants.*;
 
 public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataService{
-    private PaginatorHelperImpl paginator;
+    private final PaginatorHelperImpl paginator;
 
     DataServiceStudentImpl(JsonObject config, String strDate) {
         super(config);
@@ -34,35 +32,26 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
     @Override
     public void exportData(final Handler<Either<String, JsonObject>> handler) {
 
-        getAndProcessStudentsInfo(new Handler<Either<String, JsonObject>>() {
-            @Override
-            public void handle(Either<String, JsonObject> studentsResult) {
-                if(validResponse(studentsResult, handler)) {
+        getAndProcessStudentsInfo(studentsResult -> {
+            if(validResponse(studentsResult, handler)) {
 
-                    getAndProcessStudentsMefs(new Handler<Either<String, JsonObject>>() {
-                        @Override
-                        public void handle(Either<String, JsonObject> mefsResult) {
-                            if(validResponse(mefsResult, handler)) {
+                getAndProcessStudentsMefs(mefsResult -> {
+                    if(validResponse(mefsResult, handler)) {
 
-                                getAndProcessStudentsFos(new Handler<Either<String, JsonObject>>() {
-                                        @Override
-                                        public void handle(Either<String, JsonObject> modulesResult) {
-                                            if(validResponse(modulesResult, handler)) {
+                        getAndProcessStudentsFos(modulesResult -> {
+                            if(validResponse(modulesResult, handler)) {
 
-                                                xmlExportHelper.closeFile();
-                                                handler.handle(new Either.Right<String, JsonObject>(
-                                                        new JsonObject().put(
-                                                                FILE_LIST_KEY,
-                                                                xmlExportHelper.getFileList()
-                                                        )));
-                                            }
-                                        }
-                                    }
-                                );
+                                xmlExportHelper.closeFile();
+                                handler.handle(new Either.Right<>(
+                                        new JsonObject().put(
+                                                FILE_LIST_KEY,
+                                                xmlExportHelper.getFileList()
+                                        )));
                             }
                         }
-                    });
-                }
+                        );
+                    }
+                });
             }
         });
     }
@@ -73,15 +62,12 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      */
     private void getAndProcessStudentsInfo(final Handler<Either<String, JsonObject>> handler) {
 
-        getStudentsInfoFromNeo4j(new Handler<Either<String, JsonArray>>() {
-            @Override
-            public void handle(Either<String, JsonArray> structResults) {
-                if( validResponseNeo4j(structResults, handler) ) {
-                    Either<String,JsonObject> result = processStudentsInfo( structResults.right().getValue() );
-                    handler.handle(result);
-                } else {
-                    log.error("[DataServiceStudentImpl@getAndProcessStudentsInfo] Failed to process");
-                }
+        getStudentsInfoFromNeo4j(structResults -> {
+            if( validResponseNeo4j(structResults, handler) ) {
+                Either<String,JsonObject> result = processStudentsInfo( structResults.right().getValue() );
+                handler.handle(result);
+            } else {
+                log.error("[DataServiceStudentImpl@getAndProcessStudentsInfo] Failed to process");
             }
         });
     }
@@ -94,15 +80,12 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      */
     private void getAndProcessStudentsMefs(final Handler<Either<String, JsonObject>> handler) {
 
-        getStudentsMefFromNeo4j(new Handler<Either<String, JsonArray>>() {
-            @Override
-            public void handle(Either<String, JsonArray> structResults) {
-                if( validResponseNeo4j(structResults, handler) ) {
-                    Either<String,JsonObject> result = processStudentsMefs( structResults.right().getValue() );
-                    handler.handle(result);
-                } else {
-                    log.error("[DataServiceStudentImpl@getAndProcessStudentsMefs] Failed to process");
-                }
+        getStudentsMefFromNeo4j(structResults -> {
+            if( validResponseNeo4j(structResults, handler) ) {
+                Either<String,JsonObject> result = processStudentsMefs( structResults.right().getValue() );
+                handler.handle(result);
+            } else {
+                log.error("[DataServiceStudentImpl@getAndProcessStudentsMefs] Failed to process");
             }
         });
     }
@@ -115,15 +98,12 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      */
     private void getAndProcessStudentsFos(final Handler<Either<String, JsonObject>> handler) {
 
-        getStudentsFosFromNeo4j(new Handler<Either<String, JsonArray>>() {
-            @Override
-            public void handle(Either<String, JsonArray> structResults) {
-                if( validResponseNeo4j(structResults, handler) ) {
-                    Either<String,JsonObject> result = processStudentsFos( structResults.right().getValue() );
-                    handler.handle(result);
-                } else {
-                    log.error("[DataServiceStudentImpl@getAndProcessStudentsFos] Failed to process");
-                }
+        getStudentsFosFromNeo4j(structResults -> {
+            if( validResponseNeo4j(structResults, handler) ) {
+                Either<String,JsonObject> result = processStudentsFos( structResults.right().getValue() );
+                handler.handle(result);
+            } else {
+                log.error("[DataServiceStudentImpl@getAndProcessStudentsFos] Failed to process");
             }
         });
     }
@@ -155,7 +135,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
@@ -233,7 +213,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
@@ -267,7 +247,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
             if (res.body() != null && res.body().containsKey("result")) {
                 JsonArray garUAIs = res.body().getJsonArray("result");
 
-                List<String> UAIs = new ArrayList<String>();
+                List<String> UAIs = new ArrayList<>();
                 garUAIs.forEach((entry) -> {
                     if (entry instanceof JsonObject) {
                         JsonObject field = (JsonObject) entry;
@@ -298,7 +278,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
 
         JsonObject params = new JsonObject()
                 .put("uai", UAIs.get(index))
-                .put("limit", paginator.LIMIT);
+                .put("limit", PaginatorHelperImpl.LIMIT);
         int finalIndex = index + 1;
         paginator.neoStreamList(query, params, new JsonArray(), 0, resultNeo -> {
             if (resultNeo.isRight()) {

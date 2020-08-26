@@ -107,7 +107,7 @@ abstract class DataServiceBaseImpl implements DataService{
      */
     boolean validResponseNeo4j(Either<String,JsonArray> event, final Handler<Either<String, JsonObject>> handler) {
         if(event.isLeft()) {
-            handler.handle(new Either.Left<String, JsonObject>(event.left().getValue()));
+            handler.handle(new Either.Left<>(event.left().getValue()));
             log.error(event.left().getValue());
             return false;
         } else {
@@ -123,7 +123,7 @@ abstract class DataServiceBaseImpl implements DataService{
      */
     boolean validResponse(Either<String,JsonObject> event, final Handler<Either<String, JsonObject>> handler) {
         if(event.isLeft()) {
-            handler.handle(new Either.Left<String, JsonObject>(event.left().getValue()));
+            handler.handle(new Either.Left<>(event.left().getValue()));
             return false;
         } else {
             return true;
