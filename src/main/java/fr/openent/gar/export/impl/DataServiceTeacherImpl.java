@@ -77,8 +77,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 "collect(distinct sr.UAI)[0] as `" + PERSON_STRUCT_ATTACH + "`, " +
                 "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
                 "u.functions as functions, " +
-                "p.name as profile, " +
-                "collect(distinct s.UAI) as profiles " +
+                "collect(distinct s.UAI+'$'+p.name) as UAIprofiles " +
                 "order by " + "`" + PERSON_ID + "`";
 
 
@@ -100,7 +99,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 if(!(o instanceof JsonObject)) continue;
 
                 JsonObject teacher = (JsonObject) o;
-                JsonArray profiles = teacher.getJsonArray("profiles", null);
+                JsonArray profiles = teacher.getJsonArray("UAIprofiles", null);
                 if(profiles == null || profiles.size() == 0) {
                     log.error("Gar : Teacher with no profile or function for export, id "
                             + teacher.getString("u.id", "unknown"));
@@ -110,7 +109,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 Map<String,String> userStructProfiles = new HashMap<>();
 
                 processFunctions(teacher, userStructProfiles);
-                processProfiles(teacher, TEACHER_PROFILE, userStructProfiles);
+                processTeacherProfiles(teacher, userStructProfiles);
 
                 if(isMandatoryFieldsAbsent(teacher, TEACHER_NODE_MANDATORY)) {
                     log.warn("Gar : mandatory attribut for Teacher : " + teacher);
@@ -125,6 +124,46 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         } catch (Exception e) {
             return new Either.Left<>("Error when processing teachers Info : " + e.getMessage());
         }
+    }
+
+    /**
+     * Process profiles, set profile from structMap for structures in it
+     * Set default profile for other etabs
+     * @param teacher person to process
+     * @param structMap map for profile by structure
+     */
+    private void processTeacherProfiles(JsonObject teacher, Map<String, String> structMap) {
+        JsonArray garProfiles = new fr.wseduc.webutils.collections.JsonArray();
+        JsonArray garEtabs = new fr.wseduc.webutils.collections.JsonArray();
+
+        JsonArray profilesUser = teacher.getJsonArray("UAIprofiles");
+        String profileUser = TEACHER_PROFILE;
+
+        for(Object profile : profilesUser) {
+            if (!(profile instanceof String)) continue;
+            String[] uaiProfile = ((String) profile).split("\\$");
+            if (uaiProfile.length < 2) continue;
+            String structure = uaiProfile[0];
+            if (uaiProfile[1].equals("Personnel"))
+                profileUser = PERSONNEL_ETAB_PROFILE;
+
+            garEtabs.add(structure);
+
+            if (structMap != null && structMap.containsKey(structure)) {
+                addProfile(garProfiles, structure, structMap.get(structure));
+                structMap.remove(structure);
+            } else {
+                addProfile(garProfiles, structure, profileUser);
+            }
+        }
+        if (structMap != null) {
+            for (String structUAI : structMap.keySet()) {
+                garEtabs.add(structUAI);
+                addProfile(garProfiles, structUAI, structMap.get(structUAI));
+            }
+        }
+        teacher.put(PERSON_PROFILES, garProfiles);
+        teacher.put(PERSON_STRUCTURE, garEtabs);
     }
 
     /**
@@ -163,8 +202,6 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         if(functions == null || functions.size() == 0) {
             return;
         }
-        String profileUser = teacher.getString("profile","Teacher");
-
         JsonArray garFunctions = new fr.wseduc.webutils.collections.JsonArray();
         for(Object o : functions) {
             if(!(o instanceof String)) continue;
@@ -177,6 +214,16 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
             String structUAI = mapStructures.get(structID);
             String functionCode = arrFunction[1];
             String roleCode = arrFunction[3];
+            JsonArray profilesUser = teacher.getJsonArray("UAIprofiles");
+            String profileUser = "Teacher";
+            for(Object profile : profilesUser) {
+                if(!(profile instanceof String)) continue;
+                String[] uaiProfile = ((String)profile).split("\\$");
+                if(uaiProfile.length < 2) continue;
+                String uai = uaiProfile[0];
+                if(structUAI.equals(uai))
+                    profileUser = uaiProfile[1];
+            }
             String profileType = TEACHER_PROFILE;
             if(profileUser.equals("Personnel"))
                 profileType = PERSONNEL_ETAB_PROFILE;

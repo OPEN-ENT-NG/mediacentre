@@ -30,42 +30,6 @@ abstract class DataServiceBaseImpl implements DataService{
     }
 
     /**
-     * Process profiles, set profile from structMap for structures in it
-     * Set default profile for other etabs
-     * @param person person to process
-     * @param profileName default profile
-     * @param structMap map for profile by structure
-     */
-    void processProfiles(JsonObject person, String profileName, Map<String, String> structMap) {
-        JsonArray profiles = person.getJsonArray("profiles");
-
-        JsonArray garProfiles = new fr.wseduc.webutils.collections.JsonArray();
-        JsonArray garEtabs = new fr.wseduc.webutils.collections.JsonArray();
-        for(Object o2 : profiles) {
-            if(!(o2 instanceof String)) continue;
-            String structure = ((String)o2);
-
-            garEtabs.add(structure);
-
-            if(structMap != null && structMap.containsKey(structure)) {
-                addProfile(garProfiles, structure, structMap.get(structure));
-                structMap.remove(structure);
-            } else {
-                addProfile(garProfiles, structure, profileName);
-            }
-        }
-        if(structMap != null) {
-            for (String structUAI : structMap.keySet()) {
-                garEtabs.add(structUAI);
-                addProfile(garProfiles, structUAI, profileName);
-            }
-        }
-        person.put(PERSON_PROFILES, garProfiles);
-        person.put(PERSON_STRUCTURE, garEtabs);
-        person.remove("profiles");
-    }
-
-    /**
      * Save an array of JsonObjects in xml
      * Only save object with all mandatory fields present
      * @param array array from neo4j
@@ -137,7 +101,7 @@ abstract class DataServiceBaseImpl implements DataService{
      * @param structUAI structure UAI
      * @param profile profile name
      */
-    private void addProfile(JsonArray profileArray, String structUAI, String profile) {
+    protected void addProfile(JsonArray profileArray, String structUAI, String profile) {
         JsonObject garProfile = new JsonObject();
         garProfile.put(STRUCTURE_UAI, structUAI);
         garProfile.put(PERSON_PROFILE, profile);
