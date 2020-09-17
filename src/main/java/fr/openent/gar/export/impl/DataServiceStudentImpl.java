@@ -157,7 +157,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                     continue;
                 }
 
-                processProfiles(student, STUDENT_PROFILE, null);
+                processProfilesStudent(student);
 
                 if(isMandatoryFieldsAbsent(student, STUDENT_NODE_MANDATORY)) {
                     log.warn("Gar : mandatory attribut for Student : " + student);
@@ -172,6 +172,30 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         } catch (Exception e) {
             return new Either.Left<>("Error when processing students Info : " + e.getMessage());
         }
+    }
+
+    /**
+     * Process profiles, set profile from structMap for structures in it
+     * Set default profile for other etabs
+     * @param person person to process
+     *
+     */
+    void processProfilesStudent(JsonObject person) {
+        JsonArray profiles = person.getJsonArray("profiles");
+
+        JsonArray garProfiles = new fr.wseduc.webutils.collections.JsonArray();
+        JsonArray garEtabs = new fr.wseduc.webutils.collections.JsonArray();
+        for(Object o2 : profiles) {
+            if(!(o2 instanceof String)) continue;
+            String structure = ((String)o2);
+
+            garEtabs.add(structure);
+
+            addProfile(garProfiles, structure, STUDENT_PROFILE);
+        }
+        person.put(PERSON_PROFILES, garProfiles);
+        person.put(PERSON_STRUCTURE, garEtabs);
+        person.remove("profiles");
     }
 
     /**
