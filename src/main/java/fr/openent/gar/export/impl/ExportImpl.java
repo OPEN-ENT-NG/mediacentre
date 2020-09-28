@@ -35,14 +35,14 @@ import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
 
 public class ExportImpl {
 
-    private Logger log = LoggerFactory.getLogger(ExportImpl.class);
+    private final Logger log = LoggerFactory.getLogger(ExportImpl.class);
     private ExportService exportService;
     private TarService tarService;
     private JsonObject sftpGarConfig;
     private EventBus eb;
-    private JsonObject config;
+    private final JsonObject config;
     private Vertx vertx;
-    private EmailSender emailSender;
+    private final EmailSender emailSender;
 
     public ExportImpl(Vertx vertx, Handler<String> handler) {
         this.vertx = vertx;
@@ -64,6 +64,7 @@ public class ExportImpl {
     private void exportAndSend(Handler<String> handler) {
         log.info("Start exportAndSend GAR (Generate xml files, XSD validation, compress to tar.gz, generate md5, send to GAR by sftp");
         try {
+            createDirectory(config.getString("export-path"));
             emptyDIrectory(config.getString("export-path"));
         } catch (Exception e) {
             handler.handle(e.getMessage());
@@ -80,7 +81,12 @@ public class ExportImpl {
                     sendReport((String) validationResult.get("report"));
                 }
                 log.info("Tar.GZ to Compress");
-                emptyDIrectory(config.getString("export-archive-path"));
+                try {
+                    createDirectory(config.getString("export-archive-path"));
+                    emptyDIrectory(config.getString("export-archive-path"));
+                } catch (Exception e) {
+                    handler.handle(e.getMessage());
+                }
                 tarService.compress(config.getString("export-archive-path"), directory, (Either<String, JsonObject> event2) -> {
                     if (event2.isRight() && event2.right().getValue().containsKey("archive")) {
                         String archiveName = event2.right().getValue().getString("archive");
@@ -100,8 +106,9 @@ public class ExportImpl {
                         String node = (n != null) ? n : "";
 
                         eb.send(node + "sftp", sendTOGar, new DeliveryOptions().setSendTimeout(300 * 1000L), handlerToAsyncHandler((Message<JsonObject> messageResponse) -> {
-                            if (messageResponse.body().containsKey("status") && messageResponse.body().getString("status") == "error") {
-                                String e = "Send to GAR tar GZ by sftp";
+                            if (messageResponse.body().containsKey("status") && messageResponse.body().getString("status").equals("error")) {
+                                String e = "Send to GAR tar GZ by sftp but received an error : " +
+                                        messageResponse.body().getString("message");
                                 log.error(e);
                                 handler.handle(e);
                             } else {
@@ -111,8 +118,9 @@ public class ExportImpl {
                                         .put("local-file", config.getString("export-archive-path") + md5File)
                                         .put("dist-file", sftpGarConfig.getString("dir-dest") + md5File);
                                 eb.send(node + "sftp", sendTOGar, handlerToAsyncHandler(message1 -> {
-                                    if (message1.body().containsKey("status") && message1.body().getString("status") == "error") {
-                                        String e = "FAILED Send to Md5 by sftp";
+                                    if (message1.body().containsKey("status") && message1.body().getString("status").equals("error")) {
+                                        String e = "FAILED Send to Md5 by sftp : " +
+                                                messageResponse.body().getString("message");
                                         log.error(e);
                                         handler.handle(e);
                                     } else {
@@ -123,13 +131,15 @@ public class ExportImpl {
                             }
                         }));
                     } else {
-                        String e = "Failed Export and Send to GAR, tar service";
+                        String e = "Failed Export and Send to GAR, tar service : failure in compressing the files => " +
+                                event2.left().getValue();
                         log.error(e);
                         handler.handle(e);
                     }
                 });
             } else {
-                String e = "Failed Export and Send to GAR export service";
+                String e = "Failed Export and Send to GAR export service : failure during exporting the data => " +
+                        event1.left().getValue();
                 log.error(e);
                 handler.handle(e);
             }
@@ -180,13 +190,20 @@ public class ExportImpl {
         return result;
     }
 
-    //TODO prévenir les nullpointer ici
     private void emptyDIrectory(String path) {
         File index = new File(path);
         String[] entries = index.list();
+        assert entries != null;
         for (String s : entries) {
             File currentFile = new File(index.getPath(), s);
             currentFile.delete();
+        }
+    }
+
+    private void createDirectory(String path) {
+        File directory = new File(path);
+        if (! directory.exists()){
+            directory.mkdirs();
         }
     }
 
