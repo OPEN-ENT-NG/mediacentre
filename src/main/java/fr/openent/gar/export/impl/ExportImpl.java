@@ -10,6 +10,7 @@ import fr.wseduc.webutils.email.EmailSender;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.impl.BufferImpl;
+import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
@@ -98,7 +99,7 @@ public class ExportImpl {
                         String n = (String) vertx.sharedData().getLocalMap("server").get("node");
                         String node = (n != null) ? n : "";
 
-                        eb.send(node + "sftp", sendTOGar, handlerToAsyncHandler((Message<JsonObject> messageResponse) -> {
+                        eb.send(node + "sftp", sendTOGar, new DeliveryOptions().setSendTimeout(300 * 1000L), handlerToAsyncHandler((Message<JsonObject> messageResponse) -> {
                             if (messageResponse.body().containsKey("status") && messageResponse.body().getString("status") == "error") {
                                 String e = "Send to GAR tar GZ by sftp";
                                 log.error(e);
