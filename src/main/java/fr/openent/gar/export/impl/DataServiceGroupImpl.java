@@ -133,9 +133,10 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "\"" + GROUPS_DIVISION_NAME + "\" as `" + GROUPS_STATUS + "` " +
                 "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` ";
 
-        String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->" +
-                "(s:Structure) " +
-                "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
+        String groupsQuery = "MATCH (s:Structure)<-[:BELONGS]-(c:Class) WITH collect(c.name) as classes " +
+                "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->(s:Structure) " +
+                "WHERE NOT (fg.name IN classes) " +
+                "AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
                 "AND NOT(HAS(u.deleteDate)) " +
                 "AND NOT(HAS(u.disappearanceDate)) " +
@@ -197,8 +198,10 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "coalesce(split(c.externalId,\"$\")[1], c.id) as `" + GROUPS_CODE + "` " +
                 "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "` ";
 
-        String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure) " +
-                "WITH u,s MATCH (u)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s) " +
+        String groupsQuery = "MATCH (s:Structure)<-[:BELONGS]-(c:Class) WITH collect(c.name) as classes " +
+                "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure) " +
+                "WHERE NOT (fg.name IN classes) " +
+                "WITH u,s,fg MATCH (u)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s) " +
                 "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
                 "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
                 "AND NOT(HAS(u.deleteDate)) " +
@@ -321,9 +324,12 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                         "WITH u.id as uid, t.groups as grouplist, " + condition +
                         ", s.UAI as uai " +
                         "unwind(grouplist) as group " +
+                        "MATCH (s:Structure)<-[:BELONGS]-(c:Class) " +
+                        "WITH collect(c.name) as classes, uid, group, code, uai " +
                         "MATCH (fg:FunctionalGroup)-[:DEPENDS]->(s:Structure) " +
                         "WHERE fg.externalId = group " +
-                        "AND s.UAI = uai ";
+                        "AND s.UAI = uai " +
+                        "AND NOT (fg.name IN classes)";
         String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
                 "CASE WHEN  split(group,\"$\")[1] IS NOT null THEN split(group,\"$\")[1] ELSE group END as `" + GROUPS_CODE + "`, " +
