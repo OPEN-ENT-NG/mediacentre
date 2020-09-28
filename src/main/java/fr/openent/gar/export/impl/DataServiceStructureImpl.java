@@ -1,29 +1,22 @@
 package fr.openent.gar.export.impl;
 
+import fr.openent.gar.export.DataService;
 import fr.openent.gar.helper.impl.PaginatorHelperImpl;
 import fr.openent.gar.helper.impl.XmlExportHelperImpl;
-import fr.openent.gar.export.DataService;
 import fr.wseduc.webutils.Either;
-import io.vertx.core.CompositeFuture;
-import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.eventbus.Message;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import org.entcore.common.neo4j.Neo4jResult;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static fr.openent.gar.constants.GarConstants.*;
 
 public class DataServiceStructureImpl extends DataServiceBaseImpl implements DataService {
 
-    private PaginatorHelperImpl paginator;
-    private JsonObject config;
+    private final PaginatorHelperImpl paginator;
+    private final JsonObject config;
 
     DataServiceStructureImpl(JsonObject config, String strDate) {
         super(config);
@@ -51,7 +44,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                             if (validResponse(structFosResults, handler)) {
 
                                 xmlExportHelper.closeFile();
-                                handler.handle(new Either.Right<String, JsonObject>(
+                                handler.handle(new Either.Right<>(
                                         new JsonObject().put(
                                                 FILE_LIST_KEY,
                                                 xmlExportHelper.getFileList()
@@ -220,7 +213,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 
@@ -278,8 +271,8 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "n.module as `" + MEF_CODE + "`, " +
                 "n.moduleName as `" + MEF_DESCRIPTION + "` " +
-                "order by `" + STRUCTURE_UAI + "` , `" + MEF_CODE + "` " +
-                "UNION ";
+                "order by `" + STRUCTURE_UAI + "` , `" + MEF_CODE + "` ";
+
         String queryTeachersMefs = "MATCH (n:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "where exists(n.modules) and not has(n.deleteDate) " +
                 "AND NOT(HAS(n.disappearanceDate)) AND HAS(s.exports) AND 'GAR' IN s.exports " +
@@ -291,11 +284,19 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "modules[2] as `" + MEF_DESCRIPTION + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + MEF_CODE + "` ";
 
-        String query = queryStudentsMefs + queryTeachersMefs;
-        query += " ASC SKIP {skip} LIMIT {limit} ";
+        queryStudentsMefs += " ASC SKIP {skip} LIMIT {limit} ";
+        queryTeachersMefs += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT);
+
+        String finalQueryTeachersMefs = queryTeachersMefs;
+        paginator.neoStreamList(queryStudentsMefs, params, new JsonArray(), 0, result -> {
+            if (result.isRight()) {
+                paginator.neoStreamList(finalQueryTeachersMefs, params, result.right().getValue(), 0, handler);
+            } else {
+                log.error("[DataServiceStructureImpl@getStucturesMefsFromNeo4j] Failed to process queryStudentsMefs");
+            }
+        });
     }
 
     /**
@@ -329,15 +330,14 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
             condition = "split(sub.code,\"-\") as codelist";
         }
 
-
         String queryStructureFos = "MATCH (sub:Subject)-[:SUBJECT]->(s:Structure)" +
                 "WHERE HAS(s.exports) AND sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' AND 'GAR' IN s.exports " +
                 "with s, sub.label as label, " + condition +
                 " return distinct s.UAI as `" + STRUCTURE_UAI + "`, toUpper(" +
-                (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE + "` " +
+                (containsAcademyPrefix ? "codelist" : "codelist[size(codelist)-1]") + ") as `" + STUDYFIELD_CODE + "`, " +
                 "label as `" + STUDYFIELD_DESC + "` " +
-                "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` " +
-                "UNION ";
+                "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` ";
+
         String queryStudentFos = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
                 "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) " +
                 "AND 'GAR' IN s.exports " +
@@ -350,12 +350,19 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "row.label as  `" + STUDYFIELD_DESC + "` " +
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` ";
 
+        queryStructureFos += " ASC SKIP {skip} LIMIT {limit} ";
+        queryStudentFos += " ASC SKIP {skip} LIMIT {limit} ";
 
-        String query = queryStructureFos + queryStudentFos;
-        query += " ASC SKIP {skip} LIMIT {limit} ";
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT);
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
+        String finalQueryStudentFos = queryStudentFos;
+        paginator.neoStreamList(queryStructureFos, params, new JsonArray(), 0, result -> {
+            if (result.isRight()) {
+                paginator.neoStreamList(finalQueryStudentFos, params, result.right().getValue(), 0, handler);
+            } else {
+                log.error("[DataServiceStructureImpl@getStucturesFosFromNeo4j] Failed to process queryStructureFos");
+            }
+        });
     }
 
     /**

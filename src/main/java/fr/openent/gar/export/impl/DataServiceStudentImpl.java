@@ -1,19 +1,17 @@
 package fr.openent.gar.export.impl;
 
+import fr.openent.gar.export.DataService;
 import fr.openent.gar.helper.impl.PaginatorHelperImpl;
 import fr.openent.gar.helper.impl.XmlExportHelperImpl;
-import fr.openent.gar.export.DataService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-import static fr.openent.gar.constants.GarConstants.*;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
-import static org.entcore.common.neo4j.Neo4jResult.validResult;
+import static fr.openent.gar.constants.GarConstants.*;
 
 public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataService{
     private PaginatorHelperImpl paginator;
