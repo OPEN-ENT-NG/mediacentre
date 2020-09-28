@@ -31,7 +31,6 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      */
     @Override
     public void exportData(final Handler<Either<String, JsonObject>> handler) {
-
         getAndProcessStudentsInfo(studentsResult -> {
             if(validResponse(studentsResult, handler)) {
 
@@ -39,16 +38,16 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                     if(validResponse(mefsResult, handler)) {
 
                         getAndProcessStudentsFos(modulesResult -> {
-                            if(validResponse(modulesResult, handler)) {
+                                    if(validResponse(modulesResult, handler)) {
 
-                                xmlExportHelper.closeFile();
-                                handler.handle(new Either.Right<>(
-                                        new JsonObject().put(
-                                                FILE_LIST_KEY,
-                                                xmlExportHelper.getFileList()
-                                        )));
-                            }
-                        }
+                                        xmlExportHelper.closeFile();
+                                        handler.handle(new Either.Right<>(
+                                                new JsonObject().put(
+                                                        FILE_LIST_KEY,
+                                                        xmlExportHelper.getFileList()
+                                                )));
+                                    }
+                                }
                         );
                     }
                 });
@@ -61,7 +60,6 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler result handler
      */
     private void getAndProcessStudentsInfo(final Handler<Either<String, JsonObject>> handler) {
-
         getStudentsInfoFromNeo4j(structResults -> {
             if( validResponseNeo4j(structResults, handler) ) {
                 Either<String,JsonObject> result = processStudentsInfo( structResults.right().getValue() );
@@ -79,7 +77,6 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler result handler
      */
     private void getAndProcessStudentsMefs(final Handler<Either<String, JsonObject>> handler) {
-
         getStudentsMefFromNeo4j(structResults -> {
             if( validResponseNeo4j(structResults, handler) ) {
                 Either<String,JsonObject> result = processStudentsMefs( structResults.right().getValue() );
@@ -97,7 +94,6 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler result handler
      */
     private void getAndProcessStudentsFos(final Handler<Either<String, JsonObject>> handler) {
-
         getStudentsFosFromNeo4j(structResults -> {
             if( validResponseNeo4j(structResults, handler) ) {
                 Either<String,JsonObject> result = processStudentsFos( structResults.right().getValue() );
@@ -115,8 +111,8 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      */
     private void getStudentsInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
-                "(p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
-                "where p.name = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) AND 'GAR' IN s.exports " +
+                "(p:Profile{name:'Student'})<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
+                "where NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
                 "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) ";
         String dataReturn = "return distinct " +
@@ -130,7 +126,6 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
                 "collect(distinct s.UAI) as profiles " +
                 "order by " + "`" + PERSON_ID + "`";
-
 
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
@@ -148,7 +143,6 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         try {
             for(Object o : students) {
                 if(!(o instanceof JsonObject)) continue;
-
                 JsonObject student = (JsonObject) o;
                 JsonArray profiles = student.getJsonArray("profiles", null);
                 if(profiles == null || profiles.size() == 0) {
@@ -163,9 +157,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                     log.warn("Gar : mandatory attribut for Student : " + student);
                     continue;
                 }
-
                 reorganizeNodes(student);
-
                 xmlExportHelper.saveObject(STUDENT_NODE, student);
             }
             return new Either.Right<>(null);
@@ -222,17 +214,16 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getStudentsMefFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)";
-        String dataReturn = "WHERE head(u.profiles) = 'Student'" +
-                "AND HAS(s.exports) AND 'GAR' IN s.exports " +
+        String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
+                "(p:Profile{name:'Student'})<-[:HAS_PROFILE]-(pg:ProfileGroup) ";
+        String dataReturn = "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
                 "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) "+
                 "AND u.module  <>\"\""+
                 "RETURN DISTINCT "+
-                    "s.UAI as `" + STRUCTURE_UAI + "`, " +
-                    "u.id as `" + PERSON_ID + "`, " +
-                    "u.module as `" + MEF_CODE + "` " +
+                "s.UAI as `" + STRUCTURE_UAI + "`, " +
+                "u.id as `" + PERSON_ID + "`, " +
+                "u.module as `" + MEF_CODE + "` " +
                 "ORDER BY " + "`" + STRUCTURE_UAI + "`, `" + PERSON_ID + "`, `" + MEF_CODE + "` ";
-
 
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
@@ -259,10 +250,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getStudentsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-
-
         //get all GAR structure UAI
-
         String query1 = "MATCH (s:Structure)" +
                 "WHERE 'GAR' IN s.exports " +
                 "RETURN s.UAI as UAI";
@@ -285,8 +273,9 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
     }
 
     private void getStudentsFosByUAI(List<String> UAIs, int index, JsonArray finalResult, Handler<Either<String, JsonArray>> handler){
-        String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "WHERE head(u.profiles) = 'Student' AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) " +
+        String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
+                "(p:Profile{name:'Student'})<-[:HAS_PROFILE]-(pg:ProfileGroup)" +
+                "WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) " +
                 " AND 'GAR' IN s.exports "+
                 " AND s.UAI = {uai}";
         String dataReturn = "with u,s " +
@@ -318,9 +307,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 log.error("[DataServiceStudentImpl@getAndProcessStudentsInfo] Failed to process");
             }
         });
-    };
-
-
+    }
 
     /**
      * Process fields of study info
