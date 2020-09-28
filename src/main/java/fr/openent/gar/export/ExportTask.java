@@ -3,7 +3,6 @@ package fr.openent.gar.export;
 import fr.openent.gar.Gar;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -25,13 +24,10 @@ public class ExportTask implements Handler<Long> {
         log.info("export launched");
         eb.send(Gar.GAR_ADDRESS,
                 new JsonObject().put("action", "export"),
-                handlerToAsyncHandler(new Handler<Message<JsonObject>>() {
-            @Override
-            public void handle(Message<JsonObject> event) {
-                if ("ok".equals(event.body().getString("status"))) {
-                    log.info("export succeeded");
-                }
-            }
-        }));
+                handlerToAsyncHandler(event1 -> {
+                    if ("ok".equals(event1.body().getString("status"))) {
+                        log.info("export succeeded");
+                    }
+                }));
     }
 }

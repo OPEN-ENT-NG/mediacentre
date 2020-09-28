@@ -13,7 +13,7 @@ import org.entcore.common.neo4j.Neo4jResult;
 
 public class DefaultParameterService implements ParameterService {
 
-    private EventBus eb;
+    private final EventBus eb;
     private static final String GAR_GROUP_NAME = "RESP-AFFECT-GAR";
     private static final String GAR_GROUP_SOURCE = "MANUAL";
     private static final String GAR_LINK_NAME = "GAR_AFFECTATION_IHM_CONNECTEUR";

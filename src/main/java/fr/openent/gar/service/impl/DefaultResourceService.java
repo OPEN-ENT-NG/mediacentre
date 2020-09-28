@@ -15,7 +15,6 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.net.PemKeyCertOptions;
-import io.vertx.core.net.ProxyOptions;
 import org.entcore.common.neo4j.Neo4j;
 import org.entcore.common.neo4j.Neo4jResult;
 
@@ -26,6 +25,7 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.zip.GZIPInputStream;
 
@@ -36,7 +36,7 @@ public class DefaultResourceService implements ResourceService {
     private final String idEnt;
     private final String certPath;
     private final String keyPath;
-    private Logger log = LoggerFactory.getLogger(DefaultResourceService.class);
+    private final Logger log = LoggerFactory.getLogger(DefaultResourceService.class);
     private HttpClient httpClient;
 
     public DefaultResourceService(Vertx vertx, String garHost, String idEnt, String certPath, String keyPath) {
@@ -84,7 +84,8 @@ public class DefaultResourceService implements ResourceService {
                                 if (error.containsKey("Erreur")) {
                                     handler.handle(new Either.Left<>(error.getJsonObject("Erreur").getString("Message")));
                                 } else {
-                                    handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to connect to GAR servers: " + response.statusMessage()));
+                                    handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to connect to GAR servers: "
+                                            + response.statusMessage()));
                                 }
                             });
                         } else {
@@ -94,7 +95,9 @@ public class DefaultResourceService implements ResourceService {
                                 JsonObject resources = new JsonObject(Gar.demo ? new String(responseBuffer.getBytes()) : decompress(responseBuffer));
                                 handler.handle(new Either.Right<>(resources.getJsonObject("listeRessources").getJsonArray("ressource")));
                             });
-                            response.exceptionHandler(throwable -> handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to get GAR response: " + throwable.getMessage())));
+                            response.exceptionHandler(throwable ->
+                                    handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to get GAR response: "
+                                            + throwable.getMessage())));
                         }
                     }).putHeader("Accept", "application/json")
                             .putHeader("Accept-Encoding", "gzip, deflate")
@@ -107,7 +110,8 @@ public class DefaultResourceService implements ResourceService {
                     handler.handle(new Either.Right<>(new JsonArray()));
                 }
             } else {
-                String message = "[DefaultResourceService@get] An error occurred when fetching structure UAI for structure " + structure;
+                String message = "[DefaultResourceService@get] An error occurred when fetching structure UAI for structure " +
+                        structure;
                 log.error(message);
                 handler.handle(new Either.Left<>(message));
             }
@@ -118,7 +122,7 @@ public class DefaultResourceService implements ResourceService {
         StringBuilder output = new StringBuilder();
         try {
             GZIPInputStream gzipInputStream = new GZIPInputStream(new ByteArrayInputStream(buffer.getBytes()));
-            BufferedReader bf = new BufferedReader(new InputStreamReader(gzipInputStream, "UTF-8"));
+            BufferedReader bf = new BufferedReader(new InputStreamReader(gzipInputStream, StandardCharsets.UTF_8));
             String line;
             while ((line = bf.readLine()) != null) {
                 output.append(line);

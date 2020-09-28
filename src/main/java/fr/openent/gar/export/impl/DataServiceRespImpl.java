@@ -13,7 +13,7 @@ import static fr.openent.gar.constants.GarConstants.*;
 
 public class DataServiceRespImpl extends DataServiceBaseImpl implements DataService {
 
-    private PaginatorHelperImpl paginator;
+    private final PaginatorHelperImpl paginator;
 
     DataServiceRespImpl(JsonObject config, String strDate) {
         super(config);
@@ -24,21 +24,18 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
     @Override
     public void exportData(final Handler<Either<String, JsonObject>> handler) {
 
-        getRespFromNeo4j(new Handler<Either<String, JsonArray>>() {
-            @Override
-            public void handle(Either<String, JsonArray> respResults) {
-                if(validResponseNeo4j(respResults,  handler)) {
+        getRespFromNeo4j(respResults -> {
+            if(validResponseNeo4j(respResults,  handler)) {
 
-                    processStucturesFos(respResults.right().getValue());
-                    xmlExportHelper.closeFile();
-                    handler.handle(new Either.Right<String, JsonObject>(
-                            new JsonObject().put(
-                                    FILE_LIST_KEY,
-                                    xmlExportHelper.getFileList()
-                            )));
-                } else {
-                    log.error("[DataServiceRespImpl@exportData] Failed to process");
-                }
+                processStucturesFos(respResults.right().getValue());
+                xmlExportHelper.closeFile();
+                handler.handle(new Either.Right<>(
+                        new JsonObject().put(
+                                FILE_LIST_KEY,
+                                xmlExportHelper.getFileList()
+                        )));
+            } else {
+                log.error("[DataServiceRespImpl@exportData] Failed to process");
             }
         });
     }
@@ -72,7 +69,7 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT);
         paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
     }
 

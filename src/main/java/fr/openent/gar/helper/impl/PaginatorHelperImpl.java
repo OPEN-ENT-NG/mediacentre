@@ -16,9 +16,9 @@ public class PaginatorHelperImpl implements PaginatorHelper  {
     final Neo4j neo4j = Neo4j.getInstance();
 
     public PaginatorHelperImpl() {
-        this.LIMIT = 25000;
+        LIMIT = 25000;
         if(CONFIG.containsKey("pagination-limit")){
-            this.LIMIT = CONFIG.getInteger("pagination-limit");
+            LIMIT = CONFIG.getInteger("pagination-limit");
         }
     }
 

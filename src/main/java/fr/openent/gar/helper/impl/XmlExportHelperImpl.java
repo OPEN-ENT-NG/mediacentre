@@ -32,7 +32,7 @@ public class XmlExportHelperImpl implements XmlExportHelper {
     private int fileIndex = 0;
     private final String exportDir;
     private final String FILE_PREFIX;
-    private JsonArray fileList;
+    private final JsonArray fileList;
 
     /**
      * Initialize helper and first xml
@@ -180,6 +180,7 @@ public class XmlExportHelperImpl implements XmlExportHelper {
             e.printStackTrace();
         }
         // root elements
+        assert docBuilder != null;
         currentDoc = docBuilder.newDocument();
         currentElement = currentDoc.createElement(ROOT);
         currentDoc.appendChild(currentElement);

@@ -93,7 +93,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * Add structures in arrays to match xsd
      * @param teachers Array of teachers from Neo4j
      */
-    private Either<String,JsonObject> processTeachersInfo(JsonArray teachers) {
+    private void processTeachersInfo(JsonArray teachers) {
         try {
             for(Object o : teachers) {
                 if(!(o instanceof JsonObject)) continue;
@@ -120,9 +120,8 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
                 xmlExportHelper.saveObject(TEACHER_NODE, teacher);
             }
-            return new Either.Right<>(null);
         } catch (Exception e) {
-            return new Either.Left<>("Error when processing teachers Info : " + e.getMessage());
+            log.error("Error when processing teachers Info : " + e.getMessage());
         }
     }
 
@@ -168,7 +167,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
     /**
      * XSD specify precise order for xml tags
-     * @param teacher
+     * @param teacher informations about the user
      */
     private void reorganizeNodes(JsonObject teacher) {
         JsonObject personCopy = teacher.copy();
@@ -298,7 +297,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * Process mefs info
      * @param mefs Array of mefs from Neo4j
      */
-    private Either<String,JsonObject> processTeachersMefs(JsonArray mefs) {
+    private void processTeachersMefs(JsonArray mefs) {
 
         JsonArray filteredMEF = new fr.wseduc.webutils.collections.JsonArray();
         for(Object o : mefs) {
@@ -321,13 +320,9 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
             mefFiltered.put(MEF_CODE, mef.getValue(MEF_CODE));
             filteredMEF.add(mefFiltered);
         }
-
         Either<String,JsonObject> event =  processSimpleArray(filteredMEF, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
-
         if(event.isLeft()) {
-            return new Either.Left<>("Error when processing teacher mefs : " + event.left().getValue());
-        } else {
-            return event;
+            log.error("Error when processing teacher mefs : " + event.left().getValue());
         }
     }
 }

@@ -1,16 +1,15 @@
 package fr.openent.gar.export;
 
 import org.xml.sax.ErrorHandler;
-import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class XMLValidationHandler implements ErrorHandler {
-    private List<String> warnings;
-    private List<String> errors;
-    private List<String> fatalErrors;
+    private final List<String> warnings;
+    private final List<String> errors;
+    private final List<String> fatalErrors;
     private boolean valid;
 
     public XMLValidationHandler () {
@@ -21,18 +20,18 @@ public class XMLValidationHandler implements ErrorHandler {
     }
 
     @Override
-    public void warning(SAXParseException exception) throws SAXException {
+    public void warning(SAXParseException exception) {
         this.warnings.add(exception.toString());
     }
 
     @Override
-    public void error(SAXParseException exception) throws SAXException {
+    public void error(SAXParseException exception) {
         this.errors.add(exception.toString());
         valid = false;
     }
 
     @Override
-    public void fatalError(SAXParseException exception) throws SAXException {
+    public void fatalError(SAXParseException exception) {
         this.fatalErrors.add(exception.toString());
         valid = false;
     }

@@ -17,7 +17,7 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 
 public class DefaultTarService implements TarService {
-    private Logger log = LoggerFactory.getLogger(DefaultTarService.class);
+    private final Logger log = LoggerFactory.getLogger(DefaultTarService.class);
 
     private static TarArchiveOutputStream getTarArchiveOutputStream(String name) throws IOException {
         TarArchiveOutputStream taos = new TarArchiveOutputStream(new GzipCompressorOutputStream(new FileOutputStream(name)));
@@ -126,11 +126,11 @@ public class DefaultTarService implements TarService {
 
     public static String getMD5Checksum(String filename) throws Exception {
         byte[] b = createChecksum(filename);
-        String result = "";
+        StringBuilder result = new StringBuilder();
 
-        for (int i = 0; i < b.length; i++) {
-            result += Integer.toString((b[i] & 0xff) + 0x100, 16).substring(1);
+        for (byte value : b) {
+            result.append(Integer.toString((value & 0xff) + 0x100, 16).substring(1));
         }
-        return result;
+        return result.toString();
     }
 }

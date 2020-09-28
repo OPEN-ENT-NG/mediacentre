@@ -23,7 +23,7 @@ import java.util.List;
 
 public class SettingController extends ControllerHelper {
 
-    private ParameterService parameterService;
+    private final ParameterService parameterService;
 
     public SettingController(EventBus eb) {
         super();

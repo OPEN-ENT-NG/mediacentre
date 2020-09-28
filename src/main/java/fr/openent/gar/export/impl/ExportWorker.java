@@ -21,10 +21,8 @@ public class ExportWorker extends BusModBase implements Handler<Message<JsonObje
     @Override
     public void handle(Message<JsonObject> message) {
         final String action = message.body().getString("action", "");
-        switch (action) {
-            case "exportAndSend":
-                export();
-                break;
+        if ("exportAndSend".equals(action)) {
+            export();
         }
     }
 
@@ -32,12 +30,9 @@ public class ExportWorker extends BusModBase implements Handler<Message<JsonObje
         Calendar now = Calendar.getInstance();
         if(this.export == null || ( (now.getTimeInMillis() - lastExportTime.getTimeInMillis()) / 1000 / 3600) > 1 )  {
             this.lastExportTime = now;
-            this.export = new ExportImpl(vertx, new Handler<String>() {
-                @Override
-                public void handle(String s) {
-                    export = null;
-                }
-            });
+            this.export = new ExportImpl(vertx,
+                    s -> export = null
+            );
         }
     }
 

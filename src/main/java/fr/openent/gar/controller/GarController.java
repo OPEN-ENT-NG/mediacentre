@@ -103,17 +103,13 @@ public class GarController extends ControllerHelper {
     private void launchExport() {
         log.info("Start lauchExport (CRON GAR export)------");
         try {
-            new CronTrigger(vertx, config.getString("export-cron")).schedule(new Handler<Long>() {
-                @Override
-                public void handle(Long event) {
-                    exportAndSend();
-                }
-            });
+            new CronTrigger(vertx, config.getString("export-cron")).schedule(
+                    event -> exportAndSend()
+            );
 
         } catch (ParseException e) {
             log.error("cron GAR failed");
             log.fatal(e.getMessage(), e);
-            return;
         }
     }
 
