@@ -321,17 +321,17 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                         "WITH distinct u,s "+
                         "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
                         "WHERE sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' " +
-                        "WITH u.id as uid, t.groups as grouplist, " + condition +
+                        "WITH u, t.groups as grouplist, " + condition +
                         ", s.UAI as uai " +
                         "unwind(grouplist) as group " +
                         "MATCH (s:Structure)<-[:BELONGS]-(c:Class) " +
-                        "WITH collect(c.name) as classes, uid, group, code, uai " +
-                        "MATCH (fg:FunctionalGroup)-[:DEPENDS]->(s:Structure) " +
+                        "WITH collect(c.name) as classes, u, group, code, uai " +
+                        "MATCH (u)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure) " +
                         "WHERE fg.externalId = group " +
                         "AND s.UAI = uai " +
                         "AND NOT (fg.name IN classes)";
         String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
-                "uid as `" + PERSON_ID + "`, " +
+                "u.id as `" + PERSON_ID + "`, " +
                 "CASE WHEN  split(group,\"$\")[1] IS NOT null THEN split(group,\"$\")[1] ELSE group END as `" + GROUPS_CODE + "`, " +
                 "collect(toUpper(code)) as `" + STUDYFIELD_CODE + "` " +
                 "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "`";
