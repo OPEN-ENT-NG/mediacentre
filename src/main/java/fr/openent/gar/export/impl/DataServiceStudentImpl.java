@@ -273,15 +273,13 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
     }
 
     private void getStudentsFosByUAI(List<String> UAIs, int index, JsonArray finalResult, Handler<Either<String, JsonArray>> handler){
-        String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
+        String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure{UAI:'"+UAIs.get(index)+"'}), " +
                 "(p:Profile{name:'Student'})<-[:HAS_PROFILE]-(pg:ProfileGroup)" +
-                "WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) " +
-                " AND 'GAR' IN s.exports "+
-                " AND s.UAI = {uai}";
-        String dataReturn = "with u,s " +
+                "WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) ";
+        String dataReturn = "with u " +
                 "unwind u.fieldOfStudy as fos " +
                 "return distinct " +
-                "s.UAI as `" + STRUCTURE_UAI + "`, " +
+                "'" + UAIs.get(index) + "' as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "toUpper(fos) as `" + STUDYFIELD_CODE + "` " +
                 "order by " + "`" + STRUCTURE_UAI + "`, `" + PERSON_ID + "`, `" + STUDYFIELD_CODE + "` ";
@@ -289,9 +287,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject()
-                .put("uai", UAIs.get(index))
-                .put("limit", PaginatorHelperImpl.LIMIT);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT);
         int finalIndex = index + 1;
         paginator.neoStreamList(query, params, new JsonArray(), 0, resultNeo -> {
             if (resultNeo.isRight()) {

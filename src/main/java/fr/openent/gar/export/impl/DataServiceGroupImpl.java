@@ -103,14 +103,14 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                             Either<String, JsonObject> result1 = processClassFosInfo(groupFosResults1.right().getValue());
                             handler.handle(result1);
                         } else {
-                            log.error("[DataServiceGroupImpl@getAndProcessGroupsFosFromNeo4j] Failed to process");
+                            log.error("[DataServiceGroupImpl@getAndProcessGroupsFosFromNeo4j] Failed to process getClassesFosFromNeo4j");
                         }
                     });
                 }else {
                     handler.handle(result);
                 }
             } else {
-                log.error("[DataServiceGroupImpl@getAndProcessGroupsFosFromNeo4j] Failed to process");
+                log.error("[DataServiceGroupImpl@getAndProcessGroupsFosFromNeo4j] Failed to process getGroupsFosFromNeo4j");
             }
         });
     }
@@ -133,10 +133,11 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "\"" + GROUPS_DIVISION_NAME + "\" as `" + GROUPS_STATUS + "` " +
                 "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` ";
 
-        String groupsQuery = "MATCH (s:Structure)<-[:BELONGS]-(c:Class) WITH collect(c.name) as classes " +
+        String groupsQuery = "MATCH (s:Structure)<-[:BELONGS]-(c:Class)" +
+                "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
+                "WITH collect(c.name) as classes, s " +
                 "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->(s:Structure) " +
                 "WHERE NOT (fg.name IN classes) " +
-                "AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
                 "AND NOT(HAS(u.deleteDate)) " +
                 "AND NOT(HAS(u.disappearanceDate)) " +
@@ -198,12 +199,12 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "coalesce(split(c.externalId,\"$\")[1], c.id) as `" + GROUPS_CODE + "` " +
                 "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "` ";
 
-        String groupsQuery = "MATCH (s:Structure)<-[:BELONGS]-(c:Class) WITH collect(c.name) as classes " +
-                "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure) " +
-                "WHERE NOT (fg.name IN classes) " +
-                "WITH u,s,fg MATCH (u)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s) " +
-                "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
-                "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
+        String groupsQuery = "MATCH (s:Structure)<-[:BELONGS]-(c:Class)" +
+                "WHERE HAS(s.exports) AND 'GAR' IN s.exports WITH collect(c.name) as classes, s " +
+                "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure), " +
+                "(u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure) " +
+                "WHERE NOT (fg.name IN classes) AND " +
+                "(u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
                 "AND NOT(HAS(u.deleteDate)) " +
                 "AND NOT(HAS(u.disappearanceDate)) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
@@ -264,15 +265,13 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                         "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
                         "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                         "WITH distinct u,s "+
-                        "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s) " +
+                        "MATCH (u:User)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s:Structure) " +
                         "WHERE sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' "+
                         "WITH u.id as uid,  t.classes as classesList, " + condition +
-                        ", s.UAI as uai " +
+                        ", s " +
                         "unwind(classesList) as classes " +
-                        "MATCH (c:Class)-[:BELONGS]->(s:Structure) " +
-                        "WHERE s.UAI = uai " +
-                        "AND c.externalId = classes ";
-        String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
+                        "MATCH (c:Class{externalId:classes})-[:BELONGS]->(s:Structure) ";
+        String dataReturn = "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
                 "CASE WHEN  split(classes,\"$\")[1] IS NOT null THEN split(classes,\"$\")[1] ELSE classes END as `" + GROUPS_CODE + "`, " +
                 "collect(toUpper(code)) as `" + STUDYFIELD_CODE + "` " +
@@ -319,18 +318,15 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                         "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
                         "AND HAS(s.exports) AND 'GAR' IN s.exports " +
                         "WITH distinct u,s "+
-                        "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s)" +
+                        "MATCH (u:User)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s:Structure)" +
                         "WHERE sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' " +
-                        "WITH u, t.groups as grouplist, " + condition +
-                        ", s.UAI as uai " +
+                        "WITH u, t.groups as grouplist, " + condition + ", s " +
                         "unwind(grouplist) as group " +
                         "MATCH (s:Structure)<-[:BELONGS]-(c:Class) " +
-                        "WITH collect(c.name) as classes, u, group, code, uai " +
-                        "MATCH (u)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure) " +
-                        "WHERE fg.externalId = group " +
-                        "AND s.UAI = uai " +
-                        "AND NOT (fg.name IN classes)";
-        String dataReturn = "return distinct uai as `" + STRUCTURE_UAI + "`, " +
+                        "WITH collect(c.name) as classes, u, group, code, s " +
+                        "MATCH (u:User)-[:IN]->(fg:FunctionalGroup{externalId:group})-[:DEPENDS]->(s:Structure) " +
+                        "WHERE NOT (fg.name IN classes)";
+        String dataReturn = "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "CASE WHEN  split(group,\"$\")[1] IS NOT null THEN split(group,\"$\")[1] ELSE group END as `" + GROUPS_CODE + "`, " +
                 "collect(toUpper(code)) as `" + STUDYFIELD_CODE + "` " +
