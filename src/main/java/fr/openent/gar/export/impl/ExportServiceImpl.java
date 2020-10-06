@@ -40,8 +40,7 @@ public class ExportServiceImpl implements ExportService{
     @Override
     public void launchExport(final Handler<Either<String, JsonObject>> handler) {
 
-        //String strDate = new SimpleDateFormat("yyyyMMdd_HHmmss_").format(new Date());
-        String strDate = "20200928_102754_";
+        String strDate = new SimpleDateFormat("yyyyMMdd_HHmmss_").format(new Date());
 
         final Queue<DataService> dataServiceQueue = new ConcurrentLinkedQueue<>();
         dataServiceQueue.add(new DataServiceStructureImpl(config, strDate));
