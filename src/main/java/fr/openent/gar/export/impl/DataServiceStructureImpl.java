@@ -102,7 +102,14 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
 
         getStucturesFosFromNeo4j(structResults -> {
             if (validResponseNeo4j(structResults, handler)) {
-                getFosLabelFromNeo4j(structResults.right().getValue(), structResultsWithLabel -> {
+                JsonArray fos = new JsonArray();
+                //Remove Duplicate JsonObject
+                structResults.right().getValue().stream().distinct().forEach(json ->{
+                    synchronized (fos){
+                        fos.add(json);
+                    }
+                });
+                getFosLabelFromNeo4j(fos, structResultsWithLabel -> {
                     Either<String, JsonObject> result = processStucturesFos(structResultsWithLabel.right().getValue());
                     handler.handle(result);
                 });
@@ -114,7 +121,6 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
     }
 
     private void getFosLabelFromNeo4j(JsonArray fosList, Handler<Either<String, JsonArray>> handler) {
-
 
         String query2 = "MATCH (fos:FieldOfStudy) " +
                 "RETURN fos.externalId as id, fos.name as name ORDER BY fos.externalId";
@@ -136,8 +142,6 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                         }
                     }
                 });
-
-
 
                 String query = "MATCH (s:Structure)<-[:SUBJECT]-(sub:Subject) " +
                         "RETURN s.UAI as UAI, sub.code as code, sub.label as label";
@@ -164,7 +168,6 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                                 }
                             }
                         });
-
 
                         for (int i = 0; i < fosList.size(); i++) {
                             JsonObject entry = fosList.getJsonObject(i);

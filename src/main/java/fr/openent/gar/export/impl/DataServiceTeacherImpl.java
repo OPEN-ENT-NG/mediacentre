@@ -258,10 +258,13 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
             structMap.put(structUAI, profileType);
 
-            JsonObject function = new JsonObject();
-            function.put(STRUCTURE_UAI, structUAI);
-            function.put(POSITION_CODE, roleCode);
-            garFunctions.add(function);
+            if(!structUAI.isEmpty() && !roleCode.isEmpty()) {
+                JsonObject function = new JsonObject();
+                function.put(STRUCTURE_UAI, structUAI);
+                function.put(POSITION_CODE, roleCode);
+                if(!garFunctions.contains(function))
+                    garFunctions.add(function);
+            }
         }
         teacher.put(TEACHER_POSITION, garFunctions);
         teacher.remove("functions");
