@@ -12,36 +12,76 @@ public class GarConstants {
 
     //National_doc
     public static final String DOCUMENTALIST_CODE = "DOC";
+    public static final String CIO_CODE = "CIO";
+    public static final String DCT_CODE = "DCT";
 
     //National_dir
     public static final String DIRECTOR_CODE = "DIR";
 
     //National_evs ; personnel de vie scolaire travaillant dans l’établissement
-    public static final String EDUCATION_CODE = "EDU";
     public static final String EDUCATION_ASSISTANT_CODE = "AED";
-    public static final String ACCOMPAGNMENT_HANDICAP_CODE = "ASH";
     public static final String ACCOMPAGNEMENT_HANDICAP_2_CODE = "AES";
     public static final String ETRANGER_ASSISTANT_CODE = "ASE";
+    public static final String ACCOMPAGNMENT_HANDICAP_CODE = "ASH";
+    public static final String AUXILIAIRE_VIE_SCOLAIRE_CODE = "AVS";
+    public static final String BESOINS_EDUCATIFS_CODE = "BED";
+    public static final String EDUCATION_CODE = "EDU";
+    public static final String EDUCATEUR_INTERNAT_CODE = "EEI";
+    public static final String FORMATION_INSERTION_JEUNES_CODE = "FIJ";
+    public static final String COORDINATION_INSERTION_JEUNES_CODE = "INJ";
+    public static final String CONSEILLER_ORIENTATION_CODE = "ORI";
     public static final String SURVEILLANCE_CODE = "SUR";
     public static final String CPE_CODE = "CPE";
 
     //National_eta ; personnel administratif, technique ou d’encadrement travaillant dans personnel administratif, technique ou d’encadrement travaillant dans l’établissement
-    public static final String ADMINISTRATION_CODE = "ADM";
-    public static final String PERSONNEL_ADMINISTRATIF_CODE = "ADF";
-    public static final String CHEF_DE_TRAVAUX_CODE = "CTR";
-    public static final String PSYCHOLOGUE_CODE = "PSY";
-    public static final String OUVRIER_CODE = "OUV";
-    public static final String LABORATOIRE_CODE = "LAB";
-    public static final String PERSONNEL_MEDICO_SOCIAUX_CODE = "MDS";
-    public static final String PERSONNEL_TECHNIQUE_CODE = "TEC";
-    public static final String READAPTATION_CODE = "ADA";
-    public static final String CONSEILLER_FORMATION_CONTINUE_CODE = "CFC";
-    public static final String CONSEILLER_ORIENTATION_CODE = "ORI";
-    public static final String EDUCATEUR_INTERNAT_CODE = "EEI";
-    public static final String APPRENTISSAGE_CODE = "APP";
-    public static final String FORMATION_CONTINUE_ADULTES_CODE = "FCA";
+    public static final String SANS_OBJET_CODE = "-";
+    public static final String NON_RENSEIGNE_CODE = "$";
+    public static final String PREMIER_DEGRE_CODE = "1ED";
+    public static final String PERSONNELS_SECOND_DEGRE_CODE = "2DG";
     public static final String APPRENTI_CLASSIQUE_PROFESSEUR_CODE = "ACP";
-    public static final String FORMATION_INSERTION_JEUNES_CODE = "FIJ";
+    public static final String ACCOMPAGNANT_SOUTIEN_CODE = "ACS";
+    public static final String READAPTATION_CODE = "ADA";
+    public static final String PERSONNEL_ADMINISTRATIFS_DE_CENTRALE_CODE = "ADC";
+    public static final String PERSONNEL_ADMINISTRATIF_CODE = "ADF";
+    public static final String ADMINISTRATION_CODE = "ADM";
+    public static final String LABORATOIRE_CODE = "ALB";
+    public static final String APPRENTISSAGE_CODE = "APP";
+    public static final String PERSONNELS_ASU_DE_CENTRALE_CODE = "ASU";
+    public static final String AUTRES_ADMINISTRATIONS_CODE = "AUT";
+    public static final String PERSONNELS_BIBLIOTHEQUES_MUSEES_CODE = "BIB";
+    public static final String CONSEILLER_FORMATION_CONTINUE_CODE = "CFC";
+    public static final String COMITE_NATIONAL_EVALUATION_CODE = "CNE";
+    public static final String COORDINATEUR_PEDAGOGIQUE_CFA_CODE = "COR";
+    public static final String CONSEILLERS_PEDAGOGIQUES_EPS_CODE = "CPD";
+    public static final String PERSONNELS_CONTRACTUELS_DE_CENTRALE_CODE = "CTL";
+    public static final String CHEF_DE_TRAVAUX_CODE = "CTR";
+    public static final String ELEVE_CYCLE_PRE_COP_STAGIAIRE_CODE = "ECP";
+    public static final String EMPLOIS_PARTICULIERS_ACTIONS_DIVERSES_CODE = "EMP";
+    public static final String FORMATION_CONTINUE_ADULTES_CODE = "FCA";
+    public static final String COORDINATEUR_ORGANISATEUR_ANIMATION_MAFPEN_CODE = "FCP";
+    public static final String INTERVENANTS_EXTERIEURS_CODE = "IEX";
+    public static final String PERSONNELS_INSPECTION_GENERALE_CODE = "IGN";
+    public static final String INSPECTION_CODE = "INS";
+    public static final String PERSONNELS_INSPECTION_CENTRALE_CODE = "IPE";
+    public static final String PERSONNELS_ITARF_CENTRALE_CODE = "ITA";
+    public static final String PERSONNELS_JEUNESSE_ENGAGEMENT_SPORT_CODE = "JES";
+    public static final String LABORATOIRE_BIS_CODE = "LAB";
+    public static final String MISE_A_DISPOSITION_SANS_REMBOURSEMENT_CODE = "MAD";
+    public static final String MISE_A_DISPOSITION_AVEC_REMBOURSEMENT_CODE = "MAR";
+    public static final String PERSONNEL_MEDICO_SOCIAUX_CODE = "MDS";
+    public static final String ENSEIGNANTS_CONGES_MOBILITE_CODE = "MOB";
+    public static final String MVT_PREMIER_DEGRE_CODE = "MVT";
+    public static final String OUVRIER_CODE = "OUV";
+    public static final String PILOTAGE_ANIMATION_PEDAGOGIE_CODE = "PPA";
+    public static final String PERSONNELS_ENSEIGNANTS_CENTRALE_CODE = "PRO";
+    public static final String PERSONNELS_RECHERCHE_CENTRALE_CODE = "PST";
+    public static final String PSYCHOLOGUE_CODE = "PSY";
+    public static final String REMPLACEMENT_CODE = "REM";
+    public static final String RETRAITE_CODE = "RET";
+    public static final String REEMPLOI_AUPRES_CNED_CODE = "RPL";
+    public static final String STAGIAIRE_EN_FORMATION_CODE = "STG";
+    public static final String PERSONNEL_TECHNIQUE_CODE = "TEC";
+    public static final String _CODE = "XXX";
 
     //National_col ; personnel de collectivité territoriale
     public static final String COLLECTIVITE_TERRITORIALE_CODE = "COL";
