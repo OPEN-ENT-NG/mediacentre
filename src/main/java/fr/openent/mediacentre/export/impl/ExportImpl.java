@@ -51,14 +51,14 @@ public class ExportImpl {
         this.exportService = new ExportServiceImpl(config);
         this.tarService = new DefaultTarService();
         this.sftpGarConfig = config.getJsonObject("gar-sftp");
-        this.emailSender = new EmailFactory(vertx).getSender();
+        this.emailSender = new EmailFactory(vertx, this.config).getSender();
 
         this.exportAndSend(entId, handler);
     }
 
     public ExportImpl(Vertx vertx) {
         this.config = CONFIG;
-        this.emailSender = new EmailFactory(vertx).getSender();
+        this.emailSender = new EmailFactory(vertx, this.config).getSender();
     }
 
     private void exportAndSend(final String entId, final Handler<String> handler) {
