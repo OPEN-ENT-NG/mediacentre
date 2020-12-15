@@ -29,6 +29,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import org.entcore.common.http.request.JsonHttpServerRequest;
+import io.vertx.core.http.HttpServerRequest;
 
 import static fr.openent.gar.Gar.CONFIG;
 import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
@@ -150,8 +152,13 @@ public class ExportImpl {
         JsonArray recipients = config.getJsonArray("xsd-recipient-list", new JsonArray());
         String subject = "[GAR][" + config.getString("host") + "] XSD Validation error";
         for (int i = 0; i < recipients.size(); i++) {
-            String recipient = recipients.getString(i);
-            emailSender.sendEmail(null, recipient, null, null, subject, report, null, false, null);
+            try{
+                final HttpServerRequest request = new JsonHttpServerRequest(new JsonObject());
+                String recipient = recipients.getString(i);
+                emailSender.sendEmail(request, recipient, null, null, subject, report, null, false, null);
+            }catch(Exception e){
+                log.error("Failed to send report: ", e);
+            }
         }
     }
 
