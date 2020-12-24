@@ -71,7 +71,9 @@ public class MediacentreController extends ControllerHelper {
     @SecuredAction(value = "", type = ActionType.AUTHENTICATED)
     public void getResources(final HttpServerRequest request) {
         UserUtils.getUserInfos(eb, request, user -> {
+            log.info("Mediacentre get user: "+ user);
             String structureId = request.params().contains("structure") ? request.getParam("structure") : user.getStructures().get(0);
+            log.info("Mediacentre get user id: "+ user.getUserId());
             String userId = user.getUserId();
             this.resourceService.get(userId, structureId, garRessourcesConfig.getString("host"), result -> {
                             if (result.isRight()) {
