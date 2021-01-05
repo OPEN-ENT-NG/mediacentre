@@ -67,7 +67,7 @@ public class DefaultTarService implements TarService {
                         IOUtils.copy(in, out);
                     }
                     catch (Exception e) {
-                        log.error("Add file to archive failed");
+                        log.error("Add file to archive failed", e);
                         throw e;
                     }
                     out.closeArchiveEntry();
@@ -77,8 +77,7 @@ public class DefaultTarService implements TarService {
                 log.info("Nothing to compress");
             }
         } catch (Exception e) {
-            log.error("Create Tar failed more details :");
-            log.error(e);
+            log.error("Create Tar failed more details : ",e);
             handler.handle(new Either.Left<>(e.toString()));
         }
 

@@ -121,7 +121,8 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 xmlExportHelper.saveObject(TEACHER_NODE, teacher);
             }
         } catch (Exception e) {
-            log.error("Error when processing teachers Info : " + e.getMessage());
+            log.error("Error when processing teachers Info : ", e);
+            throw e;
         }
     }
 
@@ -310,31 +311,35 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param mefs Array of mefs from Neo4j
      */
     private void processTeachersMefs(JsonArray mefs) {
+        try {
+            JsonArray filteredMEF = new fr.wseduc.webutils.collections.JsonArray();
+            for (Object o : mefs) {
+                if (!(o instanceof JsonObject)) continue;
+                JsonObject mef = (JsonObject) o;
+                String structID = mef.getString("structureID");
+                String UAI = mapStructures.get(structID);
+                if (UAI == null) {
+                    // MEF are not prefixed with academic name by feeder
+                    //so it's necessary to check in school map with academic prefix
+                    //before filter this MEF
+                    structID = mef.getString("aca_structureID");
+                    UAI = mapStructures.get(structID);
+                    if (UAI == null) continue;
+                }
 
-        JsonArray filteredMEF = new fr.wseduc.webutils.collections.JsonArray();
-        for(Object o : mefs) {
-            if (!(o instanceof JsonObject)) continue;
-            JsonObject mef = (JsonObject) o;
-            String structID = mef.getString("structureID");
-            String UAI = mapStructures.get(structID);
-            if (UAI == null) {
-                // MEF are not prefixed with academic name by feeder
-                //so it's necessary to check in school map with academic prefix
-                //before filter this MEF
-                structID = mef.getString("aca_structureID");
-                UAI = mapStructures.get(structID);
-                if (UAI == null) continue;
+                JsonObject mefFiltered = new JsonObject();
+                mefFiltered.put(STRUCTURE_UAI, UAI);
+                mefFiltered.put(PERSON_ID, mef.getValue(PERSON_ID));
+                mefFiltered.put(MEF_CODE, mef.getValue(MEF_CODE));
+                filteredMEF.add(mefFiltered);
             }
-
-            JsonObject mefFiltered = new JsonObject();
-            mefFiltered.put(STRUCTURE_UAI, UAI);
-            mefFiltered.put(PERSON_ID, mef.getValue(PERSON_ID));
-            mefFiltered.put(MEF_CODE, mef.getValue(MEF_CODE));
-            filteredMEF.add(mefFiltered);
-        }
-        Either<String,JsonObject> event =  processSimpleArray(filteredMEF, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
-        if(event.isLeft()) {
-            log.error("Error when processing teacher mefs : " + event.left().getValue());
+            Either<String, JsonObject> event = processSimpleArray(filteredMEF, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
+            if (event.isLeft()) {
+                log.error("Error when processing teacher mefs : " + event.left().getValue());
+            }
+        } catch (Exception e) {
+            log.error("Error when processing teachers Mefs : ",e);
+            throw e;
         }
     }
 }

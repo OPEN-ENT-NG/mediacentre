@@ -114,8 +114,6 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
     }
 
     private void getFosLabelFromNeo4j(JsonArray fosList, Handler<Either<String, JsonArray>> handler) {
-
-
         String query2 = "MATCH (fos:FieldOfStudy) " +
                 "RETURN fos.externalId as id, fos.name as name ORDER BY fos.externalId";
         neo4j.execute(query2, new JsonObject(), res2 -> {
@@ -123,65 +121,75 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
             if (res2.body() != null && res2.body().containsKey("result")) {
                 JsonArray fieldOfStudyResult = res2.body().getJsonArray("result");
                 Map<String, String> fieldOfStudyLabels = new HashMap<>();
-                fieldOfStudyResult.forEach((entry2) -> {
+                try {
+                    fieldOfStudyResult.forEach((entry2) -> {
 
-                    if (entry2 instanceof JsonObject) {
-                        JsonObject field = (JsonObject) entry2;
-                        String id = field.getString("id", "");
-                        String name = field.getString("name", "");
+                        if (entry2 instanceof JsonObject) {
+                            JsonObject field = (JsonObject) entry2;
+                            String id = field.getString("id", "");
+                            String name = field.getString("name", "");
 
-                        if (!id.isEmpty() && !name.isEmpty()) {
-                            id = id.split("-", 2)[1];
-                            fieldOfStudyLabels.put(id, name);
+                            if (!id.isEmpty() && !name.isEmpty()) {
+                                if (this.config.containsKey("academy-prefix") &&
+                                        id.matches("(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+")) {
+                                    id = id.split("-", 2)[1];
+                                }
+                                fieldOfStudyLabels.put(id, name);
+                            }
                         }
-                    }
-                });
+                    });
 
-
+                } catch (Exception e) {
+                    log.error("Error when getFosLabelFromNeo4j - first part : ", e);
+                    throw e;
+                }
 
                 String query = "MATCH (s:Structure)<-[:SUBJECT]-(sub:Subject) " +
                         "RETURN s.UAI as UAI, sub.code as code, sub.label as label";
                 neo4j.execute(query, new JsonObject(), res -> {
                     if (res.body() != null && res.body().containsKey("result")) {
-                        JsonArray queryResult = res.body().getJsonArray("result");
+                        try {
+                            JsonArray queryResult = res.body().getJsonArray("result");
 
-                        Map<String, Map<String, String>> labelsByCodeUai = new HashMap<>();
-                        queryResult.forEach((entry) -> {
-                            if (entry instanceof JsonObject) {
-                                JsonObject field = (JsonObject) entry;
-                                String uai = field.getString("UAI", "");
-                                String code = field.getString("code", "");
-                                String label = field.getString("label", "");
-                                if (!uai.isEmpty() && !code.isEmpty() && !label.isEmpty()) {
-                                    if (!labelsByCodeUai.containsKey(uai)) {
-                                        labelsByCodeUai.put(uai, new HashMap<>());
-                                    }
-                                    if (this.config.containsKey("academy-prefix") &&
-                                            code.matches("(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+")) {
-                                        code = code.split("-", 2)[1];
-                                    }
-                                    labelsByCodeUai.get(uai).put(code, label);
-                                }
-                            }
-                        });
-
-
-                        for (int i = 0; i < fosList.size(); i++) {
-                            JsonObject entry = fosList.getJsonObject(i);
-                            if (entry.containsKey(STRUCTURE_UAI) && entry.containsKey(STUDYFIELD_CODE)) {
-                                String UIA = entry.getString(STRUCTURE_UAI);
-                                String fosCode = entry.getString(STUDYFIELD_CODE);
-                                if (labelsByCodeUai.containsKey(UIA) && labelsByCodeUai.get(UIA).containsKey(fosCode)) {
-                                    entry.put(STUDYFIELD_DESC, labelsByCodeUai.get(UIA).get(fosCode));
-                                } else {
-                                    if(fieldOfStudyLabels.containsKey(fosCode)){
-                                        entry.put(STUDYFIELD_DESC, fieldOfStudyLabels.get(fosCode));
-                                    }
-                                    else{
-                                        entry.put(STUDYFIELD_DESC, "MATIERE " + fosCode);
+                            Map<String, Map<String, String>> labelsByCodeUai = new HashMap<>();
+                            queryResult.forEach((entry) -> {
+                                if (entry instanceof JsonObject) {
+                                    JsonObject field = (JsonObject) entry;
+                                    String uai = field.getString("UAI", "");
+                                    String code = field.getString("code", "");
+                                    String label = field.getString("label", "");
+                                    if (!uai.isEmpty() && !code.isEmpty() && !label.isEmpty()) {
+                                        if (!labelsByCodeUai.containsKey(uai)) {
+                                            labelsByCodeUai.put(uai, new HashMap<>());
+                                        }
+                                        if (this.config.containsKey("academy-prefix") &&
+                                                code.matches("(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+")) {
+                                            code = code.split("-", 2)[1];
+                                        }
+                                        labelsByCodeUai.get(uai).put(code, label);
                                     }
                                 }
+                            });
+
+                            for (int i = 0; i < fosList.size(); i++) {
+                                JsonObject entry = fosList.getJsonObject(i);
+                                if (entry.containsKey(STRUCTURE_UAI) && entry.containsKey(STUDYFIELD_CODE)) {
+                                    String UIA = entry.getString(STRUCTURE_UAI);
+                                    String fosCode = entry.getString(STUDYFIELD_CODE);
+                                    if (labelsByCodeUai.containsKey(UIA) && labelsByCodeUai.get(UIA).containsKey(fosCode)) {
+                                        entry.put(STUDYFIELD_DESC, labelsByCodeUai.get(UIA).get(fosCode));
+                                    } else {
+                                        if (fieldOfStudyLabels.containsKey(fosCode)) {
+                                            entry.put(STUDYFIELD_DESC, fieldOfStudyLabels.get(fosCode));
+                                        } else {
+                                            entry.put(STUDYFIELD_DESC, "MATIERE " + fosCode);
+                                        }
+                                    }
+                                }
                             }
+                        } catch (Exception e) {
+                            log.error("Error when getFosLabelFromNeo4j - Second part : ", e);
+                            throw e;
                         }
                     }
                     handler.handle(new Either.Right<>(fosList));
@@ -238,6 +246,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
             }
             return new Either.Right<>(null);
         } catch (Exception e) {
+            log.error("Error when processing structures Info : ", e);
             return new Either.Left<>("Error when processing structures Info : " + e.getMessage());
         }
     }

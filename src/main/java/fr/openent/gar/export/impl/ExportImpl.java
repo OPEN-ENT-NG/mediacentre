@@ -68,6 +68,8 @@ public class ExportImpl {
         try {
             createDirectory(config.getString("export-path"));
             emptyDIrectory(config.getString("export-path"));
+            createDirectory(config.getString("export-archive-path"));
+            emptyDIrectory(config.getString("export-archive-path"));
         } catch (Exception e) {
             handler.handle(e.getMessage());
         }
@@ -83,12 +85,6 @@ public class ExportImpl {
                     sendReport((String) validationResult.get("report"));
                 }
                 log.info("Tar.GZ to Compress");
-                try {
-                    createDirectory(config.getString("export-archive-path"));
-                    emptyDIrectory(config.getString("export-archive-path"));
-                } catch (Exception e) {
-                    handler.handle(e.getMessage());
-                }
                 tarService.compress(config.getString("export-archive-path"), directory, (Either<String, JsonObject> event2) -> {
                     if (event2.isRight() && event2.right().getValue().containsKey("archive")) {
                         String archiveName = event2.right().getValue().getString("archive");
