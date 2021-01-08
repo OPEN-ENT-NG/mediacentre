@@ -65,7 +65,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
     private void getTeachersInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
                 "(p:Profile)<-[:HAS_PROFILE]-(pg:ProfileGroup) WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
-                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND p.name IN ['Personnel','Teacher'] " +
+                "AND NOT(HAS(u.deleteDate)) AND p.name IN ['Personnel','Teacher'] " +
                 // ADMINISTRATIVE ATTACHMENT can reference non GAR exported structure
                 "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure)";
         String dataReturn = "return distinct u.id  as `" + PERSON_ID + "`, " +
@@ -287,7 +287,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
     private void getTeachersMefFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "MATCH (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)," +
                 "(p:Profile{name:'Teacher'})<-[:HAS_PROFILE]-(pg:ProfileGroup) ";
-        query += "WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate))" +
+        query += "WHERE NOT(HAS(u.deleteDate)) " +
                 "AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 "WITH s,u "+
                 "UNWIND u.modules as module " +

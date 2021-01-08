@@ -140,7 +140,6 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "WHERE NOT (fg.name IN classes) " +
                 "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
                 "AND NOT(HAS(u.deleteDate)) " +
-                "AND NOT(HAS(u.disappearanceDate)) " +
                 "with s.UAI as uai, " +
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as id, " +
                 "fg.name as name " +
@@ -193,7 +192,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         String classQuery = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure)" +
                 "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
                 "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
-                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                "AND NOT(HAS(u.deleteDate)) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(c.externalId,\"$\")[1], c.id) as `" + GROUPS_CODE + "` " +
@@ -206,7 +205,6 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "WHERE NOT (fg.name IN classes) AND " +
                 "(u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
                 "AND NOT(HAS(u.deleteDate)) " +
-                "AND NOT(HAS(u.disappearanceDate)) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as `" + GROUPS_CODE + "` "+
@@ -263,7 +261,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure) " +
                         "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
                         "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
-                        "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                        "AND NOT(HAS(u.deleteDate)) " +
                         "WITH distinct u,s "+
                         "MATCH (u:User)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s:Structure) " +
                         "WHERE sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' "+
@@ -314,7 +312,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         }
         String query =
                 "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure) " +
-                        "WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                        "WHERE NOT(HAS(u.deleteDate)) " +
                         "AND (u.profiles = ['Student'] OR u.profiles = ['Teacher']) " +
                         "AND HAS(s.exports) AND 'GAR' IN s.exports " +
                         "WITH distinct u,s "+

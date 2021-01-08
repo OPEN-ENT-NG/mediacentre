@@ -112,9 +112,9 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
     private void getStudentsInfoFromNeo4j(Handler<Either<String, JsonArray>> handler) {
         String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
                 "(p:Profile{name:'Student'})<-[:HAS_PROFILE]-(pg:ProfileGroup) " +
-                "where NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) AND 'GAR' IN s.exports " +
+                "where NOT(HAS(u.deleteDate)) AND HAS(s.exports) AND 'GAR' IN s.exports " +
                 "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
-                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) ";
+                "AND NOT(HAS(u.deleteDate)) ";
         String dataReturn = "return distinct " +
                 "u.id  as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_PATRO_NAME + "`, " +
@@ -217,7 +217,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
                 "(p:Profile{name:'Student'})<-[:HAS_PROFILE]-(pg:ProfileGroup) ";
         String dataReturn = "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
-                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) "+
+                "AND NOT(HAS(u.deleteDate)) "+
                 "AND u.module  <>\"\""+
                 "RETURN DISTINCT "+
                 "s.UAI as `" + STRUCTURE_UAI + "`, " +
@@ -275,7 +275,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
     private void getStudentsFosByUAI(List<String> UAIs, int index, JsonArray finalResult, Handler<Either<String, JsonArray>> handler){
         String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure{UAI:'"+UAIs.get(index)+"'}), " +
                 "(p:Profile{name:'Student'})<-[:HAS_PROFILE]-(pg:ProfileGroup)" +
-                "WHERE NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) ";
+                "WHERE NOT(HAS(u.deleteDate)) ";
         String dataReturn = "with u " +
                 "unwind u.fieldOfStudy as fos " +
                 "return distinct " +

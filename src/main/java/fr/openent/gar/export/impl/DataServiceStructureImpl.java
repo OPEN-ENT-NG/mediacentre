@@ -348,7 +348,7 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
                 "order by `" + STRUCTURE_UAI + "` , `" + STUDYFIELD_CODE + "` ";
 
         String queryStudentFos = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure)" +
-                "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) AND HAS(s.exports) " +
+                "where exists (u.fieldOfStudy) AND NOT(HAS(u.deleteDate)) AND HAS(s.exports) " +
                 "AND 'GAR' IN s.exports " +
                 "with s, u.fieldOfStudy as fos, u.fieldOfStudyLabels as fosl " +
                 "with s, " +
