@@ -55,7 +55,7 @@ public class DefaultResourceService implements ResourceService {
 
     @Override
     public void get(String userId, String structure, String hostname, Handler<Either<String, JsonArray>> handler) {
-        String uaiQuery = "MATCH (s:Structure {id: {structureId}}) return s.UAI as UAI";
+        String uaiQuery = "MATCH (s:Structure {id: {structureId}}) return s.UAI as UAI, s.name as name";
         JsonObject params = new JsonObject().put("structureId", structure);
 
         Neo4j.getInstance().execute(uaiQuery, params, Neo4jResult.validResultHandler(event -> {
@@ -63,6 +63,7 @@ public class DefaultResourceService implements ResourceService {
                 JsonArray results = event.right().getValue();
                 if (results.size() > 0) {
                     String uai = results.getJsonObject(0).getString("UAI");
+                    String structureName = results.getJsonObject(0).getString("name");
                     String garHostNoProtocol;
                     try {
                         URL url = new URL(garHost);
@@ -93,7 +94,13 @@ public class DefaultResourceService implements ResourceService {
                             response.handler(responseBuffer::appendBuffer);
                             response.endHandler(aVoid -> {
                                 JsonObject resources = new JsonObject(Gar.demo ? new String(responseBuffer.getBytes()) : decompress(responseBuffer));
-                                handler.handle(new Either.Right<>(resources.getJsonObject("listeRessources").getJsonArray("ressource")));
+                                JsonArray ressourcesResult = resources.getJsonObject("listeRessources").getJsonArray("ressource");
+                                for(Object ressourceO : ressourcesResult){
+                                    JsonObject ressource = (JsonObject) ressourceO;
+                                    ressource.put("structure_name",structureName);
+                                    ressource.put("structure_uai",uai);
+                                }
+                                handler.handle(new Either.Right<>(ressourcesResult));
                             });
                             response.exceptionHandler(throwable ->
                                     handler.handle(new Either.Left<>("[DefaultResourceService@get] failed to get GAR response: "
