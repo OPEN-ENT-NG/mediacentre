@@ -1,6 +1,6 @@
 package fr.openent.gar.export.impl;
 
-import fr.openent.mediacentre.Mediacentre;
+import fr.openent.gar.Gar;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
@@ -26,10 +26,8 @@ public class ExportWorker extends BusModBase implements Handler<Message<JsonObje
     @Override
     public void handle(Message<JsonObject> message) {
         final String action = message.body().getString("action", "");
-        switch (action) {
-            case "exportAndSend":
-                export(message.body().getString("entId"), message.body().getString("source"));
-                break;
+        if ("exportAndSend".equals(action)) {
+            export(message.body().getString("entId"), message.body().getString("source"));
         }
     }
 
@@ -39,13 +37,8 @@ public class ExportWorker extends BusModBase implements Handler<Message<JsonObje
             this.lastExportTime = now;
             if (entId != null) {
                 //default AAF
-                source = (source == null) ? Mediacentre.AAF : source;
-                this.export = new ExportImpl(vertx, entId, source, new Handler<String>() {
-                    @Override
-                    public void handle(String s) {
-                        export = null;
-                    }
-                });
+                source = (source == null) ? Gar.AAF : source;
+                this.export = new ExportImpl(vertx, entId, source, s -> export = null);
             } else {
                 export(0);
             }
@@ -57,12 +50,7 @@ public class ExportWorker extends BusModBase implements Handler<Message<JsonObje
         final List ids = config.getJsonArray("entid-sources", new JsonArray()).getList();
         if (index < ids.size()) {
             final List<String> idSource = StringUtils.split((String)ids.get(index), "-");
-            this.export = new ExportImpl(vertx, idSource.get(0), idSource.get(1), new Handler<String>() {
-                @Override
-                public void handle(String s) {
-                    export(index+1);
-                }
-            });
+            this.export = new ExportImpl(vertx, idSource.get(0), idSource.get(1), s -> export(index+1));
         } else {
             export = null;
         }

@@ -15,8 +15,8 @@ import static fr.openent.gar.constants.GarConstants.*;
 
 public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataService{
     private final PaginatorHelperImpl paginator;
-    private String entId;
-    private String source;
+    private final String entId;
+    private final String source;
 
     DataServiceTeacherImpl(String entId, String source, JsonObject config, String strDate) {
         this.entId = entId;
@@ -39,7 +39,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
             if (validResponse(resultTeachers, handler)) {
                 if (validResponse(processTeachersMefs(modules), handler)) {
                     xmlExportHelper.closeFile();
-                    handler.handle(new Either.Right<String, JsonObject>(
+                    handler.handle(new Either.Right<>(
                             new JsonObject().put(
                                     FILE_LIST_KEY,
                                     xmlExportHelper.getFileList()
@@ -55,11 +55,11 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
     private void getAndProcessTeachersInfoFromNeo4j(int skip, JsonArray modules,
                                                     final Handler<Either<String, JsonObject>> handler) {
-        getTeachersInfoFromNeo4j(skip, teacherInfos -> {
+        getTeachersInfoFromNeo4j(skip, this.source, entId, paginator, teacherInfos -> {
             if (validResponseNeo4j(teacherInfos, handler)) {
                 final JsonArray teachers = teacherInfos.right().getValue();
-                populateModules(modules, teachers);
-                Either<String, JsonObject> result = processTeachersInfo(teachers);
+                populateModules(modules, teachers,false);
+                Either<String, JsonObject> result = processTeachersInfo(teachers,false);
 
                 if (teacherInfos.right().getValue().size() == PaginatorHelperImpl.LIMIT) {
                     getAndProcessTeachersInfoFromNeo4j(skip + PaginatorHelperImpl.LIMIT, modules, handler);
@@ -72,41 +72,44 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         });
     }
 
-    private void populateModules(JsonArray modules, final JsonArray teachers) {
-        if (!teachers.isEmpty()) {
-            teachers.forEach(teacher -> {
-                if (teacher instanceof JsonObject) {
-                    final JsonObject fields = (JsonObject) teacher;
-                    final JsonArray userModules = fields.getJsonArray("modules");
-                    if (userModules != null && !userModules.isEmpty()) {
-                        userModules.forEach(module -> {
-                            if (module instanceof String) {
-                                final String[] mods = (StringUtils.trimToBlank((String) module)).split("\\$");
-                                //export not empty Mef only for Gar Structure
-                                if (mods.length > 1 && StringUtils.trimToNull(mapStructures.get(mods[0])) != null &&
-                                        StringUtils.trimToNull(mods[1]) != null) {
-                                    final JsonObject jo = new JsonObject();
-                                    jo.put(STRUCTURE_UAI, mapStructures.get(mods[0]));
-                                    jo.put(PERSON_ID, fields.getString(PERSON_ID));
-                                    jo.put(MEF_CODE, mods[1]);
-                                    modules.add(jo);
+    protected static void populateModules(JsonArray modules, final JsonArray teachers, boolean firstDegree) {
+        try {
+            if (!teachers.isEmpty()) {
+                teachers.forEach(teacher -> {
+                    if (teacher instanceof JsonObject) {
+                        final JsonObject fields = (JsonObject) teacher;
+                        final JsonArray userModules = fields.getJsonArray("modules");
+                        if (userModules != null && !userModules.isEmpty()) {
+                            userModules.forEach(module -> {
+                                if (module instanceof String) {
+                                    final String[] mods = (StringUtils.trimToBlank((String) module)).split("\\$");
+                                    //export not empty Mef only for Gar Structure
+                                    if (mods.length > 1 && StringUtils.trimToNull(mapStructures.get(mods[0])) != null &&
+                                            StringUtils.trimToNull(mods[1]) != null) {
+                                        final JsonObject jo = new JsonObject();
+                                        jo.put(STRUCTURE_UAI, mapStructures.get(mods[0]));
+                                        jo.put(PERSON_ID, fields.getString(PERSON_ID));
+                                        if(firstDegree)
+                                            jo.put(MEF_CODE_1D, mods[1]);
+                                        else
+                                            jo.put(MEF_CODE, mods[1]);
+                                        modules.add(jo);
+                                    }
                                 }
-                            }
-                        });
+                            });
+                        }
                     }
-                }
-            });
+                });
+            }
+        } catch (Exception e) {
+            log.error("Error when populateModules teachers : ",e);
+            throw e;
         }
     }
 
-    /**
-     * Get teachers infos from Neo4j
-     * Set fields as requested by xsd, except for structures
-     *
-     * @param handler results
-     */
-    private void getTeachersInfoFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
-        String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
+    protected static void getTeachersInfoFromNeo4j(int skip, String source, String entId, PaginatorHelperImpl paginator,
+                                                Handler<Either<String, JsonArray>> handler) {
+        String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure {source:'" + source + "'}) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND NOT(HAS(u.deleteDate)) AND pg.filter IN ['Personnel','Teacher'] " +
                 // ADMINISTRATIVE ATTACHMENT can reference non GAR exported structure
@@ -116,26 +119,27 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 "u.lastName as `" + PERSON_NAME + "`, " +
                 "u.firstName as `" + PERSON_FIRST_NAME + "`, " +
                 "coalesce(u.otherNames, [u.firstName]) as `" + PERSON_OTHER_NAMES + "`, " +
-                //TODO GARPersonCivilite
+                //TODO GARPersonCivilitep
                 "collect(distinct sr.UAI)[0] as `" + PERSON_STRUCT_ATTACH + "`, " +
                 "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
-                "u.functions as functions, " +
-                "collect(distinct s.UAI+'$'+p.name) as UAIprofiles " +
+                "u.functions as functions, u.modules as modules, " +
+                "collect(distinct s.UAI+'$'+pg.filter) as UAIprofiles " +
                 "order by " + "`" + PERSON_ID + "`";
 
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT).put("entId", entId);
         paginator.neoStream(query, params, skip, handler);
     }
+
 
     /**
      * Process teachers info
      * Add structures in arrays to match xsd
      * @param teachers Array of teachers from Neo4j
      */
-    private void processTeachersInfo(JsonArray teachers) {
+    private Either<String, JsonObject> processTeachersInfo(JsonArray teachers, boolean firstDegree) {
         try {
             for(Object o : teachers) {
                 if(!(o instanceof JsonObject)) continue;
@@ -150,8 +154,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
                 Map<String,String> userStructProfiles = new HashMap<>();
 
-                processFunctions(teacher, userStructProfiles);
-                //processProfiles(teacher, TEACHER_PROFILE, userStructProfiles);
+                processFunctions(teacher, userStructProfiles, firstDegree);
                 processTeacherProfiles(teacher, userStructProfiles);
 
                 if(isMandatoryFieldsAbsent(teacher, TEACHER_NODE_MANDATORY)) {
@@ -163,6 +166,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
                 xmlExportHelper.saveObject(TEACHER_NODE, teacher);
             }
+            return new Either.Right<>(null);
         } catch (Exception e) {
             log.error("Error when processing teachers Info : ", e.getMessage());
             throw e;
@@ -175,7 +179,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param teacher person to process
      * @param structMap map for profile by structure
      */
-    private void processTeacherProfiles(JsonObject teacher, Map<String, String> structMap) {
+    protected static void processTeacherProfiles(JsonObject teacher, Map<String, String> structMap) {
         JsonArray garProfiles = new fr.wseduc.webutils.collections.JsonArray();
         JsonArray garEtabs = new fr.wseduc.webutils.collections.JsonArray();
 
@@ -214,7 +218,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      *
      * @param teacher informations about the user
      */
-    private void reorganizeNodes(JsonObject teacher) {
+    protected static void reorganizeNodes(JsonObject teacher) {
         JsonObject personCopy = teacher.copy();
         teacher.clear();
         teacher.put(PERSON_ID, personCopy.getValue(PERSON_ID));
@@ -241,7 +245,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param teacher to process functions for
      * @param structMap map between structures ID and profile
      */
-    private void processFunctions(JsonObject teacher, Map<String,String> structMap) {
+    protected static void processFunctions(JsonObject teacher, Map<String, String> structMap, boolean firstDegree) {
         JsonArray functions = teacher.getJsonArray("functions", null);
         if(functions == null || functions.size() == 0) {
             return;
@@ -257,7 +261,6 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
             }
             String structUAI = mapStructures.get(structID);
             String functionCode = arrFunction[1];
-            String functionDesc = arrFunction[2];
             String roleCode = arrFunction[3];
             JsonArray profilesUser = teacher.getJsonArray("UAIprofiles");
             String profileUser = "Teacher";
@@ -318,10 +321,16 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
             JsonObject function = new JsonObject();
             function.put(STRUCTURE_UAI, structUAI);
-            function.put(POSITION_CODE, roleCode);
+            if(firstDegree)
+                function.put(POSITION_CODE_1D, roleCode);
+            else
+                function.put(POSITION_CODE, roleCode);
             garFunctions.add(function);
         }
-        teacher.put(TEACHER_POSITION, garFunctions);
+        if(firstDegree)
+            teacher.put(TEACHER_POSITION_1D, garFunctions);
+        else
+            teacher.put(TEACHER_POSITION, garFunctions);
         teacher.remove("functions");
     }
 

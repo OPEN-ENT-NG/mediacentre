@@ -8,14 +8,12 @@ import fr.openent.gar.service.ResourceService;
 import fr.openent.gar.service.impl.DefaultEventService;
 import fr.openent.gar.service.impl.DefaultResourceService;
 import fr.wseduc.bus.BusAddress;
-import fr.wseduc.cron.CronTrigger;
 import fr.wseduc.rs.Get;
 import fr.wseduc.rs.Post;
 import fr.wseduc.security.ActionType;
 import fr.wseduc.security.SecuredAction;
 import fr.wseduc.webutils.http.Renders;
 import fr.wseduc.webutils.request.RequestUtils;
-import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
@@ -27,8 +25,6 @@ import io.vertx.core.logging.LoggerFactory;
 import org.entcore.common.controller.ControllerHelper;
 import org.entcore.common.user.UserUtils;
 
-import java.text.ParseException;
-
 import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
 import static fr.wseduc.webutils.http.response.DefaultResponseHandler.defaultResponseHandler;
 
@@ -36,23 +32,20 @@ public class GarController extends ControllerHelper {
 
     private final ResourceService resourceService;
     private final EventService eventService;
-    private final Vertx vertx;
-    private Logger log = LoggerFactory.getLogger(MediacentreController.class);
-    private EventBus eb = null;
-    private JsonObject config;
+    private final Logger log = LoggerFactory.getLogger(GarController.class);
+    private final EventBus eb;
+    private final JsonObject config;
 
     public GarController(Vertx vertx, JsonObject config) {
         super();
         eb = vertx.eventBus();
         this.config = config;
-        this.vertx = vertx;
         this.eventService = new DefaultEventService(config.getString("event-collection", "gar-events"));
         this.resourceService = new DefaultResourceService(
                 vertx,
                 config.getJsonObject("gar-ressources"),
                 config.getJsonObject("id-ent")
         );
-        this.launchExport();
     }
 
     @Get("")
@@ -93,25 +86,11 @@ public class GarController extends ControllerHelper {
     @SecuredAction(value = WorkflowUtils.EXPORT, type = ActionType.WORKFLOW)
     public void launchExportFromRoute(HttpServerRequest request) {
         final String source = request.getParam("source").toUpperCase();
-        if (Mediacentre.AAF1D.equals(source) || Mediacentre.AAF.equals(source)) {
+        if (Gar.AAF1D.equals(source) || Gar.AAF.equals(source)) {
             this.exportAndSend(config.getJsonObject("id-ent").getString(Renders.getHost(request)), source);
             request.response().setStatusCode(200).end("Import started");
         } else {
             badRequest(request);
-        }
-    }
-
-    private void launchExport() {
-        log.info("Start lauchExport (CRON GAR export)------");
-        try {
-            new CronTrigger(vertx, config.getString("export-cron")).schedule(
-                    event -> exportAndSend()
-            );
-            //TODO Rajouter les deux 1d et 2d
-
-        } catch (ParseException e) {
-            log.error("cron GAR failed");
-            log.fatal(e.getMessage(), e);
         }
     }
 
@@ -138,7 +117,8 @@ public class GarController extends ControllerHelper {
                 JsonObject body = message.body();
                 String structureId = body.getString("structure");
                 String userId = body.getString("user");
-                this.resourceService.get(userId, structureId, garRessourcesConfig.getString("host"), result -> {
+                String hostname = body.getString("hostname");
+                this.resourceService.get(userId, structureId, hostname, result -> {
                             if (result.isRight()) {
                                 JsonObject response = new JsonObject()
                                         .put("status", "ok")

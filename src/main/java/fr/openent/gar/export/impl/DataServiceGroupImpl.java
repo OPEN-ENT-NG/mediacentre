@@ -10,17 +10,13 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import static fr.openent.gar.constants.GarConstants.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import static fr.openent.mediacentre.constants.GarConstants.*;
+import java.util.*;
 
 public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataService {
 
-    private String entId;
-    private String source;
+    private final String entId;
+    private final String source;
     private final PaginatorHelperImpl paginator;
     private final JsonObject config;
 
@@ -47,7 +43,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                         getAndProcessFosFromNeo4j(groupFosResults -> {
                             if (validResponse(groupFosResults, handler)) {
                                 xmlExportHelper.closeFile();
-                                handler.handle(new Either.Right<String, JsonObject>(
+                                handler.handle(new Either.Right<>(
                                         new JsonObject().put(
                                                 FILE_LIST_KEY,
                                                 xmlExportHelper.getFileList()
@@ -68,7 +64,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      */
     private void getAndProcessGroupsInfoFromNeo4j(final Handler<Either<String, JsonObject>> handler) {
         final Map<String, Map<String, List<String>>> mapStructGroupClasses = new HashMap<>();
-        getGroupsStructureInfoFromNeo4j(mapStructGroupClasses, res -> {
+        getGroupsStructureInfoFromNeo4j(mapStructGroupClasses, this.source, entId, res -> {
             if (res.isRight()) {
                 getAndProcessDivisionGroupsInfoFromNeo4j(0, event -> {
                     if (validResponse(event, handler)) {
@@ -97,7 +93,8 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         });
     }
 
-    private void getAndProcessOtherGroupsInfoFromNeo4j(int skip, final Map<String, Map<String, List<String>>> mapStructGroupClasses, final Handler<Either<String, JsonObject>> handler) {
+    private void getAndProcessOtherGroupsInfoFromNeo4j(int skip, final Map<String, Map<String, List<String>>> mapStructGroupClasses,
+                                                       final Handler<Either<String, JsonObject>> handler) {
         getOtherGroupsInfoFromNeo4j(skip, groupsResults -> {
             if (validResponseNeo4j(groupsResults, handler)) {
                 final JsonArray results = groupsResults.right().getValue();
@@ -211,8 +208,10 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         });
     }
 
-    private void getGroupsStructureInfoFromNeo4j(Map<String, Map<String, List<String>>> mapStructGroupClasses, Handler<Either<String, Boolean>> handler) {
-        final String divisionQuery = "MATCH (s:Structure {source:'" + this.source + "'}) WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
+    static void getGroupsStructureInfoFromNeo4j(Map<String, Map<String, List<String>>> mapStructGroupClasses, String source,
+                                                 String entId, Handler<Either<String, Boolean>> handler) {
+        //in AAF1D s.groups is null for the moment
+        final String divisionQuery = "MATCH (s:Structure {source:'" + source + "'}) WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "RETURN distinct s.UAI as uai, s.groups as groups";
         JsonObject params = new JsonObject().put("entId", entId);
 
@@ -234,10 +233,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                                 if (gp != null && !gp.isEmpty()) {
                                     final String[] elems = gp.split("\\$");
                                     if (elems.length >= 3) {
-                                        final List<String> classes = new ArrayList<String>();
-                                        for (int i = 2; i < elems.length; i++) {
-                                            classes.add(elems[i]);
-                                        }
+                                        final List<String> classes = new ArrayList<>(Arrays.asList(elems).subList(2, elems.length));
 
                                         if (!classes.isEmpty()) {
                                             mapGroup.put(elems[0], classes);
@@ -269,12 +265,14 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * @param handler results
      */
     private void getOtherGroupsInfoFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
-        final String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->" +
+        final String groupsQuery = "MATCH (s:Structure)<-[:BELONGS]-(c:Class) WITH collect(c.name) as classes " +
+                "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->" +
                 "(s:Structure {source:'" + this.source + "'}) " +
+                "WHERE NOT (fg.name IN classes) " +
+                "WITH u,s,fg MATCH (u)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND head(u.profiles) IN ['Student', 'Teacher'] " +
                 "AND NOT(HAS(u.deleteDate)) " +
-                "AND NOT(HAS(u.disappearanceDate)) " +
                 "with distinct s.UAI as uai, fg " +
                 "return distinct " +
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as `" + GROUPS_CODE + "`, " +
@@ -284,7 +282,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` " +
                 " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT).put("entId", entId);
         paginator.neoStream(groupsQuery, params, skip, handler);
     }
 
@@ -308,7 +306,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` " +
                 " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT).put("entId", entId);
 
         paginator.neoStream(classQuery, params, skip, handler);
     }
@@ -338,14 +336,14 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         final String classQuery = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure {source:'" + this.source + "'})" +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND pg.filter IN ['Student', 'Teacher'] " +
-                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                "AND NOT(HAS(u.deleteDate)) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(c.externalId,\"$\")[1], c.id) as `" + GROUPS_CODE + "` " +
                 "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "` " +
                 " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT).put("entId", entId);
 
         paginator.neoStream(classQuery, params, skip, handler);
     }
@@ -357,7 +355,10 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * @param handler results
      */
     private void getOtherGroupsPersonFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
-        final String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
+        final String groupsQuery = "MATCH (s:Structure)<-[:BELONGS]-(c:Class) WITH collect(c.name) as classes " +
+                "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
+                "WHERE NOT (fg.name IN classes) " +
+                "WITH u,s,fg MATCH (u)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND head(u.profiles) IN ['Student', 'Teacher'] " +
                 "AND NOT(HAS(u.deleteDate)) " +
@@ -367,7 +368,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "`" +
                 " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT).put("entId", entId);
 
         paginator.neoStream(groupsQuery, params, skip, handler);
     }
@@ -406,7 +407,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure {source:'" + this.source + "'}) " +
                         "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                         "AND pg.filter IN ['Student', 'Teacher'] " +
-                        "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                        "AND NOT(HAS(u.deleteDate)) " +
                         "WITH distinct u,s " +
                         "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s) " +
                         "WHERE sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' " +
@@ -423,7 +424,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT).put("entId", entId);
         paginator.neoStream(query, params, skip, handler);
     }
 
@@ -461,12 +462,11 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
                 "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure {source:'" + this.source + "'}) " +
                         "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                         "AND pg.filter IN ['Student', 'Teacher'] " +
-                        "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                        "AND NOT(HAS(u.deleteDate)) " +
                         "WITH distinct u,s " +
                         "MATCH (u)-[t:TEACHES]->(sub:Subject)-[:SUBJECT]->(s) " +
                         "WHERE sub.code =~ '^(.*-)?([0-9]{2})([A-Z0-9]{4})$' " +
-                        "WITH u.id as uid, t.groups as grouplist, " + condition +
-                        ", s.UAI as uai " +
+                        "WITH u, t.groups as grouplist, " + condition + ", s " +
                         "unwind(grouplist) as group " +
                         "MATCH (s:Structure)<-[:BELONGS]-(c:Class) " +
                         "WITH collect(c.name) as classes, u, group, code, s " +
@@ -481,7 +481,7 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT).put("entId", entId);
         paginator.neoStream(query, params, skip, handler);
     }
 

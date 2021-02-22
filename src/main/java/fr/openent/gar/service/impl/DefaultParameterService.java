@@ -109,7 +109,7 @@ public class DefaultParameterService implements ParameterService {
                 .put("source", GAR_GROUP_SOURCE)
                 .put("groupId", body.getString("groupId"))
                 .put("structureId", body.getString("structureId"));
-        if (Mediacentre.AAF.equals(body.getString("source"))) {
+        if (Gar.AAF.equals(body.getString("source"))) {
             query = "match (g:ManualGroup{name: {groupName}, id: {groupId} }), " +
                     "(u:User{profiles:['Personnel']})--(Structure{id: {structureId} }) " +
                     "WHERE ANY(function IN u.functions WHERE function CONTAINS {direction} OR function CONTAINS {documentation}) " +

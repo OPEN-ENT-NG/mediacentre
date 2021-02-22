@@ -14,9 +14,9 @@ import static fr.openent.gar.constants.GarConstants.*;
 public class DataServiceRespImpl extends DataServiceBaseImpl implements DataService {
 
     private final PaginatorHelperImpl paginator;
-    private String controlGroup;
-    private String entId;
-    private String source;
+    private final String controlGroup;
+    private final String entId;
+    private final String source;
 
     DataServiceRespImpl(String entId, String source, JsonObject config, String strDate) {
         this.entId = entId;
@@ -31,7 +31,7 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
         getAndProcessRespFromNeo4j(0, respResults -> {
             if (validResponse(respResults, handler)) {
                 xmlExportHelper.closeFile();
-                handler.handle(new Either.Right<String, JsonObject>(
+                handler.handle(new Either.Right<>(
                         new JsonObject().put(
                                 FILE_LIST_KEY,
                                 xmlExportHelper.getFileList()
@@ -68,7 +68,6 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
                 " WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports" +
                 " AND head(us.profiles) IN ['Teacher','Personnel'] " +
                 " AND NOT(HAS(us.deleteDate)) " +
-                " AND NOT(HAS(us.disappearanceDate))" +
                 " AND (HAS(us.emailAcademy) OR HAS(us.emailInternal) OR HAS(us.email)) " +
                 " WITH s, us ORDER BY s.id , us.id " +
                 " WITH s, collect(us)[..15] as uc " +    // 15 first Teachers or Personnels in each Structures
@@ -85,7 +84,7 @@ public class DataServiceRespImpl extends DataServiceBaseImpl implements DataServ
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT).put("entId", entId);
         paginator.neoStream(query, params, skip, handler);
     }
 

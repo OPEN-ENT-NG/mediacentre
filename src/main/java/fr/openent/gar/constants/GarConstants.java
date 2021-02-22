@@ -12,6 +12,7 @@ public class GarConstants {
 
     //National_doc
     public static final String DOCUMENTALIST_CODE = "DOC";
+    public static final String DOCUMENTALIST_DESC= "DOCUMENTATION";
     public static final String CIO_CODE = "CIO";
     public static final String DCT_CODE = "DCT";
 

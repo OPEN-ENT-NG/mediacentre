@@ -8,16 +8,14 @@ import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.entcore.common.utils.StringUtils;
 
 import static fr.openent.gar.constants.GarConstants.*;
 
 public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataService {
     private final PaginatorHelperImpl paginator;
-    private String entId;
-    private String source;
+    private final String entId;
+    private final String source;
 
     DataServiceStudentImpl(String entId, String source, JsonObject config, String strDate) {
         this.entId = entId;
@@ -43,7 +41,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 if (validResponse(processStudentsMefs(modules), handler)) {
                     if (validResponse(processStudentsFos(fos), handler)) {
                         xmlExportHelper.closeFile();
-                        handler.handle(new Either.Right<String, JsonObject>(
+                        handler.handle(new Either.Right<>(
                                 new JsonObject().put(
                                         FILE_LIST_KEY,
                                         xmlExportHelper.getFileList()
@@ -60,7 +58,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param handler result handler
      */
     private void getAndProcessStudentsInfo(int skip, JsonArray modules, JsonArray fos, final Handler<Either<String, JsonObject>> handler) {
-        getStudentsInfoFromNeo4j(skip, studentResults -> {
+        getStudentsInfoFromNeo4j(skip, entId, this.source, paginator, studentResults -> {
             if (validResponseNeo4j(studentResults, handler)) {
                 final JsonArray students = studentResults.right().getValue();
                 //fixme : it is necessary to order STRUCTURE_UAI, PERSON_ID, MEF_CODE OR STUDYFIELD_CODE
@@ -140,18 +138,12 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         }
     }
 
-    /**
-     * Get students infos from Neo4j
-     * Set fields as requested by xsd, except for structures
-     *
-     * @param handler results
-     */
-    private void getStudentsInfoFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
-        String query = "match (u:User)-[:IN]->(pg:ProfileGroup {filter:'Student'})-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
-                "where HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
-                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure {source:'" + this.source + "'}) " +
+    static void getStudentsInfoFromNeo4j(int skip, String entId, String source, PaginatorHelperImpl paginator, Handler<Either<String, JsonArray>> handler) {
+        String query = "match (u:User)-[:IN]->(pg:ProfileGroup {filter:'Student'})-[:DEPENDS]->(s:Structure {source:'" + source + "'}) " +
+                "where HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports AND NOT(HAS(u.deleteDate)) " +
+                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure {source:'" + source + "'}) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
-                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) ";
+                "AND NOT(HAS(u.deleteDate)) ";
         String dataReturn = "return distinct " +
                 "u.id  as `" + PERSON_ID + "`, " +
                 "u.lastName as `" + PERSON_PATRO_NAME + "`, " +
@@ -161,13 +153,13 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                 //TODO GARPersonCivilite
                 "sr.UAI as `" + PERSON_STRUCT_ATTACH + "`, " +
                 "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
-                "collect(distinct s.UAI) as profiles, u.module as module, u.fieldOfStudy as study " +
+                "collect(distinct s.UAI) as profiles, u.module as module, u.fieldOfStudy as study, u.level as level  " +
                 "order by " + "`" + PERSON_ID + "`";
 
         query = query + dataReturn;
         query += " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT).put("entId", entId);
         paginator.neoStream(query, params, skip, handler);
     }
 
@@ -189,7 +181,6 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
                     continue;
                 }
 
-                //processProfiles(student, STUDENT_PROFILE, null)
                 processProfilesStudent(student);
 
                 if (isMandatoryFieldsAbsent(student, STUDENT_NODE_MANDATORY)) {
@@ -211,7 +202,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      * @param person person to process
      *
      */
-    void processProfilesStudent(JsonObject person) {
+    public static void processProfilesStudent(JsonObject person) {
         JsonArray profiles = person.getJsonArray("profiles");
 
         JsonArray garProfiles = new fr.wseduc.webutils.collections.JsonArray();
@@ -234,7 +225,7 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
      *
      * @param student
      */
-    private void reorganizeNodes(JsonObject student) {
+    static void reorganizeNodes(JsonObject student) {
         JsonObject personCopy = student.copy();
         student.clear();
         student.put(PERSON_ID, personCopy.getValue(PERSON_ID));
@@ -250,29 +241,6 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
     }
 
     /**
-     * Get students mefs from Neo4j
-     * @param handler results
-     */
-    private void getStudentsMefFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure), " +
-                "(p:Profile{name:'Student'})<-[:HAS_PROFILE]-(pg:ProfileGroup) ";
-        String dataReturn = "WHERE HAS(s.exports) AND 'GAR' IN s.exports " +
-                "AND NOT(HAS(u.deleteDate)) "+
-                "AND u.module  <>\"\""+
-                "RETURN DISTINCT "+
-                "s.UAI as `" + STRUCTURE_UAI + "`, " +
-                "u.id as `" + PERSON_ID + "`, " +
-                "u.module as `" + MEF_CODE + "` " +
-                "ORDER BY " + "`" + STRUCTURE_UAI + "`, `" + PERSON_ID + "`, `" + MEF_CODE + "` ";
-
-        query = query + dataReturn;
-        query += " ASC SKIP {skip} LIMIT {limit} ";
-
-        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT);
-        paginator.neoStreamList(query, params, new JsonArray(), 0, handler);
-    }
-
-    /**
      * Process mefs info
      *
      * @param mefs Array of mefs from Neo4j
@@ -284,66 +252,6 @@ public class DataServiceStudentImpl extends DataServiceBaseImpl implements DataS
         } else {
             return event;
         }
-    }
-
-    /**
-     * Get students fields of study from Neo4j
-     * @param handler results
-     */
-    private void getStudentsFosFromNeo4j(Handler<Either<String, JsonArray>> handler) {
-        //get all GAR structure UAI
-        String query1 = "MATCH (s:Structure)" +
-                "WHERE 'GAR' IN s.exports " +
-                "RETURN s.UAI as UAI";
-
-        neo4j.execute(query1, new JsonObject(), res -> {
-            if (res.body() != null && res.body().containsKey("result")) {
-                JsonArray garUAIs = res.body().getJsonArray("result");
-
-                List<String> UAIs = new ArrayList<>();
-                garUAIs.forEach((entry) -> {
-                    if (entry instanceof JsonObject) {
-                        JsonObject field = (JsonObject) entry;
-                        UAIs.add(field.getString("UAI", ""));
-                    }
-                });
-
-                getStudentsFosByUAI(UAIs, 0, new JsonArray(), handler);
-            }
-        });
-    }
-
-    private void getStudentsFosByUAI(List<String> UAIs, int index, JsonArray finalResult, Handler<Either<String, JsonArray>> handler){
-        String query = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure{UAI:'"+UAIs.get(index)+"'}), " +
-                "(p:Profile{name:'Student'})<-[:HAS_PROFILE]-(pg:ProfileGroup)" +
-                "WHERE NOT(HAS(u.deleteDate)) ";
-        String dataReturn = "with u " +
-                "unwind u.fieldOfStudy as fos " +
-                "return distinct " +
-                "'" + UAIs.get(index) + "' as `" + STRUCTURE_UAI + "`, " +
-                "u.id as `" + PERSON_ID + "`, " +
-                "toUpper(fos) as `" + STUDYFIELD_CODE + "` " +
-                "order by " + "`" + STRUCTURE_UAI + "`, `" + PERSON_ID + "`, `" + STUDYFIELD_CODE + "` ";
-
-        query = query + dataReturn;
-        query += " ASC SKIP {skip} LIMIT {limit} ";
-
-        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT);
-        int finalIndex = index + 1;
-        paginator.neoStreamList(query, params, new JsonArray(), 0, resultNeo -> {
-            if (resultNeo.isRight()) {
-                finalResult.addAll(resultNeo.right().getValue());
-                if(UAIs.size() > finalIndex){
-                    getStudentsFosByUAI( UAIs, finalIndex, finalResult, handler);
-                }
-                else {
-                    handler.handle(new Either.Right<>(finalResult));
-                }
-            }
-            else {
-                log.error("[DataServiceStudentImpl@getAndProcessStudentsInfo] Failed to process");
-            }
-        });
     }
 
     /**

@@ -1,28 +1,27 @@
-package fr.openent.mediacentre.export.impl;
+package fr.openent.gar.export.impl;
 
-import fr.openent.mediacentre.export.DataService;
-import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
-import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
+import fr.openent.gar.export.DataService;
+import fr.openent.gar.helper.impl.PaginatorHelperImpl;
+import fr.openent.gar.helper.impl.XmlExportHelperImpl;
 import fr.wseduc.webutils.Either;
-import fr.wseduc.webutils.Utils;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static fr.openent.mediacentre.constants.GarConstants.*;
+import static fr.openent.gar.constants.GarConstants.*;
+import static fr.openent.gar.export.impl.DataServiceGroupImpl.*;
 
 public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataService {
 
-    private PaginatorHelperImpl paginator;
-    private JsonObject config;
-    private String entId;
-    private String source;
-    private Boolean hasAcademyPrefix;
+    private final PaginatorHelperImpl paginator;
+    private final JsonObject config;
+    private final String entId;
+    private final String source;
+    private final Boolean hasAcademyPrefix;
 
     DataServiceGroupImpl1d(String entId, String source, JsonObject config, String strDate) {
         this.entId = entId;
@@ -46,7 +45,7 @@ public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataS
                 getAndProcessGroupsPersonFromNeo4j(groupPersonResults -> {
                     if (validResponse(groupPersonResults, handler)) {
                         xmlExportHelper.closeFile();
-                        handler.handle(new Either.Right<String, JsonObject>(
+                        handler.handle(new Either.Right<>(
                                 new JsonObject().put(
                                         FILE_LIST_KEY,
                                         xmlExportHelper.getFileList()
@@ -64,7 +63,7 @@ public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataS
      */
     private void getAndProcessGroupsInfoFromNeo4j(final Handler<Either<String, JsonObject>> handler) {
         final Map<String, Map<String, List<String>>> mapStructGroupClasses = new HashMap<>();
-        getGroupsStructureInfoFromNeo4j(mapStructGroupClasses, res -> {
+        getGroupsStructureInfoFromNeo4j(mapStructGroupClasses, this.source, entId, res -> {
             if (res.isRight()) {
                 getAndProcessDivisionGroupsInfoFromNeo4j(0, event -> {
                     if (validResponse(event, handler)) {
@@ -88,12 +87,27 @@ public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataS
                     handler.handle(result);
                 }
             } else {
-                log.error("[DataServiceGroupImpl@getAndProcessDivisionGroupsInfoFromNeo4j] Failed to process");
+                log.error("[DataServiceGroupImpl1d@getAndProcessDivisionGroupsInfoFromNeo4j] Failed to process");
             }
         });
     }
 
-    private void getAndProcessOtherGroupsInfoFromNeo4j(int skip, final Map<String, Map<String, List<String>>> mapStructGroupClasses, final Handler<Either<String, JsonObject>> handler) {
+    /**
+     * Process groups info
+     *
+     * @param groups Array of groups from Neo4j
+     */
+    private Either<String, JsonObject> processGroupsInfo(JsonArray groups) {
+        Either<String, JsonObject> event = processSimpleArray(groups, GROUPS_NODE, GROUPS_NODE_MANDATORY);
+        if (event.isLeft()) {
+            return new Either.Left<>("Error when processing groups infos : " + event.left().getValue());
+        } else {
+            return event;
+        }
+    }
+
+    private void getAndProcessOtherGroupsInfoFromNeo4j(int skip, final Map<String, Map<String, List<String>>> mapStructGroupClasses,
+                                                       final Handler<Either<String, JsonObject>> handler) {
         getOtherGroupsInfoFromNeo4j(skip, groupsResults -> {
             if (validResponseNeo4j(groupsResults, handler)) {
                 final JsonArray results = groupsResults.right().getValue();
@@ -121,7 +135,7 @@ public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataS
                     handler.handle(new Either.Right<>(null));
                 }
             } else {
-                log.error("[DataServiceGroupImpl@getAndProcessOtherGroupsInfoFromNeo4j] Failed to process");
+                log.error("[DataServiceGroupImpl1d@getAndProcessOtherGroupsInfoFromNeo4j] Failed to process");
             }
         });
     }
@@ -166,54 +180,19 @@ public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataS
         });
     }
 
-    private void getGroupsStructureInfoFromNeo4j(Map<String, Map<String, List<String>>> mapStructGroupClasses, Handler<Either<String, Boolean>> handler) {
-        //in AAF1D s.groups is null for the moment
-        final String divisionQuery = "MATCH (s:Structure {source:'"+ this.source +"'}) WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
-                "RETURN distinct s.UAI as uai, s.groups as groups";
-        JsonObject params = new JsonObject().put("entId", entId);
-
-        neo4j.execute(divisionQuery, params, res -> {
-            if (res.body() != null && res.body().containsKey("result")) {
-                JsonArray queryResult = Utils.getOrElse(res.body().getJsonArray("result"), new JsonArray());
-
-                queryResult.forEach((entry) -> {
-                    if (entry instanceof JsonObject) {
-                        JsonObject field = (JsonObject) entry;
-                        String uai = field.getString("uai", "");
-                        final HashMap<String, List<String>> mapGroup = new HashMap<>();
-
-                        final JsonArray groups = field.getJsonArray("groups");
-
-                        if (groups != null && !groups.isEmpty()) {
-                            groups.forEach((group) -> {
-                                String gp = (String) group;
-                                if (gp != null && !gp.isEmpty()) {
-                                    final String[] elems = gp.split("\\$");
-                                    if (elems.length >= 3) {
-                                        final List<String> classes = new ArrayList<String>();
-                                        for (int i = 2; i < elems.length; i++) {
-                                            classes.add(elems[i]);
-                                        }
-
-                                        if (!classes.isEmpty()) {
-                                            mapGroup.put(elems[0], classes);
-                                        }
-                                    }
-                                }
-                            });
-
-                            if (!mapGroup.isEmpty()) {
-                                mapStructGroupClasses.put(uai, mapGroup);
-                            }
-                        }
-                    }
-                });
-                handler.handle(new Either.Right<>(true));
-            } else {
-                log.error("[DataServiceGroupImple@getGroupsStructureInfoFromNeo4j] Failed to process divisionQuery");
-                handler.handle(new Either.Left<>("error"));
-            }
-        });
+    /**
+     * Process groups content
+     *
+     * @param groupPerson Array of group content from Neo4j
+     */
+    private Either<String, JsonObject> processGroupPersonInfo(JsonArray groupPerson) {
+        Either<String, JsonObject> event =
+                processSimpleArray(groupPerson, GROUPS_PERSON_NODE, GROUPS_PERSON_NODE_MANDATORY);
+        if (event.isLeft()) {
+            return new Either.Left<>("Error when processing groups content : " + event.left().getValue());
+        } else {
+            return event;
+        }
     }
 
     /**
@@ -233,12 +212,13 @@ public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataS
             condition = "split(fg.externalId,\"-\") as fgcode";
         }
 
-        final String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->" +
-                "(s:Structure {source:'" + this.source + "'}) " +
+        final String groupsQuery = "MATCH (s:Structure)<-[:BELONGS]-(c:Class) WITH collect(c.name) as classes " +
+                "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
+                "WHERE NOT (fg.name IN classes) " +
+                "WITH u,s,fg MATCH (u)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND head(u.profiles) IN ['Student', 'Teacher'] " +
                 "AND NOT(HAS(u.deleteDate)) " +
-                "AND NOT(HAS(u.disappearanceDate)) " +
                 "with distinct s.UAI as uai, fg, " + condition +
                 " return distinct coalesce(" + (hasAcademyPrefix ? "fgcode" : "fgcode[size(fgcode)-1]") + ", fg.id) as `" + GROUPS_CODE + "`, " +
                 "uai as `" + STRUCTURE_UAI + "`, " +
@@ -247,7 +227,7 @@ public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataS
                 "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` " +
                 " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT).put("entId", entId);
         paginator.neoStream(groupsQuery, params, skip, handler);
     }
 
@@ -264,8 +244,10 @@ public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataS
         //in 1D (no more split(c.externalId,"$")[1] for code)
         final String condition;
         if (hasAcademyPrefix) {
-            condition = "CASE WHEN c.externalId =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+' THEN reduce(v=c.externalId, prefix in split('" +
-                    this.config.getString("academy-prefix") +"', '|') | replace(v, prefix + '-', '')) ELSE c.externalId END as ccode";
+            condition = "CASE WHEN c.externalId =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+' " +
+                    "THEN reduce(v=c.externalId, prefix in split('" +
+                    this.config.getString("academy-prefix") +"', '|') | replace(v, prefix + '-', '')) " +
+                    "ELSE c.externalId END as ccode";
         } else {
             condition = "split(c.externalId,\"-\") as ccode";
         }
@@ -280,24 +262,9 @@ public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataS
                 "order by `" + STRUCTURE_UAI + "`, `" + GROUPS_CODE + "` " +
                 " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT).put("entId", entId);
 
         paginator.neoStream(classQuery, params, skip, handler);
-    }
-
-
-    /**
-     * Process groups info
-     *
-     * @param groups Array of groups from Neo4j
-     */
-    private Either<String, JsonObject> processGroupsInfo(JsonArray groups) {
-        Either<String, JsonObject> event = processSimpleArray(groups, GROUPS_NODE, GROUPS_NODE_MANDATORY);
-        if (event.isLeft()) {
-            return new Either.Left<>("Error when processing groups infos : " + event.left().getValue());
-        } else {
-            return event;
-        }
     }
 
     /**
@@ -310,15 +277,17 @@ public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataS
         //in 1D (no more split(c.externalId,"$")[1] for code)
         final String condition;
         if (hasAcademyPrefix) {
-            condition = "CASE WHEN c.externalId =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+' THEN reduce(v=c.externalId, prefix in split('" +
-                    this.config.getString("academy-prefix") +"', '|') | replace(v, prefix + '-', '')) ELSE c.externalId END as ccode";
+            condition = "CASE WHEN c.externalId =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+' " +
+                    "THEN reduce(v=c.externalId, prefix in split('" +
+                    this.config.getString("academy-prefix") +"', '|') | replace(v, prefix + '-', '')) " +
+                    "ELSE c.externalId END as ccode";
         } else {
             condition = "split(c.externalId,\"-\") as ccode";
         }
         final String classQuery = "MATCH (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(c:Class)-[:BELONGS]->(s:Structure {source:'" + this.source + "'})" +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND pg.filter IN ['Student', 'Teacher'] " +
-                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
+                "AND NOT(HAS(u.deleteDate)) " +
                 "WITH distinct s.UAI as uai, u.id as uid, c, " + condition +
                 " return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
@@ -326,7 +295,7 @@ public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataS
                 "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "` " +
                 " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT).put("entId", entId);
 
         paginator.neoStream(classQuery, params, skip, handler);
     }
@@ -340,16 +309,20 @@ public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataS
     private void getOtherGroupsPersonFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
         final String condition;
         if (hasAcademyPrefix) {
-            condition = "CASE WHEN fg.externalId =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+' THEN reduce(v=fg.externalId, prefix in split('" +
-                    this.config.getString("academy-prefix") +"', '|') | replace(v, prefix + '-', '')) ELSE fg.externalId END as fgcode";
+            condition = "CASE WHEN fg.externalId =~ '(" + this.config.getString("academy-prefix") + ")-[A-Z0-9-]+' " +
+                    "THEN reduce(v=fg.externalId, prefix in split('" +
+                    this.config.getString("academy-prefix") +"', '|') | replace(v, prefix + '-', '')) " +
+                    "ELSE fg.externalId END as fgcode";
         } else {
             condition = "split(fg.externalId,\"-\") as fgcode";
         }
-        final String groupsQuery = "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
+        final String groupsQuery = "MATCH (s:Structure)<-[:BELONGS]-(c:Class) WITH collect(c.name) as classes " +
+                "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
+                "WHERE NOT (fg.name IN classes) " +
+                "WITH u,s,fg MATCH (u)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND head(u.profiles) IN ['Student', 'Teacher'] " +
                 "AND NOT(HAS(u.deleteDate)) " +
-                "AND NOT(HAS(u.disappearanceDate)) " +
                 "with distinct s.UAI as uai, u.id as uid, fg, " + condition +
                 " return distinct uai as `" + STRUCTURE_UAI + "`, " +
                 "uid as `" + PERSON_ID + "`, " +
@@ -357,23 +330,8 @@ public class DataServiceGroupImpl1d extends DataServiceBaseImpl implements DataS
                 "order by `" + PERSON_ID + "`, `" + GROUPS_CODE + "`, `" + STRUCTURE_UAI + "`" +
                 " ASC SKIP {skip} LIMIT {limit} ";
 
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
+        JsonObject params = new JsonObject().put("limit", PaginatorHelperImpl.LIMIT).put("entId", entId);
 
         paginator.neoStream(groupsQuery, params, skip, handler);
-    }
-
-    /**
-     * Process groups content
-     *
-     * @param groupPerson Array of group content from Neo4j
-     */
-    private Either<String, JsonObject> processGroupPersonInfo(JsonArray groupPerson) {
-        Either<String, JsonObject> event =
-                processSimpleArray(groupPerson, GROUPS_PERSON_NODE, GROUPS_PERSON_NODE_MANDATORY);
-        if (event.isLeft()) {
-            return new Either.Left<>("Error when processing groups content : " + event.left().getValue());
-        } else {
-            return event;
-        }
     }
 }

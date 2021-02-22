@@ -1,10 +1,10 @@
 package fr.openent.gar.controller;
 
+import fr.openent.gar.Gar;
+import fr.openent.gar.constants.GarConstants;
 import fr.openent.gar.export.impl.ExportImpl;
 import fr.openent.gar.service.ParameterService;
 import fr.openent.gar.service.impl.DefaultParameterService;
-import fr.openent.gar.Gar;
-import fr.openent.gar.constants.GarConstants;
 import fr.openent.gar.utils.FileUtils;
 import fr.wseduc.rs.ApiDoc;
 import fr.wseduc.rs.Delete;
@@ -105,9 +105,9 @@ public class SettingController extends ControllerHelper {
     public void downloadArchive(HttpServerRequest request) {
         final String entId = config.getJsonObject("id-ent").getString(Renders.getHost(request));
         final String source = request.getParam("source").toUpperCase();
-        if (Mediacentre.AAF1D.equals(source) || Mediacentre.AAF.equals(source)) {
+        if (Gar.AAF1D.equals(source) || Gar.AAF.equals(source)) {
             final String archivePath;
-            if (Mediacentre.AAF1D.equals(source)) {
+            if (Gar.AAF1D.equals(source)) {
                 archivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId + GarConstants.EXPORT_1D_SUFFIX);
             } else {
                 archivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId);
@@ -147,9 +147,9 @@ public class SettingController extends ControllerHelper {
     public void xsdValidation(HttpServerRequest request) {
         final String entId = config.getJsonObject("id-ent").getString(Renders.getHost(request));
         final String source = request.getParam("source").toUpperCase();
-        if (Mediacentre.AAF1D.equals(source) || Mediacentre.AAF.equals(source)) {
+        if (Gar.AAF1D.equals(source) || Gar.AAF.equals(source)) {
             final String archivePath;
-            if (Mediacentre.AAF1D.equals(source)) {
+            if (Gar.AAF1D.equals(source)) {
                 archivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId + GarConstants.EXPORT_1D_SUFFIX);
             } else {
                 archivePath = FileUtils.appendPath(config.getString("export-archive-path"), entId);

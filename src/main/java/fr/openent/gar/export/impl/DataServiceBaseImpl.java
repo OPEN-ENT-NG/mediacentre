@@ -19,8 +19,8 @@ import static fr.openent.gar.constants.GarConstants.*;
 abstract class DataServiceBaseImpl implements DataService {
     static Map<String,String> mapStructures = new HashMap<>();
     XmlExportHelper xmlExportHelper;
-    final Logger log = LoggerFactory.getLogger(DataServiceBaseImpl.class);
-    final Neo4j neo4j = Neo4j.getInstance();
+    static final Logger log = LoggerFactory.getLogger(DataServiceBaseImpl.class);
+    static final Neo4j neo4j = Neo4j.getInstance();
 
     DataServiceBaseImpl() {
     }
@@ -51,7 +51,7 @@ abstract class DataServiceBaseImpl implements DataService {
         }
     }
 
-    boolean isMandatoryFieldsAbsent(JsonObject obj, String[] mandatoryFields) {
+    static boolean isMandatoryFieldsAbsent(JsonObject obj, String[] mandatoryFields) {
         if(obj == null) return true;
         for(String s : mandatoryFields) {
             if(!obj.containsKey(s) || null == obj.getValue(s)) return true;
@@ -96,7 +96,7 @@ abstract class DataServiceBaseImpl implements DataService {
      * @param structUAI structure UAI
      * @param profile profile name
      */
-    protected void addProfile(JsonArray profileArray, String structUAI, String profile) {
+    protected static void addProfile(JsonArray profileArray, String structUAI, String profile) {
         JsonObject garProfile = new JsonObject();
         garProfile.put(STRUCTURE_UAI, structUAI);
         garProfile.put(PERSON_PROFILE, profile);

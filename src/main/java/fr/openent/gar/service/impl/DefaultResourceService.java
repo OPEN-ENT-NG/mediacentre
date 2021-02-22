@@ -36,7 +36,7 @@ public class DefaultResourceService implements ResourceService {
     private final Vertx vertx;
     private final String garHost;
     private final JsonObject idsEnt;
-    private Logger log = LoggerFactory.getLogger(DefaultResourceService.class);
+    private final Logger log = LoggerFactory.getLogger(DefaultResourceService.class);
     private final Map<String, HttpClient> httpClientByDomain = new HashMap();
 
     public DefaultResourceService(Vertx vertx, JsonObject garRessource, JsonObject idsEnt) {

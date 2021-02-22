@@ -1,12 +1,12 @@
 package fr.openent.gar.export.impl;
 
+import fr.openent.gar.Gar;
+import fr.openent.gar.constants.GarConstants;
 import fr.openent.gar.export.ExportService;
 import fr.openent.gar.export.XMLValidationHandler;
 import fr.openent.gar.service.TarService;
 import fr.openent.gar.service.impl.DefaultTarService;
-import fr.openent.gar.Gar;
-import fr.openent.gar.constants.GarConstants;
-import fr.openent.ger.utils.FileUtils;
+import fr.openent.gar.utils.FileUtils;
 import fr.wseduc.webutils.Either;
 import fr.wseduc.webutils.data.FileResolver;
 import fr.wseduc.webutils.email.EmailSender;
@@ -16,11 +16,13 @@ import io.vertx.core.buffer.impl.BufferImpl;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.Message;
+import io.vertx.core.http.HttpServerRequest;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.entcore.common.email.EmailFactory;
+import org.entcore.common.http.request.JsonHttpServerRequest;
 import org.xml.sax.SAXException;
 
 import javax.xml.XMLConstants;
@@ -32,8 +34,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import org.entcore.common.http.request.JsonHttpServerRequest;
-import io.vertx.core.http.HttpServerRequest;
 
 import static fr.openent.gar.Gar.CONFIG;
 import static fr.wseduc.webutils.Utils.handlerToAsyncHandler;
@@ -56,8 +56,8 @@ public class ExportImpl {
         this.exportService = new ExportServiceImpl(config);
         this.tarService = new DefaultTarService();
         this.sftpGarConfig = config.getJsonObject("gar-sftp");
-        this.emailSender = new EmailFactory(vertx).getSender();
-        if (Mediacentre.AAF1D.equals(source)) {
+        this.emailSender = new EmailFactory(vertx,this.config).getSender();
+        if (Gar.AAF1D.equals(source)) {
             this.exportAndSend1d(entId, source, handler);
         } else {
             this.exportAndSend2d(entId, source, handler);
@@ -66,7 +66,7 @@ public class ExportImpl {
 
     public ExportImpl(Vertx vertx) {
         this.config = CONFIG;
-        this.emailSender = new EmailFactory(vertx).getSender();
+        this.emailSender = new EmailFactory(vertx,this.config).getSender();
     }
 
     private void exportAndSend1d(final String entId, final String source, final Handler<String> handler) {
@@ -88,7 +88,8 @@ public class ExportImpl {
         FileUtils.mkdirs(exportArchivePath);
         FileUtils.deleteFiles(exportArchivePath);
 
-        log.info("Start exportAndSend GAR for ENT ID : " + entId + " " + source + "(Generate xml files, XSD validation, compress to tar.gz, generate md5, send to GAR by sftp");
+        log.info("Start exportAndSend GAR for ENT ID : " + entId + " " + source +
+                "(Generate xml files, XSD validation, compress to tar.gz, generate md5, send to GAR by sftp");
         log.info("Generate XML files");
         exportService.launchExport(entId, source, (Either<String, JsonObject> event1) -> {
             if (event1.isRight()) {
@@ -122,7 +123,8 @@ public class ExportImpl {
                         String n = (String) vertx.sharedData().getLocalMap("server").get("node");
                         String node = (n != null) ? n : "";
 
-                        eb.send(node + "sftp", sendTOGar, new DeliveryOptions().setSendTimeout(300 * 1000L), handlerToAsyncHandler((Message<JsonObject> messageResponse) -> {
+                        eb.send(node + "sftp", sendTOGar, new DeliveryOptions().setSendTimeout(300 * 1000L),
+                                handlerToAsyncHandler((Message<JsonObject> messageResponse) -> {
                             if (messageResponse.body().containsKey("status") && messageResponse.body().getString("status").equals("error")) {
                                 String e = "Send to GAR tar GZ by sftp but received an error : " +
                                         messageResponse.body().getString("message");
@@ -190,7 +192,7 @@ public class ExportImpl {
             SchemaFactory factory = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
             String schemaPath = FileResolver.absolutePath("public/xsd");
             final Schema schema;
-            if (Mediacentre.AAF1D.equals(source)) {
+            if (Gar.AAF1D.equals(source)) {
                 schema = factory.newSchema(new File(schemaPath + "/GAR-ENT-1D.xsd"));
             } else {
                 schema = factory.newSchema(new File(schemaPath + "/GAR-ENT.xsd"));
@@ -216,22 +218,4 @@ public class ExportImpl {
         }
         return result;
     }
-
-    private void emptyDIrectory(String path) {
-        File index = new File(path);
-        String[] entries = index.list();
-        assert entries != null;
-        for (String s : entries) {
-            File currentFile = new File(index.getPath(), s);
-            currentFile.delete();
-        }
-    }
-
-    private void createDirectory(String path) {
-        File directory = new File(path);
-        if (! directory.exists()){
-            directory.mkdirs();
-        }
-    }
-
 }

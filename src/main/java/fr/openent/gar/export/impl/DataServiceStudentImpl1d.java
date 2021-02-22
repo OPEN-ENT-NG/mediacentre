@@ -1,20 +1,21 @@
-package fr.openent.mediacentre.export.impl;
+package fr.openent.gar.export.impl;
 
-import fr.openent.mediacentre.export.DataService;
-import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
-import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
+import fr.openent.gar.export.DataService;
+import fr.openent.gar.helper.impl.PaginatorHelperImpl;
+import fr.openent.gar.helper.impl.XmlExportHelperImpl;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.entcore.common.utils.StringUtils;
 
-import static fr.openent.mediacentre.constants.GarConstants.*;
+import static fr.openent.gar.constants.GarConstants.*;
+import static fr.openent.gar.export.impl.DataServiceStudentImpl.*;
 
 public class DataServiceStudentImpl1d extends DataServiceBaseImpl implements DataService {
-    private PaginatorHelperImpl paginator;
-    private String entId;
-    private String source;
+    private final PaginatorHelperImpl paginator;
+    private final String entId;
+    private final String source;
 
     DataServiceStudentImpl1d(String entId, String source, JsonObject config, String strDate) {
         this.entId = entId;
@@ -37,7 +38,7 @@ public class DataServiceStudentImpl1d extends DataServiceBaseImpl implements Dat
             if (validResponse(studentsResult, handler)) {
                 if (validResponse(processStudentsMefs(mefs), handler)) {
                     xmlExportHelper.closeFile();
-                    handler.handle(new Either.Right<String, JsonObject>(
+                    handler.handle(new Either.Right<>(
                             new JsonObject().put(
                                     FILE_LIST_KEY,
                                     xmlExportHelper.getFileList()
@@ -53,7 +54,7 @@ public class DataServiceStudentImpl1d extends DataServiceBaseImpl implements Dat
      * @param handler result handler
      */
     private void getAndProcessStudentsInfo(int skip, JsonArray mefs, final Handler<Either<String, JsonObject>> handler) {
-        getStudentsInfoFromNeo4j(skip, studentResults -> {
+        getStudentsInfoFromNeo4j(skip, entId, this.source, paginator, studentResults -> {
             if (validResponseNeo4j(studentResults, handler)) {
                 final JsonArray students = studentResults.right().getValue();
                 populateMef(mefs, students);
@@ -107,35 +108,17 @@ public class DataServiceStudentImpl1d extends DataServiceBaseImpl implements Dat
     }
 
     /**
-     * Get students infos from Neo4j
-     * Set fields as requested by xsd, except for structures
+     * Process mefs info
      *
-     * @param handler results
+     * @param mefs Array of mefs from Neo4j
      */
-    private void getStudentsInfoFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
-        String query = "match (u:User)-[:IN]->(pg:ProfileGroup {filter:'Student'})-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
-                "where HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
-                "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure {source:'" + this.source + "'}) " +
-                "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
-                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) ";
-        String dataReturn = "return distinct " +
-                "u.id  as `" + PERSON_ID + "`, " +
-                "u.lastName as `" + PERSON_PATRO_NAME + "`, " +
-                "u.lastName as `" + PERSON_NAME + "`, " +
-                "u.firstName as `" + PERSON_FIRST_NAME + "`, " +
-                "coalesce(u.otherNames, [u.firstName]) as `" + PERSON_OTHER_NAMES + "`, " +
-                //TODO GARPersonCivilite
-                "sr.UAI as `" + PERSON_STRUCT_ATTACH + "`, " +
-                "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
-                "collect(distinct s.UAI) as profiles, u.level as level " +
-                "order by " + "`" + PERSON_ID + "`";
-
-
-        query = query + dataReturn;
-        query += " ASC SKIP {skip} LIMIT {limit} ";
-
-        JsonObject params = new JsonObject().put("limit", paginator.LIMIT).put("entId", entId);
-        paginator.neoStream(query, params, skip, handler);
+    private Either<String, JsonObject> processStudentsMefs(JsonArray mefs) {
+        Either<String, JsonObject> event = processSimpleArray(mefs, PERSON_MEF_1D, PERSON_MEF_NODE_MANDATORY_1D);
+        if (event.isLeft()) {
+            return new Either.Left<>("Error when processing students mefs : " + event.left().getValue());
+        } else {
+            return event;
+        }
     }
 
     /**
@@ -148,63 +131,26 @@ public class DataServiceStudentImpl1d extends DataServiceBaseImpl implements Dat
         try {
             for (Object o : students) {
                 if (!(o instanceof JsonObject)) continue;
-
                 JsonObject student = (JsonObject) o;
                 JsonArray profiles = student.getJsonArray("profiles", null);
                 if (profiles == null || profiles.size() == 0) {
-                    log.warn("Mediacentre : Student with no profile for export, id "
+                    log.warn("Gar : Student with no profile for export, id "
                             + student.getString("u.id", "unknown"));
                     continue;
                 }
 
-                processProfiles(student, STUDENT_PROFILE, null);
+                processProfilesStudent(student);
 
                 if (isMandatoryFieldsAbsent(student, STUDENT_NODE_MANDATORY)) {
-                    log.warn("Mediacentre : mandatory attribut for Student : " + student);
+                    log.warn("Gar : mandatory attribut for Student : " + student);
                     continue;
                 }
-
                 reorganizeNodes(student);
-
                 xmlExportHelper.saveObject(STUDENT_NODE, student);
             }
             return new Either.Right<>(null);
         } catch (Exception e) {
             return new Either.Left<>("Error when processing students Info : " + e.getMessage());
-        }
-    }
-
-    /**
-     * XSD specify precise order for xml tags
-     *
-     * @param student
-     */
-    private void reorganizeNodes(JsonObject student) {
-        JsonObject personCopy = student.copy();
-        student.clear();
-        student.put(PERSON_ID, personCopy.getValue(PERSON_ID));
-        student.put(PERSON_PROFILES, personCopy.getValue(PERSON_PROFILES));
-        student.put(PERSON_PATRO_NAME, personCopy.getValue(PERSON_PATRO_NAME));
-        student.put(PERSON_NAME, personCopy.getValue(PERSON_NAME));
-        student.put(PERSON_FIRST_NAME, personCopy.getValue(PERSON_FIRST_NAME));
-        student.put(PERSON_OTHER_NAMES, personCopy.getValue(PERSON_OTHER_NAMES));
-        //TODO GARPersonCivilite
-        student.put(PERSON_STRUCT_ATTACH, personCopy.getValue(PERSON_STRUCT_ATTACH));
-        student.put(PERSON_STRUCTURE, personCopy.getValue(PERSON_STRUCTURE));
-        student.put(PERSON_BIRTH_DATE, personCopy.getValue(PERSON_BIRTH_DATE));
-    }
-
-    /**
-     * Process mefs info
-     *
-     * @param mefs Array of mefs from Neo4j
-     */
-    private Either<String, JsonObject> processStudentsMefs(JsonArray mefs) {
-        Either<String, JsonObject> event = processSimpleArray(mefs, PERSON_MEF_1D, PERSON_MEF_NODE_MANDATORY_1D);
-        if (event.isLeft()) {
-            return new Either.Left<>("Error when processing students mefs : " + event.left().getValue());
-        } else {
-            return event;
         }
     }
 }

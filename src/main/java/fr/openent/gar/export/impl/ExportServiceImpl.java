@@ -5,7 +5,6 @@ import fr.openent.gar.export.DataService;
 import fr.openent.gar.export.ExportService;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
-import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -13,51 +12,34 @@ import io.vertx.core.logging.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ExportServiceImpl implements ExportService{
 
     private final JsonObject config;
-    private Logger log = LoggerFactory.getLogger(ExportServiceImpl.class);
+    private final Logger log = LoggerFactory.getLogger(ExportServiceImpl.class);
 
     public ExportServiceImpl(JsonObject config) {
         this.config = config;
     }
 
-    //launchExport à revoir!!
     @Override
-    public void launchExport(final Message<JsonObject> message) {
-        launchExport(exportResult -> {
-            JsonObject json;
-            if(exportResult.isLeft()) {
-                json = (new JsonObject())
-                        .put("status", "error")
-                        .put("message", exportResult.left().getValue());
-            } else {
-                json = exportResult.right().getValue();
-            }
-            message.reply(json.put("status", "ok"));
-        });
-    }
-
-    @Override
-    public void launchExport(final Handler<Either<String, JsonObject>> handler) {
+    public void launchExport(final String entId, final String source, final Handler<Either<String, JsonObject>> handler) {
 
         String strDate = new SimpleDateFormat("yyyyMMdd_HHmmss_").format(new Date());
 
         final Queue<DataService> dataServiceQueue = new ConcurrentLinkedQueue<>();
 
         switch (source) {
-            case Mediacentre.AAF1D:
+            case Gar.AAF1D:
                 dataServiceQueue.add(new DataServiceStructureImpl1d(entId, source, config, strDate));
                 dataServiceQueue.add(new DataServiceStudentImpl1d(entId, source, config, strDate));
                 dataServiceQueue.add(new DataServiceTeacherImpl1d(entId, source, config, strDate));
                 dataServiceQueue.add(new DataServiceGroupImpl1d(entId, source, config, strDate));
                 dataServiceQueue.add(new DataServiceRespImpl(entId, source, config, strDate));
                 break;
-            case Mediacentre.AAF:
+            case Gar.AAF:
                 dataServiceQueue.add(new DataServiceStructureImpl(entId, source, config, strDate));
                 dataServiceQueue.add(new DataServiceStudentImpl(entId, source, config, strDate));
                 dataServiceQueue.add(new DataServiceTeacherImpl(entId, source, config, strDate));

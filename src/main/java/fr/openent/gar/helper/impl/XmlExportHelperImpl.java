@@ -1,13 +1,12 @@
 package fr.openent.gar.helper.impl;
 
-import fr.openent.gar.helper.XmlExportHelper;
 import fr.openent.gar.Gar;
 import fr.openent.gar.constants.GarConstants;
+import fr.openent.gar.helper.XmlExportHelper;
 import fr.openent.gar.utils.FileUtils;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
-
 import io.vertx.core.logging.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -35,8 +34,8 @@ public class XmlExportHelperImpl implements XmlExportHelper {
     private int fileIndex = 0;
     private final String exportDir;
     private final String FILE_PREFIX;
-    private JsonArray fileList;
-    private String source;
+    private final JsonArray fileList;
+    private final String source;
 
     /**
      * Initialize helper and first xml
@@ -49,7 +48,7 @@ public class XmlExportHelperImpl implements XmlExportHelper {
         this.source = source;
         initNewFile();
         MAX_NODES = config.getInteger("max-nodes", 10000);
-        if (Mediacentre.AAF.equals(source)) {
+        if (Gar.AAF.equals(source)) {
             exportDir = FileUtils.appendPath(config.getString("export-path", ""), entId);
         } else {
             exportDir = FileUtils.appendPath(config.getString("export-path"), entId + GarConstants.EXPORT_1D_SUFFIX);
@@ -65,7 +64,7 @@ public class XmlExportHelperImpl implements XmlExportHelper {
      */
     private String getLevelBySource(String source) {
         String level = "2D_";
-        if (Mediacentre.AAF1D.equals(source)) {
+        if (Gar.AAF1D.equals(source)) {
             level = "1D_";
         }
         return level;
@@ -75,7 +74,7 @@ public class XmlExportHelperImpl implements XmlExportHelper {
      * Add static attributes to xml root node
      */
     private void addAttributesToRootNode() {
-        if (Mediacentre.AAF1D.equals(this.source)) {
+        if (Gar.AAF1D.equals(this.source)) {
             currentElement.setAttribute("xmlns:men", "http://data.education.fr/ns/gar/1d");
         } else {
             currentElement.setAttribute("xmlns:men", "http://data.education.fr/ns/gar");
@@ -85,7 +84,7 @@ public class XmlExportHelperImpl implements XmlExportHelper {
         currentElement.setAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance");
         currentElement.setAttribute("Version", "1.0");
 
-        if (Mediacentre.AAF1D.equals(this.source)) {
+        if (Gar.AAF1D.equals(this.source)) {
             currentElement.setAttribute("xsi:schemaLocation", "http://data.education.fr/ns/gar/1d GAR-ENT-1D.xsd");
         } else {
             currentElement.setAttribute("xsi:schemaLocation", "http://data.education.fr/ns/gar GAR-ENT.xsd");

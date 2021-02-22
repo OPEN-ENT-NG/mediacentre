@@ -1,4 +1,4 @@
-package fr.openent.mediacentre.utils;
+package fr.openent.gar.utils;
 
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
