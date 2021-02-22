@@ -37,24 +37,20 @@ public class GarController extends ControllerHelper {
     private final ResourceService resourceService;
     private final EventService eventService;
     private final Vertx vertx;
-    private final JsonObject garRessourcesConfig;
-    private final Logger log = LoggerFactory.getLogger(GarController.class);
-    private final EventBus eb;
-    private final JsonObject config;
+    private Logger log = LoggerFactory.getLogger(MediacentreController.class);
+    private EventBus eb = null;
+    private JsonObject config;
 
     public GarController(Vertx vertx, JsonObject config) {
         super();
         eb = vertx.eventBus();
         this.config = config;
         this.vertx = vertx;
-        this.garRessourcesConfig = config.getJsonObject("gar-ressources");
         this.eventService = new DefaultEventService(config.getString("event-collection", "gar-events"));
         this.resourceService = new DefaultResourceService(
                 vertx,
-                Gar.demo ? config.getString("host") : garRessourcesConfig.getString("host"),
-                config.getString("id-ent"),
-                garRessourcesConfig.getString("cert"),
-                garRessourcesConfig.getString("key")
+                config.getJsonObject("gar-ressources"),
+                config.getJsonObject("id-ent")
         );
         this.launchExport();
     }
@@ -71,7 +67,7 @@ public class GarController extends ControllerHelper {
         UserUtils.getUserInfos(eb, request, user -> {
             String structureId = request.params().contains("structure") ? request.getParam("structure") : user.getStructures().get(0);
             String userId = user.getUserId();
-            this.resourceService.get(userId, structureId, garRessourcesConfig.getString("host"), result -> {
+            this.resourceService.get(userId, structureId, Renders.getHost(request), result -> {
                             if (result.isRight()) {
                                 Renders.renderJson(request, result.right().getValue());
                             } else {
@@ -93,11 +89,16 @@ public class GarController extends ControllerHelper {
     }
 
 
-    @Get("/launchExport")
+    @Get("/launchExport/:source")
     @SecuredAction(value = WorkflowUtils.EXPORT, type = ActionType.WORKFLOW)
     public void launchExportFromRoute(HttpServerRequest request) {
-        this.exportAndSend();
-        request.response().setStatusCode(200).end("Import started");
+        final String source = request.getParam("source").toUpperCase();
+        if (Mediacentre.AAF1D.equals(source) || Mediacentre.AAF.equals(source)) {
+            this.exportAndSend(config.getJsonObject("id-ent").getString(Renders.getHost(request)), source);
+            request.response().setStatusCode(200).end("Import started");
+        } else {
+            badRequest(request);
+        }
     }
 
     private void launchExport() {
@@ -106,6 +107,7 @@ public class GarController extends ControllerHelper {
             new CronTrigger(vertx, config.getString("export-cron")).schedule(
                     event -> exportAndSend()
             );
+            //TODO Rajouter les deux 1d et 2d
 
         } catch (ParseException e) {
             log.error("cron GAR failed");
@@ -113,9 +115,9 @@ public class GarController extends ControllerHelper {
         }
     }
 
-    private void exportAndSend() {
-        eb.send(ExportWorker.class.getSimpleName(),
-                new JsonObject().put("action", "exportAndSend"),
+    private void exportAndSend(final String entId, final String source) {
+        final JsonObject param = new JsonObject().put("action", "exportAndSend").put("entId", entId).put("source", source);
+        eb.send(ExportWorker.EXPORTWORKER_ADDRESS, param,
                 handlerToAsyncHandler(event -> log.info("Export Gar Launched")));
     }
 
@@ -123,7 +125,7 @@ public class GarController extends ControllerHelper {
     public void addressHandler(Message<JsonObject> message) {
         String action = message.body().getString("action", "");
         switch (action) {
-            case "export" : exportAndSend();
+            case "export" : exportAndSend(null, null);
                 break;
             case "getConfig":
                 log.info("MEDIACENTRE GET CONFIG BUS RECEPTION");

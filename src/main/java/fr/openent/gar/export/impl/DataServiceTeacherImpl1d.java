@@ -1,24 +1,25 @@
-package fr.openent.gar.export.impl;
+package fr.openent.mediacentre.export.impl;
 
-import fr.openent.gar.helper.impl.PaginatorHelperImpl;
-import fr.openent.gar.helper.impl.XmlExportHelperImpl;
-import fr.openent.gar.export.DataService;
+import fr.openent.mediacentre.export.DataService;
+import fr.openent.mediacentre.helper.impl.PaginatorHelperImpl;
+import fr.openent.mediacentre.helper.impl.XmlExportHelperImpl;
 import fr.wseduc.webutils.Either;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.entcore.common.utils.StringUtils;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
-import static fr.openent.gar.constants.GarConstants.*;
+import static fr.openent.mediacentre.constants.GarConstants.*;
 
-public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataService{
-    private final PaginatorHelperImpl paginator;
+public class DataServiceTeacherImpl1d extends DataServiceBaseImpl implements DataService {
+    private PaginatorHelperImpl paginator;
     private String entId;
     private String source;
 
-    DataServiceTeacherImpl(String entId, String source, JsonObject config, String strDate) {
+    DataServiceTeacherImpl1d(String entId, String source, JsonObject config, String strDate) {
         this.entId = entId;
         this.source = source;
         xmlExportHelper = new XmlExportHelperImpl(entId, source, config, TEACHER_ROOT, TEACHER_FILE_PARAM, strDate);
@@ -34,6 +35,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      */
     @Override
     public void exportData(final Handler<Either<String, JsonObject>> handler) {
+        //fixme : no modules IN 1D, perhaps level in futur like student
         final JsonArray modules = new fr.wseduc.webutils.collections.JsonArray();
         getAndProcessTeachersInfoFromNeo4j(0, modules, resultTeachers -> {
             if (validResponse(resultTeachers, handler)) {
@@ -88,7 +90,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                                     final JsonObject jo = new JsonObject();
                                     jo.put(STRUCTURE_UAI, mapStructures.get(mods[0]));
                                     jo.put(PERSON_ID, fields.getString(PERSON_ID));
-                                    jo.put(MEF_CODE, mods[1]);
+                                    jo.put(MEF_CODE_1D, mods[1]);
                                     modules.add(jo);
                                 }
                             }
@@ -106,9 +108,9 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param handler results
      */
     private void getTeachersInfoFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
-        String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
+        String query = "match (u:User)-[:IN]->(pg:ProfileGroup {filter:'Teacher'})-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
-                "AND NOT(HAS(u.deleteDate)) AND pg.filter IN ['Personnel','Teacher'] " +
+                "AND NOT(HAS(u.deleteDate)) AND NOT(HAS(u.disappearanceDate)) " +
                 // ADMINISTRATIVE ATTACHMENT can reference non GAR exported structure
                 "OPTIONAL MATCH (u:User)-[:ADMINISTRATIVE_ATTACHMENT]->(sr:Structure) ";
         String dataReturn = "return distinct u.id  as `" + PERSON_ID + "`, " +
@@ -119,8 +121,8 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
                 //TODO GARPersonCivilite
                 "collect(distinct sr.UAI)[0] as `" + PERSON_STRUCT_ATTACH + "`, " +
                 "u.birthDate as `" + PERSON_BIRTH_DATE + "`, " +
-                "u.functions as functions, " +
-                "collect(distinct s.UAI+'$'+p.name) as UAIprofiles " +
+                "u.functions as functions, u.modules as modules, " +
+                "collect(distinct s.UAI) as profiles " +
                 "order by " + "`" + PERSON_ID + "`";
 
         query = query + dataReturn;
@@ -133,29 +135,29 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
     /**
      * Process teachers info
      * Add structures in arrays to match xsd
+     *
      * @param teachers Array of teachers from Neo4j
      */
-    private void processTeachersInfo(JsonArray teachers) {
+    private Either<String, JsonObject> processTeachersInfo(JsonArray teachers) {
         try {
-            for(Object o : teachers) {
-                if(!(o instanceof JsonObject)) continue;
+            for (Object o : teachers) {
+                if (!(o instanceof JsonObject)) continue;
 
                 JsonObject teacher = (JsonObject) o;
-                JsonArray profiles = teacher.getJsonArray("UAIprofiles", null);
-                if(profiles == null || profiles.size() == 0) {
-                    log.error("Gar : Teacher with no profile or function for export, id "
+                JsonArray profiles = teacher.getJsonArray("profiles", null);
+                if (profiles == null || profiles.size() == 0) {
+                    log.error("Mediacentre : Teacher with no profile or function for export, id "
                             + teacher.getString("u.id", "unknown"));
                     continue;
                 }
 
-                Map<String,String> userStructProfiles = new HashMap<>();
+                Map<String, String> userStructProfiles = new HashMap<>();
 
                 processFunctions(teacher, userStructProfiles);
-                //processProfiles(teacher, TEACHER_PROFILE, userStructProfiles);
-                processTeacherProfiles(teacher, userStructProfiles);
+                processProfiles(teacher, TEACHER_PROFILE, userStructProfiles);
 
-                if(isMandatoryFieldsAbsent(teacher, TEACHER_NODE_MANDATORY)) {
-                    log.warn("Gar : mandatory attribut for Teacher : " + teacher);
+                if (isMandatoryFieldsAbsent(teacher, TEACHER_NODE_MANDATORY)) {
+                    log.warn("Mediacentre : mandatory attribut for Teacher : " + teacher);
                     continue;
                 }
 
@@ -163,56 +165,16 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
                 xmlExportHelper.saveObject(TEACHER_NODE, teacher);
             }
+            return new Either.Right<>(null);
         } catch (Exception e) {
-            log.error("Error when processing teachers Info : ", e.getMessage());
-            throw e;
+            return new Either.Left<>("Error when processing teachers Info : " + e.getMessage());
         }
-    }
-
-    /**
-     * Process profiles, set profile from structMap for structures in it
-     * Set default profile for other etabs
-     * @param teacher person to process
-     * @param structMap map for profile by structure
-     */
-    private void processTeacherProfiles(JsonObject teacher, Map<String, String> structMap) {
-        JsonArray garProfiles = new fr.wseduc.webutils.collections.JsonArray();
-        JsonArray garEtabs = new fr.wseduc.webutils.collections.JsonArray();
-
-        JsonArray profilesUser = teacher.getJsonArray("UAIprofiles");
-        String profileUser = TEACHER_PROFILE;
-
-        for(Object profile : profilesUser) {
-            if (!(profile instanceof String)) continue;
-            String[] uaiProfile = ((String) profile).split("\\$");
-            if (uaiProfile.length < 2) continue;
-            String structure = uaiProfile[0];
-            if (uaiProfile[1].equals("Personnel"))
-                profileUser = PERSONNEL_ETAB_PROFILE;
-
-            garEtabs.add(structure);
-
-            if (structMap != null && structMap.containsKey(structure)) {
-                addProfile(garProfiles, structure, structMap.get(structure));
-                structMap.remove(structure);
-            } else {
-                addProfile(garProfiles, structure, profileUser);
-            }
-        }
-        if (structMap != null) {
-            for (String structUAI : structMap.keySet()) {
-                garEtabs.add(structUAI);
-                addProfile(garProfiles, structUAI, structMap.get(structUAI));
-            }
-        }
-        teacher.put(PERSON_PROFILES, garProfiles);
-        teacher.put(PERSON_STRUCTURE, garEtabs);
     }
 
     /**
      * XSD specify precise order for xml tags
      *
-     * @param teacher informations about the user
+     * @param teacher
      */
     private void reorganizeNodes(JsonObject teacher) {
         JsonObject personCopy = teacher.copy();
@@ -226,10 +188,10 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
         //TODO GARPersonCivilite
         teacher.put(PERSON_STRUCT_ATTACH, personCopy.getValue(PERSON_STRUCT_ATTACH));
         teacher.put(PERSON_STRUCTURE, personCopy.getValue(PERSON_STRUCTURE));
-        if(personCopy.getValue(PERSON_BIRTH_DATE) != null && !"".equals(personCopy.getValue(PERSON_BIRTH_DATE))){
+        if (personCopy.getValue(PERSON_BIRTH_DATE) != null && !"".equals(personCopy.getValue(PERSON_BIRTH_DATE))) {
             teacher.put(PERSON_BIRTH_DATE, personCopy.getValue(PERSON_BIRTH_DATE));
         }
-        teacher.put(TEACHER_POSITION, personCopy.getValue(TEACHER_POSITION));
+        teacher.put(TEACHER_POSITION_1D, personCopy.getValue(TEACHER_POSITION_1D));
     }
 
     /**
@@ -238,90 +200,41 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * Teacher function is in form structID$functionCode$functionDesc$roleCode and must be splited
      * and analyzed
      * Documentalists have specific role and profile
-     * @param teacher to process functions for
+     *
+     * @param teacher   to process functions for
      * @param structMap map between structures ID and profile
      */
-    private void processFunctions(JsonObject teacher, Map<String,String> structMap) {
+    private void processFunctions(JsonObject teacher, Map<String, String> structMap) {
         JsonArray functions = teacher.getJsonArray("functions", null);
-        if(functions == null || functions.size() == 0) {
+        if (functions == null || functions.size() == 0) {
             return;
         }
+
         JsonArray garFunctions = new fr.wseduc.webutils.collections.JsonArray();
-        for(Object o : functions) {
-            if(!(o instanceof String)) continue;
-            String[] arrFunction = ((String)o).split("\\$");
-            if(arrFunction.length < 4) continue;
+        for (Object o : functions) {
+            if (!(o instanceof String)) continue;
+            String[] arrFunction = ((String) o).split("\\$");
+            if (arrFunction.length < 4) continue;
             String structID = arrFunction[0];
-            if(!mapStructures.containsKey(structID)) {
+            if (!mapStructures.containsKey(structID)) {
                 continue;
             }
             String structUAI = mapStructures.get(structID);
             String functionCode = arrFunction[1];
             String functionDesc = arrFunction[2];
             String roleCode = arrFunction[3];
-            JsonArray profilesUser = teacher.getJsonArray("UAIprofiles");
-            String profileUser = "Teacher";
-            for(Object profile : profilesUser) {
-                if(!(profile instanceof String)) continue;
-                String[] uaiProfile = ((String)profile).split("\\$");
-                if(uaiProfile.length < 2) continue;
-                String uai = uaiProfile[0];
-                if(structUAI.equals(uai))
-                    profileUser = uaiProfile[1];
-            }
             String profileType = TEACHER_PROFILE;
-            if(profileUser.equals("Personnel"))
-                profileType = PERSONNEL_ETAB_PROFILE;
-
-            switch (functionCode) {
-                case DIRECTOR_CODE :
-                    profileType = DIRECTOR_PROFILE;
-                    break;
-                case COLLECTIVITE_TERRITORIALE_CODE :
-                    profileType = COLLECTIVITE_TERRITORIALE_PROFILE;
-                    break;
-                case ENSEIGNANT_CODE :
-                    profileType = TEACHER_PROFILE;
-                    break;
-            }
-
-            List documentaliste_code = Arrays.asList(DOCUMENTALIST_CODE,CIO_CODE,DCT_CODE);
-
-            List vie_scolaire_code = Arrays.asList(EDUCATION_CODE,EDUCATION_ASSISTANT_CODE,ACCOMPAGNEMENT_HANDICAP_2_CODE,
-                    ACCOMPAGNMENT_HANDICAP_CODE,ETRANGER_ASSISTANT_CODE,SURVEILLANCE_CODE,CPE_CODE,AUXILIAIRE_VIE_SCOLAIRE_CODE,
-                    BESOINS_EDUCATIFS_CODE, EDUCATEUR_INTERNAT_CODE, FORMATION_INSERTION_JEUNES_CODE, COORDINATION_INSERTION_JEUNES_CODE,
-                    CONSEILLER_ORIENTATION_CODE);
-
-            List personnel_etab_code = Arrays.asList(SANS_OBJET_CODE, NON_RENSEIGNE_CODE, PREMIER_DEGRE_CODE, PERSONNELS_SECOND_DEGRE_CODE,
-                    ADMINISTRATION_CODE, PERSONNEL_ADMINISTRATIF_CODE, CHEF_DE_TRAVAUX_CODE, ACCOMPAGNANT_SOUTIEN_CODE,
-                    PSYCHOLOGUE_CODE, OUVRIER_CODE, LABORATOIRE_CODE, PERSONNEL_MEDICO_SOCIAUX_CODE, PERSONNEL_TECHNIQUE_CODE,
-                    READAPTATION_CODE, CONSEILLER_FORMATION_CONTINUE_CODE, APPRENTISSAGE_CODE, FORMATION_CONTINUE_ADULTES_CODE,
-                    APPRENTI_CLASSIQUE_PROFESSEUR_CODE, PERSONNEL_ADMINISTRATIFS_DE_CENTRALE_CODE, PERSONNELS_ASU_DE_CENTRALE_CODE,
-                    AUTRES_ADMINISTRATIONS_CODE, PERSONNELS_BIBLIOTHEQUES_MUSEES_CODE, COMITE_NATIONAL_EVALUATION_CODE,
-                    COORDINATEUR_PEDAGOGIQUE_CFA_CODE, CONSEILLERS_PEDAGOGIQUES_EPS_CODE, PERSONNELS_CONTRACTUELS_DE_CENTRALE_CODE,
-                    ELEVE_CYCLE_PRE_COP_STAGIAIRE_CODE, EMPLOIS_PARTICULIERS_ACTIONS_DIVERSES_CODE, COORDINATEUR_ORGANISATEUR_ANIMATION_MAFPEN_CODE,
-                    INTERVENANTS_EXTERIEURS_CODE, PERSONNELS_INSPECTION_GENERALE_CODE, INSPECTION_CODE, PERSONNELS_INSPECTION_CENTRALE_CODE,
-                    PERSONNELS_ITARF_CENTRALE_CODE, PERSONNELS_JEUNESSE_ENGAGEMENT_SPORT_CODE, LABORATOIRE_BIS_CODE, MISE_A_DISPOSITION_SANS_REMBOURSEMENT_CODE,
-                    MISE_A_DISPOSITION_AVEC_REMBOURSEMENT_CODE, ENSEIGNANTS_CONGES_MOBILITE_CODE, MVT_PREMIER_DEGRE_CODE,
-                    PILOTAGE_ANIMATION_PEDAGOGIE_CODE, PERSONNELS_ENSEIGNANTS_CENTRALE_CODE, REMPLACEMENT_CODE, RETRAITE_CODE,
-                    REEMPLOI_AUPRES_CNED_CODE, STAGIAIRE_EN_FORMATION_CODE, _CODE);
-
-            if(documentaliste_code.contains(functionCode)){
+            if (DOCUMENTALIST_CODE.equals(functionCode) && DOCUMENTALIST_DESC.equals(functionDesc)) {
                 profileType = DOCUMENTALIST_PROFILE;
-            }else if(vie_scolaire_code.contains(functionCode)){
-                profileType = VIE_SCOLAIRE_PROFILE;
-            }else if(personnel_etab_code.contains(functionCode)){
-                profileType = PERSONNEL_ETAB_PROFILE;
             }
-
             structMap.put(structUAI, profileType);
 
             JsonObject function = new JsonObject();
             function.put(STRUCTURE_UAI, structUAI);
-            function.put(POSITION_CODE, roleCode);
+            function.put(POSITION_CODE_1D, roleCode);
             garFunctions.add(function);
         }
-        teacher.put(TEACHER_POSITION, garFunctions);
+        teacher.put(TEACHER_POSITION_1D, garFunctions);
         teacher.remove("functions");
     }
 
@@ -331,7 +244,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
      * @param mefs Array of mefs from Neo4j
      */
     private Either<String, JsonObject> processTeachersMefs(JsonArray mefs) {
-        Either<String, JsonObject> event = processSimpleArray(mefs, PERSON_MEF, PERSON_MEF_NODE_MANDATORY);
+        Either<String, JsonObject> event = processSimpleArray(mefs, PERSON_MEF_1D, PERSON_MEF_NODE_MANDATORY_1D);
         if (event.isLeft()) {
             return new Either.Left<>("Error when processing teacher mefs : " + event.left().getValue());
         } else {
