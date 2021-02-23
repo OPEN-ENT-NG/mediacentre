@@ -265,15 +265,15 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * @param handler results
      */
     private void getOtherGroupsInfoFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
-        final String groupsQuery = "MATCH (s:Structure)<-[:BELONGS]-(c:Class) WITH collect(c.name) as classes " +
-                "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->" +
-                "(s:Structure {source:'" + this.source + "'}) " +
-                "WHERE NOT (fg.name IN classes) " +
-                "WITH u,s,fg MATCH (u)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s) " +
+        final String groupsQuery = "MATCH (s:Structure {source:'" + this.source + "'})<-[:BELONGS]-(c:Class) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
+                "WITH collect(c.name) as classes, s " +
+                "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[d2:DEPENDS]->(s:Structure) " +
+                "WHERE NOT (fg.name IN classes) " +
                 "AND head(u.profiles) IN ['Student', 'Teacher'] " +
                 "AND NOT(HAS(u.deleteDate)) " +
-                "with distinct s.UAI as uai, fg " +
+                "WITH u,s,fg MATCH (u)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s) " +
+                "with s.UAI as uai, fg " +
                 "return distinct " +
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as `" + GROUPS_CODE + "`, " +
                 "uai as `" + STRUCTURE_UAI + "`, " +
@@ -355,13 +355,14 @@ public class DataServiceGroupImpl extends DataServiceBaseImpl implements DataSer
      * @param handler results
      */
     private void getOtherGroupsPersonFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
-        final String groupsQuery = "MATCH (s:Structure)<-[:BELONGS]-(c:Class) WITH collect(c.name) as classes " +
-                "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
-                "WHERE NOT (fg.name IN classes) " +
-                "WITH u,s,fg MATCH (u)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s) " +
+        final String groupsQuery = "MATCH (s:Structure {source:'" + this.source + "'})<-[:BELONGS]-(c:Class) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
+                "WITH collect(c.name) as classes, s " +
+                "MATCH (u:User)-[:IN]->(fg:FunctionalGroup)-[:DEPENDS]->(s:Structure) " +
+                "WHERE NOT (fg.name IN classes) " +
                 "AND head(u.profiles) IN ['Student', 'Teacher'] " +
                 "AND NOT(HAS(u.deleteDate)) " +
+                "WITH u,s,fg MATCH (u)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s) " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "u.id as `" + PERSON_ID + "`, " +
                 "coalesce(split(fg.externalId,\"$\")[1], fg.id) as `" + GROUPS_CODE + "` " +

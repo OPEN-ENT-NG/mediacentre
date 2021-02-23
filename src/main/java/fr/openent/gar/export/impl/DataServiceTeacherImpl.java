@@ -109,7 +109,7 @@ public class DataServiceTeacherImpl extends DataServiceBaseImpl implements DataS
 
     protected static void getTeachersInfoFromNeo4j(int skip, String source, String entId, PaginatorHelperImpl paginator,
                                                 Handler<Either<String, JsonArray>> handler) {
-        String query = "match (u:User)-[:IN]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure {source:'" + source + "'}) " +
+        String query = "match (u:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup)-[:DEPENDS]->(s:Structure {source:'" + source + "'}) " +
                 "WHERE HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND NOT(HAS(u.deleteDate)) AND pg.filter IN ['Personnel','Teacher'] " +
                 // ADMINISTRATIVE ATTACHMENT can reference non GAR exported structure

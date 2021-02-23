@@ -382,12 +382,13 @@ public class DataServiceStructureImpl extends DataServiceBaseImpl implements Dat
      * @param handler results
      */
     private void getStucturesTeachersMefsFromNeo4j(int skip, Handler<Either<String, JsonArray>> handler) {
-        String queryTeachersMefs = "MATCH (n:User)-[:IN]->(pg:ProfileGroup {filter:'Teacher'})-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
+        String queryTeachersMefs = "MATCH (n:User)-[:IN|DEPENDS*1..2]->(pg:ProfileGroup {filter:'Teacher'})-[:DEPENDS]->(s:Structure {source:'" + this.source + "'}) " +
                 "where HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports " +
                 "AND exists(n.modules) and not has(n.deleteDate) " +
                 "with distinct s,n " +
                 "unwind n.modules as rows " +
                 "with s, split(rows,\"$\") as modules " +
+                "where modules[0] = s.externalId " +
                 "return distinct s.UAI as `" + STRUCTURE_UAI + "`, " +
                 "modules[1] as `" + MEF_CODE + "`, " +
                 "modules[2] as `" + MEF_DESCRIPTION + "` " +
