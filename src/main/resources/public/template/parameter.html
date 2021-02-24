@@ -79,6 +79,12 @@
                     <span ng-if="item.deployed">
                         <i class="validated-icon-large"></i>
                     </span>
+                    <span ng-if="item.source == 'AAF1D' && item.deployed">
+                        1D
+                    </span>
+                    <span ng-if="item.source == 'AAF' && item.deployed">
+                        2D
+                    </span>
                 </th>
                 <th>
                     <dots-menu style="text-align: left">

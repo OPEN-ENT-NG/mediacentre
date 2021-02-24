@@ -36,7 +36,8 @@ public class DefaultParameterService implements ParameterService {
 
     @Override
     public void getStructureGar(String entId, Handler<Either<String, JsonArray>> handler) {
-        String query = "MATCH (s:Structure) WHERE HAS(s.UAI) OPTIONAL MATCH (s)<-[:DEPENDS]-(g:ManualGroup{name: {groupName} })" +
+        String query = "MATCH (s:Structure) WHERE HAS(s.UAI) OPTIONAL MATCH (s)<-[:DEPENDS]-(g:ManualGroup{name: {groupName} }) " +
+                "WHERE s.source starts with '"+ Gar.AAF +"' " +
                 "RETURN DISTINCT s.UAI as uai, s.name as name, s.id as structureId, s.source as source, (HAS(s.exports) AND ('GAR-' + {entId}) IN s.exports) as deployed, g.id as id";
 
         JsonObject params = new JsonObject().put("groupName", GAR_GROUP_NAME).put("entId", entId);
