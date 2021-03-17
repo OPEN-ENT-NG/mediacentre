@@ -59,6 +59,22 @@ public class DefaultResourceService implements ResourceService {
 
     @Override
     public void get(String userId, String structure, String hostname, Handler<Either<String, JsonArray>> handler) {
+        if(userId == null){
+            handler.handle(new Either.Left<>("[DefaultResourceService@get] No userid." ));
+            return;
+        }
+        if(structure == null){
+            handler.handle(new Either.Left<>("[DefaultResourceService@get] No structure." ));
+            return;
+        }
+        if(hostname == null){
+           handler.handle(new Either.Left<>("[DefaultResourceService@get] No hostname." ));
+           return;
+       }
+        if(!idsEnt.containsKey(hostname)){
+            handler.handle(new Either.Left<>("[DefaultResourceService@get] This hostname is undefined in config key id-ent, or hostname isn't match real hostname : " + hostname ));
+            return;
+        }
         String uaiQuery = "MATCH (s:Structure {id: {structureId}}) return s.UAI as UAI, s.name as name";
         JsonObject params = new JsonObject().put("structureId", structure);
 

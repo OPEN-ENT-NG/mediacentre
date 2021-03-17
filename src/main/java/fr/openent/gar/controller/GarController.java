@@ -118,6 +118,9 @@ public class GarController extends ControllerHelper {
                 String structureId = body.getString("structure");
                 String userId = body.getString("user");
                 String hostname = body.getString("hostname");
+                if( hostname == null ) {
+                    hostname = config.getString("host").split("//")[1];
+                }
                 this.resourceService.get(userId, structureId, hostname, result -> {
                             if (result.isRight()) {
                                 JsonObject response = new JsonObject()
