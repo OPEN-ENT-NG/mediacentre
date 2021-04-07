@@ -96,26 +96,4 @@ public class MediacentreController extends ControllerHelper {
                 new JsonObject().put("action", "exportAndSend").put("entId", entId),
                 handlerToAsyncHandler(event -> log.info("Export Gar Launched")));
     }
-
-    @BusAddress(Mediacentre.MEDIACENTRE_ADDRESS)
-    public void addressHandler(Message<JsonObject> message) {
-        String action = message.body().getString("action", "");
-        switch (action) {
-            case "export" : exportAndSend(null);
-                break;
-            case "getConfig":
-                log.info("MEDIACENTRE GET CONFIG BUS RECEPTION");
-                JsonObject data = (new JsonObject())
-                        .put("status", "ok")
-                        .put("message", config);
-                message.reply(data);
-                break;
-            default:
-                log.error("Mediacentre invalid.action " + action);
-                JsonObject json = (new JsonObject())
-                        .put("status", "error")
-                        .put("message", "invalid.action");
-                message.reply(json);
-        }
-    }
 }
