@@ -17,6 +17,18 @@ export const mainController = ng.controller("MainController", [
     $scope.lang = idiom;
     $scope.limitTo = 20;
     $scope.filteredResources = [];
+    
+    $scope.safeApply = function (fn) {
+       const phase = this.$root.$$phase;
+       if (phase == '$apply' || phase == '$digest') {
+          if (fn && (typeof (fn) === 'function')) {
+            fn();
+          }
+       } else {
+            this.$apply(fn);
+       }
+    };
+    
     $scope.loaders = {
       resources: false
     };
@@ -44,7 +56,7 @@ export const mainController = ng.controller("MainController", [
       $scope.loaders.resources = data.loading;
       $scope.resetFilters();
       $scope.filteredResources = $scope.resources.all;
-      $scope.$apply();
+      $scope.safeApply();
     });
 
     $scope.resetFilters = () => {
@@ -56,12 +68,12 @@ export const mainController = ng.controller("MainController", [
         typologies: []
       };
       $scope.filteredResources = $scope.resources.all;
-      $scope.$apply();
+      $scope.safeApply();
     };
 
     $scope.filter = () => {
       $scope.filteredResources = $scope.resources.filter($scope.search);
-      $scope.$apply();
+      $scope.safeApply();
     };
 
     $scope.loadResources = (structure: Structure) => {
