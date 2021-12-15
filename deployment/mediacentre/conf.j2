@@ -1,0 +1,101 @@
+{
+    "name": "{{ mediacentreVersion }}",
+    {% if (item == 'jobs') %}
+    "worker" : true,
+    {% endif %}
+    "config": {
+        "main" : "fr.openent.mediacentre.Mediacentre",
+        "port" : 8122,
+        "app-name" : "Mediacentre",
+        "app-address" : "/mediacentre",
+        "app-icon" : "Mediacentre-large",
+        "host": "https://{{ host }}",
+        "ssl" : true,
+        "sql" : true,
+        "db-schema" : "mediacentre",
+        "event-collection": "gar-events",
+        {% if overrideTheme %} "override-theme": {{ override2d }}, {% endif %}
+        "auto-redeploy": false,
+        "userbook-host": "https://{{ host }}",
+        "integration-mode" : "HTTP",
+        "app-registry.port" : 8012,
+        {% if not mediacentreVersion.startsWith('2.') and not mediacentreVersion.startsWith('3.') %}
+            {% if garDemoMode is defined %}
+        "demo" : {{ garDemoMode }},
+            {% endif %}
+        "mode": "prod",
+        "entcore.port" : 8009,
+        "max-nodes": 10000,
+        "export-path": "{{ garExportPath }}/data/",
+        "export-archive-path": "{{ garExportPath }}/data-compress/",
+            {% if garIdEnt is defined %}
+        "id-ent" : "{{ garIdEnt }}",
+            {% else %}
+        "id-ent" : {{ garIdsEnt }},
+            {% endif %}
+        "control-group" : "RESP-AFFECT-GAR",
+            {% if garExportCron is defined %}
+        "export-cron": "{{ garExportCron }}",
+            {% else %}
+        "export-cron": "0 0 21 * * ? 2099",
+            {% endif %}
+            {% if xsdRecipientList is defined %}
+        "xsd-recipient-list": {{ xsdRecipientList }},
+            {% endif %}
+        "pagination-limit": {{ paginationLimit|default('21999') }},
+        "academy-prefix": "{{ garAcademyPrefix }}",
+            {% if garRessourcesHost is defined %}
+        "gar-ressources" : {
+            "host": "{{ garRessourcesHost }}",
+            "cert": "{{ garRessourcesCert }}",
+            "key": "{{ garRessourcesKey }}"
+        },
+            {% else %}
+        "gar-ressources" : {{ garRessources }},
+            {% endif %}
+            {% if garSftpHost is defined %}
+        "gar-sftp" : {
+            "host": "{{ garSftpHost }}",
+            "port": {{ garSftpPort }},
+            "username": "{{ garSftpUsername }}",
+            "passphrase": "{{ garSftpPassphrase }}",
+            "sshkey": "{{ garSftpSshkey }}",
+            "dir-dest": "{{ garSftpDirDest }}",
+            "known-hosts": "{{ garSftpKnownHost }}"
+        },
+            {% else %}
+        "gar-sftp" : {{ garSftp }},
+            {% endif %}
+        {% else %}
+        "sources": {
+            "fr.openent.mediacentre.source.GAR": true,
+            "fr.openent.mediacentre.source.Moodle": {{ sourceMediacentreMoodle | default('false') }},
+            {% if mediacentreVersion.startsWith('3.') %}
+            "fr.openent.mediacentre.source.Signet": true,
+            {% endif %}
+            "fr.openent.mediacentre.source.PMB": false
+        },
+        "textbook_typology": [
+            "MAN"
+        ],
+        "wsPort": 6503,
+            {% if elasticServerURIs is defined and mediacentreESIndex is defined %}
+        "elasticsearch": true,
+        "elasticsearchConfig" : {
+            "server-uris": {{ elasticServerURIs }},
+            "index": "{{ mediacentreESIndex }}"
+        },
+            {% endif %}
+        {% endif %}
+        "publicConf": {
+            "xiti": {
+                "ID_SERVICE": {
+                    "default": 13
+                },
+                "LIBELLE_SERVICE": {
+                    "default": "PAGE_ENT"
+                }
+            }
+        }
+    }
+}
